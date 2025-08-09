@@ -305,12 +305,17 @@ function App() {
 
               {/* Court for Logging */}
               <div className="w-full">
-                <Court shots={shots} onCourtClick={handleCourtClick} showShotMarkers={true} />
+                <Court
+                  shots={shots}
+                  onCourtClick={handleCourtClick}
+                  showShotMarkers={true}
+                  currentPlayer={currentPlayer}
+                />
               </div>
 
-              {/* Shot Log Table */}
+              {/* Player Performance & Actions */}
               <div className="w-full">
-                <ShotLog shots={shots} onDeleteShot={handleDeleteShot} onClearAllShots={handleClearAllShots} playerNames={playerNames}/>
+                <ShotLog shots={shots} stats={playerStats} playerNames={playerNames}/>
               </div>
             </>
           )}
@@ -390,7 +395,7 @@ function App() {
       </div>
       
       <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
-        Santiago Greco - All rights reserved. Gresolutions ©
+        Santiago Greco - All rights reserved. Gresolutions © 2025
       </footer>
 
       {pendingShotPosition && (

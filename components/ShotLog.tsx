@@ -1,19 +1,12 @@
 
 import React from 'react';
-import { Shot } from '../types';
+import { Shot, PlayerStats } from '../types';
 
 interface ShotLogProps {
   shots: Shot[];
-  onDeleteShot: (shotId: string) => void;
-  onClearAllShots: () => void;
+  stats: PlayerStats[];
   playerNames: Record<string, string>;
 }
-
-const TrashIcon: React.FC<{className?: string}> = ({className}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
-    </svg>
-);
 
 const DownloadIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
@@ -21,11 +14,23 @@ const DownloadIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
+// Helper component for a progress bar
+const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
+  <div className="w-full bg-gray-600 rounded-full h-2.5">
+    <div
+      className="bg-cyan-500 h-2.5 rounded-full"
+      style={{ width: `${percentage}%` }}
+    ></div>
+  </div>
+);
+
+
 /**
- * Displays a log of all recorded shots in a table.
- * Newest shots are shown first.
+ * Displays player performance statistics and provides an option to export logs.
  */
-const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots, playerNames }) => {
+const ShotLog: React.FC<ShotLogProps> = ({ shots, stats, playerNames }) => {
+  const sortedByPlayerNumber = [...stats].sort((a, b) => Number(a.playerNumber) - Number(b.playerNumber));
+
   /**
    * Generates a CSV file from the shot data and triggers a download.
    */
@@ -69,81 +74,50 @@ const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots,
     URL.revokeObjectURL(url);
   };
   
-  const periodTranslations = {
-      'First Half': 'Primer Tiempo',
-      'Second Half': 'Segundo Tiempo'
-  };
-
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-cyan-400">Registro de Tiros</h2>
+        <h2 className="text-2xl font-bold text-cyan-400">Rendimiento de Jugadores</h2>
         {shots.length > 0 && (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
-              aria-label="Exportar todos los tiros como CSV"
-            >
-              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-              <span className="hidden sm:inline">Exportar CSV</span>
-            </button>
-            <button
-              onClick={onClearAllShots}
-              className="flex items-center gap-2 bg-red-800 hover:bg-red-700 text-red-100 font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-red-600"
-              aria-label="Borrar todos los tiros"
-            >
-              <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-              <span className="hidden sm:inline">Borrar Todo</span>
-            </button>
-          </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+            aria-label="Exportar todos los tiros como CSV"
+          >
+            <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+            <span className="hidden sm:inline">Exportar Logs</span>
+          </button>
         )}
       </div>
-      <div className="max-h-[28rem] overflow-y-auto pr-2">
-        {shots.length === 0 ? (
-          <p className="text-gray-400 text-center py-4">Aún no hay tiros registrados.</p>
+      <div className="overflow-x-auto">
+        {stats.length === 0 ? (
+          <p className="text-gray-400 text-center py-4">Aún no hay tiros registrados para ver estadísticas.</p>
         ) : (
-          <div className="w-full">
-            <table className="w-full text-left table-auto">
-              <thead className="sticky top-0 bg-gray-800 z-10">
-                <tr className="border-b-2 border-gray-600">
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[20%]">Jugador</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[20%]">Posición (m)</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[20%]">Período</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[15%]">Resultado</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[15%] text-center">Puntos</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[10%] text-right"></th>
+          <table className="w-full text-left table-auto">
+            <thead>
+              <tr className="border-b-2 border-gray-600">
+                <th className="p-3 text-sm font-semibold tracking-wider">Jugador</th>
+                <th className="p-3 text-sm font-semibold tracking-wider text-center">Puntos Totales</th>
+                <th className="p-3 text-sm font-semibold tracking-wider text-center">Tiros (G/T)</th>
+                <th className="p-3 text-sm font-semibold tracking-wider w-[30%]">% Goles</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedByPlayerNumber.map(player => (
+                <tr key={player.playerNumber} className="border-b border-gray-700 hover:bg-gray-700/50">
+                  <td className="p-3 font-mono text-cyan-300 font-bold text-lg">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
+                  <td className="p-3 font-mono text-white text-center text-lg">{player.totalPoints}</td>
+                  <td className="p-3 font-mono text-gray-300 text-center">{`${player.totalGoles}/${player.totalShots}`}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-3">
+                      <PercentageBar percentage={player.golPercentage} />
+                      <span className="font-mono text-gray-300 w-12 text-right">{player.golPercentage.toFixed(1)}%</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {[...shots].reverse().map((shot) => (
-                  <tr key={shot.id} className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors duration-150">
-                    <td className="p-3 font-mono text-cyan-300">
-                      {playerNames[shot.playerNumber] || `#${shot.playerNumber}`}
-                      {playerNames[shot.playerNumber] && <span className="block text-xs text-gray-400 font-sans">#{shot.playerNumber}</span>}
-                    </td>
-                    <td className="p-3 font-mono text-gray-300">{`(${shot.position.x.toFixed(1)}, ${shot.position.y.toFixed(1)})`}</td>
-                    <td className="p-3 text-gray-300">{periodTranslations[shot.period]}</td>
-                    <td className={`p-3 font-semibold ${shot.isGol ? 'text-green-400' : 'text-red-400'}`}>
-                      {shot.isGol ? 'Gol' : 'Fallo'}
-                    </td>
-                    <td className="p-3 font-mono text-white text-center">
-                      {shot.golValue > 0 ? shot.golValue : '-'}
-                    </td>
-                    <td className="p-3 text-right">
-                      <button
-                        onClick={() => onDeleteShot(shot.id)}
-                        className="text-gray-500 hover:text-red-500 transition-colors p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                        aria-label={`Eliminar tiro del jugador ${shot.playerNumber}`}
-                      >
-                        <TrashIcon />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

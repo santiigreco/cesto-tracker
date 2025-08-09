@@ -11,16 +11,6 @@ const DownloadIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
-// Helper component for a progress bar
-const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
-  <div className="w-full bg-gray-600 rounded-full h-2.5">
-    <div
-      className="bg-cyan-500 h-2.5 rounded-full"
-      style={{ width: `${percentage}%` }}
-    ></div>
-  </div>
-);
-
 const TrophyIcon: React.FC<{ rank: number }> = ({ rank }) => {
   const colors: { [key: number]: string } = {
     1: 'text-yellow-400', // Gold
@@ -40,7 +30,6 @@ const TrophyIcon: React.FC<{ rank: number }> = ({ rank }) => {
 const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<string, string>; }> = ({ stats, playerNames }) => {
   const captureRef = useRef<HTMLDivElement>(null);
   const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
-  const sortedByPlayerNumber = [...stats].sort((a, b) => Number(a.playerNumber) - Number(b.playerNumber));
   
   const handleDownload = () => {
     if (captureRef.current && typeof html2canvas === 'function') {
@@ -82,7 +71,7 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
       <div ref={captureRef} className="pt-4">
         {/* Top Scorers Section */}
         <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-          <h2 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Máximos Anotadores (por Puntos)</h2>
+          <h2 className="text-3xl font-bold text-cyan-400 mb-6 text-center">MVP del partido</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {topScorers.map((player, index) => (
               <div key={player.playerNumber} className="bg-gray-700/50 p-6 rounded-xl flex flex-col items-center gap-2 border border-gray-600">
@@ -95,38 +84,6 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
               </div>
             ))}
             {topScorers.length === 0 && <p className="text-gray-400 text-center col-span-3">Aún no se han anotado puntos.</p>}
-          </div>
-        </div>
-
-        {/* Player Performance Table */}
-        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg mt-8">
-          <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Rendimiento de Jugadores</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left table-auto">
-              <thead>
-                <tr className="border-b-2 border-gray-600">
-                  <th className="p-3 text-sm font-semibold tracking-wider">Jugador</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider text-center">Puntos Totales</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider text-center">Tiros (G/T)</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[30%]">% Goles</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedByPlayerNumber.map(player => (
-                  <tr key={player.playerNumber} className="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td className="p-3 font-mono text-cyan-300 font-bold text-lg">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
-                    <td className="p-3 font-mono text-white text-center text-lg">{player.totalPoints}</td>
-                    <td className="p-3 font-mono text-gray-300 text-center">{`${player.totalGoles}/${player.totalShots}`}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <PercentageBar percentage={player.golPercentage} />
-                        <span className="font-mono text-gray-300 w-12 text-right">{player.golPercentage.toFixed(1)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
