@@ -21,7 +21,7 @@ const HALF_COURT_LINE_Y = 1;
 const BASKET_DIAMETER = 0.8; // Increased for better visibility
 const PENALTY_LINE_LENGTH = 0.5;
 
-const parquetBgUrl = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='20' viewBox='0 0 80 20'%3e%3crect width='80' height='20' fill='%23e0cda9'/%3e%3cpath d='M0 10h80M10 0v20M30 0v20M50 0v20M70 0v20' stroke='%23d1bfa1' stroke-width='0.5'/%3e%3c/svg%3e";
+const parquetBgUrl = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='20' viewBox='0 0 80 20'%3e%3crect width='80' height='20' fill='%23f0e0c0'/%3e%3cpath d='M10 0v20 M30 0v20 M50 0v20 M70 0v20' stroke='%23d9c0a0' stroke-width='0.5'/%3e%3c/svg%3e";
 
 const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = true, children }) => {
   
@@ -48,7 +48,7 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
         role={onCourtClick ? "button" : "img"}
         aria-label="Media cancha de Cestoball"
         style={{
-          backgroundColor: '#e0cda9',
+          backgroundColor: '#f0e0c0',
           backgroundImage: `url("${parquetBgUrl}")`,
           backgroundSize: '80px 20px',
         }}

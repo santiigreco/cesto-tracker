@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats } from './types';
+import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter } from './types';
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
@@ -64,6 +64,30 @@ const HeatmapOverlay: React.FC<{ shots: Shot[], filter: HeatmapFilter }> = ({ sh
   );
 };
 
+// Reusable Period Filter Component
+const PeriodFilter: React.FC<{
+  currentFilter: MapPeriodFilter;
+  setFilter: (filter: MapPeriodFilter) => void;
+  translations: { [key in GamePeriod]: string };
+}> = ({ currentFilter, setFilter, translations }) => (
+  <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+    <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h2>
+    <div className="flex justify-center gap-2 sm:gap-4">
+      {(['all', 'First Half', 'Second Half'] as MapPeriodFilter[]).map((period) => (
+        <button
+          key={period}
+          onClick={() => setFilter(period)}
+          className={`flex-1 max-w-xs capitalize font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 shadow-lg ${
+            currentFilter === period ? 'bg-cyan-600 text-white ring-cyan-500 scale-105' : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
+          }`}
+        >
+          {period === 'all' ? 'Ambos' : translations[period as GamePeriod]}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 
 /**
  * The main application component.
@@ -85,6 +109,8 @@ function App() {
   const [heatmapFilter, setHeatmapFilter] = useState<HeatmapFilter>('all');
   // Shotmap State
   const [shotmapPlayer, setShotmapPlayer] = useState<string>('Todos');
+  // Shared Map Filter State
+  const [mapPeriodFilter, setMapPeriodFilter] = useState<MapPeriodFilter>('all');
 
   const heatmapRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +185,9 @@ function App() {
     return shots.filter(shot => {
       const playerMatch = heatmapPlayer === 'Todos' || shot.playerNumber === heatmapPlayer;
       if (!playerMatch) return false;
+      
+      const periodMatch = mapPeriodFilter === 'all' || shot.period === mapPeriodFilter;
+      if (!periodMatch) return false;
 
       switch (heatmapFilter) {
         case 'goles': return shot.isGol;
@@ -167,13 +196,15 @@ function App() {
         default: return true;
       }
     });
-  }, [shots, heatmapPlayer, heatmapFilter]);
+  }, [shots, heatmapPlayer, heatmapFilter, mapPeriodFilter]);
   
   const filteredShotmapShots = useMemo(() => {
     return shots.filter(shot => {
-        return shotmapPlayer === 'Todos' || shot.playerNumber === shotmapPlayer;
+        const playerMatch = shotmapPlayer === 'Todos' || shot.playerNumber === shotmapPlayer;
+        const periodMatch = mapPeriodFilter === 'all' || shot.period === mapPeriodFilter;
+        return playerMatch && periodMatch;
     });
-  }, [shots, shotmapPlayer]);
+  }, [shots, shotmapPlayer, mapPeriodFilter]);
 
   const playerStats = useMemo<PlayerStats[]>(() => {
     const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
@@ -288,8 +319,12 @@ function App() {
              <div className="flex flex-col gap-8">
                 {/* Shotmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
                   <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} />
                 </div>
+                
+                {/* Period Filter */}
+                <PeriodFilter currentFilter={mapPeriodFilter} setFilter={setMapPeriodFilter} translations={periodTranslations} />
 
                 {/* Court for Shotmap */}
                 <div className="w-full">
@@ -303,12 +338,13 @@ function App() {
               <div ref={heatmapRef} className="flex flex-col gap-8">
                 {/* Heatmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
                   <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} />
                 </div>
 
                 {/* Heatmap Filter Toggle */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Filtrar Tiros</h2>
+                  <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h2>
                   <div className="flex justify-center gap-2 sm:gap-4">
                     {(['all', 'goles', 'misses'] as HeatmapFilter[]).map((filter) => (
                       <button key={filter} onClick={() => setHeatmapFilter(filter)}
@@ -321,6 +357,9 @@ function App() {
                     ))}
                   </div>
                 </div>
+
+                {/* Period Filter */}
+                <PeriodFilter currentFilter={mapPeriodFilter} setFilter={setMapPeriodFilter} translations={periodTranslations} />
 
                 {/* Court for Heatmap */}
                 <div className="w-full">
@@ -362,11 +401,12 @@ function App() {
         href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Estuve%20probando%20la%20app%20Cesto%20Tracker%20y...."
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-400"
+        className="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-400 flex items-center gap-2"
         aria-label="Enviar feedback por WhatsApp"
         title="Enviar feedback por WhatsApp"
       >
-        <WhatsappIcon className="h-7 w-7" />
+        <WhatsappIcon className="h-6 w-6" />
+        <span className="text-sm">Feedback</span>
       </a>
     </div>
   );

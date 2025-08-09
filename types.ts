@@ -1,6 +1,7 @@
 export type GamePeriod = 'First Half' | 'Second Half';
 export type AppTab = 'logger' | 'heatmap' | 'shotmap' | 'statistics';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
+export type MapPeriodFilter = GamePeriod | 'all';
 
 export interface ShotPosition {
   x: number; // in meters, from top edge (length-wise)
