@@ -5,6 +5,7 @@ interface PlayerSelectorProps {
   currentPlayer: string;
   setCurrentPlayer: (player: string) => void;
   showAllPlayersOption?: boolean;
+  playerNames: Record<string, string>;
 }
 
 // Generate jersey numbers from 1 to 15
@@ -15,9 +16,10 @@ const jerseyNumbers = Array.from({ length: 15 }, (_, i) => String(i + 1));
  */
 const JerseyIcon: React.FC<{
   number: string;
+  name?: string;
   isSelected: boolean;
   onClick: (number: string) => void;
-}> = ({ number, isSelected, onClick }) => {
+}> = ({ number, name, isSelected, onClick }) => {
   const jerseyColor = isSelected ? 'fill-cyan-500' : 'fill-gray-700';
   const textColor = isSelected ? 'fill-white' : 'fill-gray-200';
   const strokeColor = isSelected ? 'stroke-cyan-300' : 'stroke-gray-600';
@@ -27,7 +29,8 @@ const JerseyIcon: React.FC<{
       onClick={() => onClick(number)}
       className="transition-transform duration-200 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-cyan-400 rounded-lg"
       aria-pressed={isSelected}
-      aria-label={`Seleccionar Jugador ${number}`}
+      aria-label={`Seleccionar ${name || `Jugador ${number}`}`}
+      title={name || `Jugador ${number}`}
     >
       <svg
         width="56"
@@ -60,10 +63,9 @@ const JerseyIcon: React.FC<{
 /**
  * A component that displays clickable jersey icons for player selection.
  */
-const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false }) => {
+const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames }) => {
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
       <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
         {showAllPlayersOption && (
           <button
@@ -81,6 +83,7 @@ const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurre
           <JerseyIcon
             key={num}
             number={num}
+            name={playerNames[num]}
             isSelected={currentPlayer === num}
             onClick={setCurrentPlayer}
           />

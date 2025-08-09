@@ -37,7 +37,7 @@ const TrophyIcon: React.FC<{ rank: number }> = ({ rank }) => {
 };
 
 
-const StatisticsView: React.FC<{ stats: PlayerStats[] }> = ({ stats }) => {
+const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<string, string>; }> = ({ stats, playerNames }) => {
   const captureRef = useRef<HTMLDivElement>(null);
   const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
   const sortedByPlayerNumber = [...stats].sort((a, b) => Number(a.playerNumber) - Number(b.playerNumber));
@@ -88,7 +88,7 @@ const StatisticsView: React.FC<{ stats: PlayerStats[] }> = ({ stats }) => {
               <div key={player.playerNumber} className="bg-gray-700/50 p-6 rounded-xl flex flex-col items-center gap-2 border border-gray-600">
                 <div className="flex items-center gap-3">
                   <TrophyIcon rank={index + 1} />
-                  <p className="text-2xl font-bold text-white">Jugador {player.playerNumber}</p>
+                  <p className="text-2xl font-bold text-white">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</p>
                 </div>
                 <p className="text-5xl font-extrabold text-cyan-400">{player.totalPoints}</p>
                 <p className="text-gray-400">Puntos Totales</p>
@@ -107,20 +107,20 @@ const StatisticsView: React.FC<{ stats: PlayerStats[] }> = ({ stats }) => {
                 <tr className="border-b-2 border-gray-600">
                   <th className="p-3 text-sm font-semibold tracking-wider">Jugador</th>
                   <th className="p-3 text-sm font-semibold tracking-wider text-center">Puntos Totales</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider text-center">Tiros</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[30%]">% Goals</th>
+                  <th className="p-3 text-sm font-semibold tracking-wider text-center">Tiros (G/T)</th>
+                  <th className="p-3 text-sm font-semibold tracking-wider w-[30%]">% Goles</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedByPlayerNumber.map(player => (
                   <tr key={player.playerNumber} className="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td className="p-3 font-mono text-cyan-300 font-bold text-lg">#{player.playerNumber}</td>
+                    <td className="p-3 font-mono text-cyan-300 font-bold text-lg">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
                     <td className="p-3 font-mono text-white text-center text-lg">{player.totalPoints}</td>
-                    <td className="p-3 font-mono text-gray-300 text-center">{player.totalShots}</td>
+                    <td className="p-3 font-mono text-gray-300 text-center">{`${player.totalGoles}/${player.totalShots}`}</td>
                     <td className="p-3">
                       <div className="flex items-center gap-3">
-                        <PercentageBar percentage={player.goalPercentage} />
-                        <span className="font-mono text-gray-300 w-12 text-right">{player.goalPercentage.toFixed(1)}%</span>
+                        <PercentageBar percentage={player.golPercentage} />
+                        <span className="font-mono text-gray-300 w-12 text-right">{player.golPercentage.toFixed(1)}%</span>
                       </div>
                     </td>
                   </tr>

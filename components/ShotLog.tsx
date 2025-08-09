@@ -6,6 +6,7 @@ interface ShotLogProps {
   shots: Shot[];
   onDeleteShot: (shotId: string) => void;
   onClearAllShots: () => void;
+  playerNames: Record<string, string>;
 }
 
 const TrashIcon: React.FC<{className?: string}> = ({className}) => (
@@ -24,7 +25,7 @@ const DownloadIcon: React.FC<{className?: string}> = ({className}) => (
  * Displays a log of all recorded shots in a table.
  * Newest shots are shown first.
  */
-const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots }) => {
+const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots, playerNames }) => {
   /**
    * Generates a CSV file from the shot data and triggers a download.
    */
@@ -34,19 +35,20 @@ const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots 
       return;
     }
 
-    const headers = ['ID Tiro', 'Jugador', 'Período', 'Posición X', 'Posición Y', 'Resultado', 'Puntos'];
+    const headers = ['ID Tiro', 'Jugador', 'Nombre Jugador', 'Período', 'Posición X', 'Posición Y', 'Resultado', 'Puntos'];
     const csvRows = [headers.join(',')];
 
     // Create a row for each shot
     shots.forEach(shot => {
       const row = [
-        `"${shot.id}"`, // Enclose ID in quotes to handle any special characters
+        `"${shot.id}"`,
         shot.playerNumber,
+        playerNames[shot.playerNumber] || '',
         shot.period === 'First Half' ? 'Primer Tiempo' : 'Segundo Tiempo',
         shot.position.x.toFixed(2),
         shot.position.y.toFixed(2),
-        shot.isGoal ? 'Goal' : 'Fallo',
-        shot.goalValue.toString()
+        shot.isGol ? 'Gol' : 'Fallo',
+        shot.golValue.toString()
       ];
       csvRows.push(row.join(','));
     });
@@ -105,8 +107,8 @@ const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots 
             <table className="w-full text-left table-auto">
               <thead className="sticky top-0 bg-gray-800 z-10">
                 <tr className="border-b-2 border-gray-600">
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[15%]">Jugador</th>
-                  <th className="p-3 text-sm font-semibold tracking-wider w-[25%]">Posición (m)</th>
+                  <th className="p-3 text-sm font-semibold tracking-wider w-[20%]">Jugador</th>
+                  <th className="p-3 text-sm font-semibold tracking-wider w-[20%]">Posición (m)</th>
                   <th className="p-3 text-sm font-semibold tracking-wider w-[20%]">Período</th>
                   <th className="p-3 text-sm font-semibold tracking-wider w-[15%]">Resultado</th>
                   <th className="p-3 text-sm font-semibold tracking-wider w-[15%] text-center">Puntos</th>
@@ -116,14 +118,17 @@ const ShotLog: React.FC<ShotLogProps> = ({ shots, onDeleteShot, onClearAllShots 
               <tbody>
                 {[...shots].reverse().map((shot) => (
                   <tr key={shot.id} className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors duration-150">
-                    <td className="p-3 font-mono text-cyan-300">{shot.playerNumber}</td>
+                    <td className="p-3 font-mono text-cyan-300">
+                      {playerNames[shot.playerNumber] || `#${shot.playerNumber}`}
+                      {playerNames[shot.playerNumber] && <span className="block text-xs text-gray-400 font-sans">#{shot.playerNumber}</span>}
+                    </td>
                     <td className="p-3 font-mono text-gray-300">{`(${shot.position.x.toFixed(1)}, ${shot.position.y.toFixed(1)})`}</td>
                     <td className="p-3 text-gray-300">{periodTranslations[shot.period]}</td>
-                    <td className={`p-3 font-semibold ${shot.isGoal ? 'text-green-400' : 'text-red-400'}`}>
-                      {shot.isGoal ? 'Goal' : 'Fallo'}
+                    <td className={`p-3 font-semibold ${shot.isGol ? 'text-green-400' : 'text-red-400'}`}>
+                      {shot.isGol ? 'Gol' : 'Fallo'}
                     </td>
                     <td className="p-3 font-mono text-white text-center">
-                      {shot.goalValue > 0 ? shot.goalValue : '-'}
+                      {shot.golValue > 0 ? shot.golValue : '-'}
                     </td>
                     <td className="p-3 text-right">
                       <button

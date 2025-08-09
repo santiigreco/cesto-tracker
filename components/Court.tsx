@@ -82,7 +82,7 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
             width: `${(BASKET_DIAMETER / COURT_WIDTH) * 100}%`,
             transform: 'translateX(-50%) translateY(-50%)' 
           }}
-          title="Goal"
+          title="Gol"
         ></div>
 
         {/* Shot markers (conditionally rendered) */}
@@ -90,15 +90,15 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
           <div
             key={shot.id}
             className={`absolute w-3 h-3 sm:w-4 sm:h-4 rounded-full flex items-center justify-center font-bold text-xs shadow-xl transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
-              shot.isGoal ? 'bg-green-500 border-2 border-green-200 text-green-900' : 'bg-red-600 border-2 border-red-300 text-red-900'
+              shot.isGol ? 'bg-green-500 border-2 border-green-200 text-green-900' : 'bg-red-600 border-2 border-red-300 text-red-900'
             }`}
             style={{
               left: `${(shot.position.x / COURT_WIDTH) * 100}%`,
               top: `${((HALF_COURT_LENGTH - shot.position.y) / HALF_COURT_LENGTH) * 100}%`,
             }}
-            title={`Jugador ${shot.playerNumber} - ${shot.isGoal ? `Goal (${shot.goalValue} pts)` : 'Fallo'} en (${shot.position.x.toFixed(1)}, ${shot.position.y.toFixed(1)})`}
+            title={`Jugador ${shot.playerNumber} - ${shot.isGol ? `Gol (${shot.golValue} pts)` : 'Fallo'} en (${shot.position.x.toFixed(1)}, ${shot.position.y.toFixed(1)})`}
           >
-            {shot.isGoal ? '✓' : '✗'}
+            {shot.isGol ? '✓' : '✗'}
           </div>
         ))}
         

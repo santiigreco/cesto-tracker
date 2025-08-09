@@ -21,6 +21,19 @@ const DownloadIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
+const PencilIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
+      <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+      <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+    </svg>
+);
+
+const WhatsappIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-8 w-8"} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.651 4.383 1.803 6.123l-1.215 4.433 4.515-1.185z" />
+    </svg>
+);
+
 
 /**
  * The Heatmap overlay component.
@@ -59,6 +72,8 @@ const HeatmapOverlay: React.FC<{ shots: Shot[], filter: HeatmapFilter }> = ({ sh
 function App() {
   // --- STATE MANAGEMENT ---
   const [shots, setShots] = useState<Shot[]>([]);
+  // Player State
+  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   // Logger State
   const [currentPlayer, setCurrentPlayer] = useState<string>('1');
   const [currentPeriod, setCurrentPeriod] = useState<GamePeriod>('First Half');
@@ -68,44 +83,60 @@ function App() {
   // Heatmap State
   const [heatmapPlayer, setHeatmapPlayer] = useState<string>('Todos');
   const [heatmapFilter, setHeatmapFilter] = useState<HeatmapFilter>('all');
+  // Shotmap State
+  const [shotmapPlayer, setShotmapPlayer] = useState<string>('Todos');
+
   const heatmapRef = useRef<HTMLDivElement>(null);
 
   // --- HANDLERS ---
   const handleCourtClick = useCallback((position: ShotPosition) => {
-    if (!currentPlayer.trim()) {
+    if (!currentPlayer.trim() || currentPlayer === 'Todos') {
       alert('Por favor, selecciona un jugador antes de marcar un tiro.');
       return;
     }
     setPendingShotPosition(position);
   }, [currentPlayer]);
 
-  const handleOutcomeSelection = useCallback((isGoal: boolean) => {
+  const handleOutcomeSelection = useCallback((isGol: boolean) => {
     if (pendingShotPosition) {
       const HALF_COURT_LINE_Y = 1; // From Court.tsx, represents the behind-the-arc line
-      let goalValue = 0;
-      if (isGoal) {
+      let golValue = 0;
+      if (isGol) {
         // If shot y-position is below the line, it's a triple (3 points). Otherwise, it's 2.
-        goalValue = pendingShotPosition.y < HALF_COURT_LINE_Y ? 3 : 2;
+        golValue = pendingShotPosition.y < HALF_COURT_LINE_Y ? 3 : 2;
       }
 
       const newShot: Shot = {
         id: new Date().toISOString() + Math.random(),
         playerNumber: currentPlayer,
         position: pendingShotPosition,
-        isGoal,
-        goalValue,
+        isGol,
+        golValue,
         period: currentPeriod,
       };
       setShots(prevShots => [...prevShots, newShot]);
       setPendingShotPosition(null);
     }
   }, [currentPlayer, pendingShotPosition, currentPeriod]);
+  
+  const handleEditPlayerName = useCallback(() => {
+    if (!currentPlayer || currentPlayer === 'Todos') return;
+    const currentName = playerNames[currentPlayer] || '';
+    const newName = prompt(`Ingresa el nombre para el jugador #${currentPlayer}:`, currentName);
+    if (newName !== null) { // prompt returns null if cancelled
+      setPlayerNames(prev => ({
+        ...prev,
+        [currentPlayer]: newName.trim(),
+      }));
+    }
+  }, [currentPlayer, playerNames]);
 
   const handleCancelShot = useCallback(() => setPendingShotPosition(null), []);
   const handleDeleteShot = useCallback((shotId: string) => setShots(p => p.filter(s => s.id !== shotId)), []);
   const handleClearAllShots = useCallback(() => {
     if (window.confirm('¿Estás seguro de que quieres borrar todos los registros de tiros? Esta acción no se puede deshacer.')) {
       setShots([]);
+      setPlayerNames({});
     }
   }, []);
 
@@ -126,28 +157,33 @@ function App() {
   // --- MEMOIZED DERIVED STATE ---
   const filteredHeatmapShots = useMemo(() => {
     return shots.filter(shot => {
-      // If "Todos" is selected, playerMatch is always true.
       const playerMatch = heatmapPlayer === 'Todos' || shot.playerNumber === heatmapPlayer;
       if (!playerMatch) return false;
 
       switch (heatmapFilter) {
-        case 'goals': return shot.isGoal;
-        case 'misses': return !shot.isGoal;
+        case 'goles': return shot.isGol;
+        case 'misses': return !shot.isGol;
         case 'all':
         default: return true;
       }
     });
   }, [shots, heatmapPlayer, heatmapFilter]);
+  
+  const filteredShotmapShots = useMemo(() => {
+    return shots.filter(shot => {
+        return shotmapPlayer === 'Todos' || shot.playerNumber === shotmapPlayer;
+    });
+  }, [shots, shotmapPlayer]);
 
   const playerStats = useMemo<PlayerStats[]>(() => {
-    const statsMap = new Map<string, { totalShots: number; totalGoals: number; totalPoints: number }>();
+    const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
 
     shots.forEach(shot => {
-      const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoals: 0, totalPoints: 0 };
+      const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
       pStats.totalShots += 1;
-      if (shot.isGoal) {
-        pStats.totalGoals += 1;
-        pStats.totalPoints += shot.goalValue;
+      if (shot.isGol) {
+        pStats.totalGoles += 1;
+        pStats.totalPoints += shot.golValue;
       }
       statsMap.set(shot.playerNumber, pStats);
     });
@@ -155,13 +191,14 @@ function App() {
     return Array.from(statsMap.entries()).map(([playerNumber, data]) => ({
       playerNumber,
       ...data,
-      goalPercentage: data.totalShots > 0 ? (data.totalGoals / data.totalShots) * 100 : 0,
+      golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
     }));
   }, [shots]);
   
   const tabTranslations: {[key in AppTab]: string} = {
     logger: 'Registro',
     heatmap: 'Mapa de Calor',
+    shotmap: 'Mapa de Tiros',
     statistics: 'Estadísticas'
   }
   
@@ -178,18 +215,19 @@ function App() {
           <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker</h1>
           <p className="text-lg text-gray-400 mt-2">
             {activeTab === 'logger' && 'Registra tiros o cambia de pestaña para analizar.'}
-            {activeTab === 'heatmap' && 'Analiza los patrones de tiro de un jugador seleccionado.'}
-            {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores y los máximos anotadores.'}
+            {activeTab === 'heatmap' && 'Analiza la densidad de tiros de un jugador.'}
+            {activeTab === 'shotmap' && 'Visualiza la ubicación de cada tiro en la cancha.'}
+            {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
           </p>
         </header>
 
         {/* Tab Switcher */}
         <div className="flex justify-center mb-8 border-b-2 border-gray-700">
-          {(['logger', 'heatmap', 'statistics'] as AppTab[]).map(tab => (
+          {(['logger', 'heatmap', 'shotmap', 'statistics'] as AppTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
+              className={`px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
                 activeTab === tab
                   ? 'border-b-4 border-cyan-500 text-cyan-400'
                   : 'text-gray-500 hover:text-cyan-400'
@@ -217,7 +255,21 @@ function App() {
 
               {/* Logger Player Selector */}
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} />
+                <div className="flex justify-center items-center gap-4 mb-4">
+                  <h2 className="text-2xl font-bold text-cyan-400 text-center">
+                    {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : 'Seleccionar Jugador'}
+                  </h2>
+                  <button
+                    onClick={handleEditPlayerName}
+                    className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!currentPlayer || currentPlayer === 'Todos'}
+                    title="Editar nombre del jugador"
+                    aria-label="Editar nombre del jugador"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </button>
+                </div>
+                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} playerNames={playerNames} />
               </div>
 
               {/* Court for Logging */}
@@ -227,9 +279,23 @@ function App() {
 
               {/* Shot Log Table */}
               <div className="w-full">
-                <ShotLog shots={shots} onDeleteShot={handleDeleteShot} onClearAllShots={handleClearAllShots} />
+                <ShotLog shots={shots} onDeleteShot={handleDeleteShot} onClearAllShots={handleClearAllShots} playerNames={playerNames}/>
               </div>
             </>
+          )}
+          
+          {activeTab === 'shotmap' && (
+             <div className="flex flex-col gap-8">
+                {/* Shotmap Player Selector */}
+                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                  <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} />
+                </div>
+
+                {/* Court for Shotmap */}
+                <div className="w-full">
+                  <Court shots={filteredShotmapShots} showShotMarkers={true} />
+                </div>
+             </div>
           )}
 
           {activeTab === 'heatmap' && (
@@ -237,20 +303,20 @@ function App() {
               <div ref={heatmapRef} className="flex flex-col gap-8">
                 {/* Heatmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} />
+                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} />
                 </div>
 
                 {/* Heatmap Filter Toggle */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Filtrar Tiros</h2>
                   <div className="flex justify-center gap-2 sm:gap-4">
-                    {(['all', 'goals', 'misses'] as HeatmapFilter[]).map((filter) => (
+                    {(['all', 'goles', 'misses'] as HeatmapFilter[]).map((filter) => (
                       <button key={filter} onClick={() => setHeatmapFilter(filter)}
                         className={`flex-1 max-w-xs capitalize font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 shadow-lg ${
                           heatmapFilter === filter ? 'bg-cyan-600 text-white ring-cyan-500 scale-105' : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
                         }`}
                       >
-                        {filter === 'all' ? 'Todos' : filter === 'goals' ? 'Goals' : 'Fallos'}
+                        {filter === 'all' ? 'Todos' : filter === 'goles' ? 'Goles' : 'Fallos'}
                       </button>
                     ))}
                   </div>
@@ -279,7 +345,7 @@ function App() {
           )}
 
           {activeTab === 'statistics' && (
-            <StatisticsView stats={playerStats} />
+            <StatisticsView stats={playerStats} playerNames={playerNames} />
           )}
         </main>
       </div>
@@ -291,6 +357,17 @@ function App() {
       {pendingShotPosition && (
         <OutcomeModal onOutcomeSelect={handleOutcomeSelection} onClose={handleCancelShot} />
       )}
+
+      <a
+        href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Estuve%20probando%20la%20app%20Cesto%20Tracker%20y...."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-400"
+        aria-label="Enviar feedback por WhatsApp"
+        title="Enviar feedback por WhatsApp"
+      >
+        <WhatsappIcon className="h-7 w-7" />
+      </a>
     </div>
   );
 }

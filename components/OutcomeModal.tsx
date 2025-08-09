@@ -2,7 +2,7 @@
 import React from 'react';
 
 interface OutcomeModalProps {
-  onOutcomeSelect: (isGoal: boolean) => void;
+  onOutcomeSelect: (isGol: boolean) => void;
   onClose: () => void;
 }
 
@@ -20,13 +20,13 @@ const OutcomeModal: React.FC<OutcomeModalProps> = ({ onOutcomeSelect, onClose })
     >
       <div className="bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-sm w-full text-center transform transition-all scale-100">
         <h2 id="modal-title" className="text-2xl font-bold text-white mb-4">Resultado del Tiro</h2>
-        <p className="text-gray-400 mb-8">¿El tiro fue goal o fallo?</p>
+        <p className="text-gray-400 mb-8">¿El tiro fue gol o fallo?</p>
         <div className="flex justify-center gap-4">
           <button
             onClick={() => onOutcomeSelect(true)}
             className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500"
           >
-            Goal
+            Gol
           </button>
           <button
             onClick={() => onOutcomeSelect(false)}
