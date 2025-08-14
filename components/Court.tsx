@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Shot, ShotPosition } from '../types';
 
 interface CourtProps {
@@ -26,6 +25,9 @@ const parquetBgUrl = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/sv
 
 const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = true, children, currentPlayer }) => {
   const [pressPosition, setPressPosition] = useState<ShotPosition | null>(null);
+  const pointerStartRef = useRef<{ x: number, y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const DRAG_THRESHOLD = 10; // pixels to move before it's considered a drag
 
   const getPositionFromEvent = (e: React.PointerEvent<HTMLDivElement>): ShotPosition => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -41,26 +43,46 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!onCourtClick) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = false;
     setPressPosition(getPositionFromEvent(e));
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (pressPosition) {
+    if (!pointerStartRef.current || isDraggingRef.current) return;
+
+    const dx = e.clientX - pointerStartRef.current.x;
+    const dy = e.clientY - pointerStartRef.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > DRAG_THRESHOLD) {
+      isDraggingRef.current = true;
+      setPressPosition(null); // It's a drag, hide the indicator to allow scrolling
+    } else {
+      // Not a drag yet, keep updating the position for minor adjustments before release
       setPressPosition(getPositionFromEvent(e));
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
-    if (onCourtClick && pressPosition) {
+    if (onCourtClick && pressPosition && !isDraggingRef.current) {
       onCourtClick(pressPosition);
     }
+    // Reset state after pointer up
     setPressPosition(null);
+    pointerStartRef.current = null;
+    isDraggingRef.current = false;
   };
-  
-  const handlePointerLeave = () => {
-    // Cancel the press if the pointer leaves the court area
-    setPressPosition(null);
+
+  const handlePointerLeave = (e: React.PointerEvent<HTMLDivElement>) => {
+    // If pointer leaves, we consider it a cancellation (likely a scroll action).
+    if (pointerStartRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      setPressPosition(null);
+      pointerStartRef.current = null;
+      isDraggingRef.current = false;
+    }
   };
 
   return (

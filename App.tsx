@@ -5,7 +5,14 @@ import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
 import OutcomeModal from './components/OutcomeModal';
+import ConfirmationModal from './components/ConfirmationModal';
 import StatisticsView from './components/StatisticsView';
+import PlayerSetup from './components/PlayerSetup';
+import WhatsappIcon from './components/WhatsappIcon';
+import SettingsModal from './components/SettingsModal';
+import GearIcon from './components/GearIcon';
+import NotificationPopup from './components/NotificationPopup';
+
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
@@ -28,12 +35,23 @@ const PencilIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-const WhatsappIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-8 w-8"} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.651 4.383 1.803 6.123l-1.215 4.433 4.515-1.185z" />
-    </svg>
+const UndoIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+  </svg>
 );
 
+interface Settings {
+  isManoCalienteEnabled: boolean;
+  manoCalienteThreshold: number;
+  isManoFriaEnabled: boolean;
+  manoFriaThreshold: number;
+}
+
+interface NotificationInfo {
+    type: 'caliente' | 'fria';
+    playerNumber: string;
+}
 
 /**
  * The Heatmap overlay component.
@@ -64,31 +82,6 @@ const HeatmapOverlay: React.FC<{ shots: Shot[], filter: HeatmapFilter }> = ({ sh
   );
 };
 
-// Reusable Period Filter Component
-const PeriodFilter: React.FC<{
-  currentFilter: MapPeriodFilter;
-  setFilter: (filter: MapPeriodFilter) => void;
-  translations: { [key in GamePeriod]: string };
-}> = ({ currentFilter, setFilter, translations }) => (
-  <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-    <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h2>
-    <div className="flex justify-center gap-2 sm:gap-4">
-      {(['all', 'First Half', 'Second Half'] as MapPeriodFilter[]).map((period) => (
-        <button
-          key={period}
-          onClick={() => setFilter(period)}
-          className={`flex-1 max-w-xs capitalize font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 shadow-lg ${
-            currentFilter === period ? 'bg-cyan-600 text-white ring-cyan-500 scale-105' : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
-          }`}
-        >
-          {period === 'all' ? 'Ambos' : translations[period as GamePeriod]}
-        </button>
-      ))}
-    </div>
-  </div>
-);
-
-
 /**
  * The main application component.
  * It holds the application's state and orchestrates all UI components and views.
@@ -96,25 +89,56 @@ const PeriodFilter: React.FC<{
 function App() {
   // --- STATE MANAGEMENT ---
   const [shots, setShots] = useState<Shot[]>([]);
+  // Setup State
+  const [isSetupComplete, setIsSetupComplete] = useState<boolean>(false);
+  const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
   // Player State
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   // Logger State
   const [currentPlayer, setCurrentPlayer] = useState<string>('1');
   const [currentPeriod, setCurrentPeriod] = useState<GamePeriod>('First Half');
   const [pendingShotPosition, setPendingShotPosition] = useState<ShotPosition | null>(null);
+  const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
   // UI State
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   // Heatmap State
   const [heatmapPlayer, setHeatmapPlayer] = useState<string>('Todos');
   const [heatmapFilter, setHeatmapFilter] = useState<HeatmapFilter>('all');
   // Shotmap State
   const [shotmapPlayer, setShotmapPlayer] = useState<string>('Todos');
+  const [shotmapResultFilter, setShotmapResultFilter] = useState<HeatmapFilter>('all');
   // Shared Map Filter State
   const [mapPeriodFilter, setMapPeriodFilter] = useState<MapPeriodFilter>('all');
 
-  const heatmapRef = useRef<HTMLDivElement>(null);
+  // "Mano Caliente / Fría" Feature State
+  const [settings, setSettings] = useState<Settings>({
+    isManoCalienteEnabled: true,
+    manoCalienteThreshold: 3,
+    isManoFriaEnabled: true,
+    manoFriaThreshold: 3,
+  });
+  const [playerStreaks, setPlayerStreaks] = useState<Record<string, { consecutiveGoles: number; consecutiveMisses: number }>>({});
+  const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
+
+
+  const heatmapCourtRef = useRef<HTMLDivElement>(null);
 
   // --- HANDLERS ---
+  const handleSetupComplete = useCallback((selectedPlayers: string[]) => {
+    if (selectedPlayers.length === 0) {
+        alert('Debes seleccionar al menos un jugador.');
+        return;
+    }
+    const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
+    setAvailablePlayers(sortedPlayers);
+    // Set default selections
+    setCurrentPlayer(sortedPlayers[0]);
+    setHeatmapPlayer('Todos'); // 'Todos' is a good default for maps
+    setShotmapPlayer('Todos');
+    setIsSetupComplete(true);
+  }, []);
+  
   const handleCourtClick = useCallback((position: ShotPosition) => {
     if (!currentPlayer.trim() || currentPlayer === 'Todos') {
       alert('Por favor, selecciona un jugador antes de marcar un tiro.');
@@ -140,10 +164,37 @@ function App() {
         golValue,
         period: currentPeriod,
       };
+      
+      // Update streaks and check for notifications
+      const { playerNumber } = newShot;
+      const currentStreak = playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0 };
+      let newStreak = { ...currentStreak };
+      let triggeredNotification: NotificationInfo | null = null;
+
+      if (isGol) {
+        newStreak.consecutiveGoles += 1;
+        newStreak.consecutiveMisses = 0;
+        if (settings.isManoCalienteEnabled && newStreak.consecutiveGoles === settings.manoCalienteThreshold) {
+          triggeredNotification = { type: 'caliente', playerNumber };
+        }
+      } else { // is Miss
+        newStreak.consecutiveMisses += 1;
+        newStreak.consecutiveGoles = 0;
+        if (settings.isManoFriaEnabled && newStreak.consecutiveMisses === settings.manoFriaThreshold) {
+          triggeredNotification = { type: 'fria', playerNumber };
+        }
+      }
+      setPlayerStreaks(prev => ({ ...prev, [playerNumber]: newStreak }));
+
       setShots(prevShots => [...prevShots, newShot]);
       setPendingShotPosition(null);
+
+      // Show notification after a brief delay
+      if (triggeredNotification) {
+        setTimeout(() => setNotificationPopup(triggeredNotification), 200);
+      }
     }
-  }, [currentPlayer, pendingShotPosition, currentPeriod]);
+  }, [currentPlayer, pendingShotPosition, currentPeriod, playerStreaks, settings]);
   
   const handleEditPlayerName = useCallback(() => {
     if (!currentPlayer || currentPlayer === 'Todos') return;
@@ -156,20 +207,30 @@ function App() {
       }));
     }
   }, [currentPlayer, playerNames]);
-
-  const handleCancelShot = useCallback(() => setPendingShotPosition(null), []);
-  const handleDeleteShot = useCallback((shotId: string) => setShots(p => p.filter(s => s.id !== shotId)), []);
-  const handleClearAllShots = useCallback(() => {
-    if (window.confirm('¿Estás seguro de que quieres borrar todos los registros de tiros? Esta acción no se puede deshacer.')) {
-      setShots([]);
-      setPlayerNames({});
+  
+  const handleRequestUndo = useCallback(() => {
+    if (shots.length > 0) {
+      setIsUndoModalOpen(true);
     }
+  }, [shots.length]);
+  
+  const handleConfirmUndo = useCallback(() => {
+    // Note: This simple undo does not revert the streak counters,
+    // as it would add significant complexity. It just removes the shot.
+    setShots(prevShots => prevShots.slice(0, -1));
+    setIsUndoModalOpen(false);
+  }, []);
+  
+  const handleCancelUndo = useCallback(() => {
+    setIsUndoModalOpen(false);
   }, []);
 
+  const handleCancelShot = useCallback(() => setPendingShotPosition(null), []);
+
   const handleDownloadHeatmap = useCallback(() => {
-    if (heatmapRef.current && typeof html2canvas === 'function') {
-      html2canvas(heatmapRef.current, {
-        backgroundColor: '#111827', // bg-gray-900
+    if (heatmapCourtRef.current && typeof html2canvas === 'function') {
+      html2canvas(heatmapCourtRef.current, {
+        backgroundColor: null, // Let html2canvas use the element's background
         useCORS: true,
       }).then((canvas: HTMLCanvasElement) => {
         const link = document.createElement('a');
@@ -202,9 +263,17 @@ function App() {
     return shots.filter(shot => {
         const playerMatch = shotmapPlayer === 'Todos' || shot.playerNumber === shotmapPlayer;
         const periodMatch = mapPeriodFilter === 'all' || shot.period === mapPeriodFilter;
-        return playerMatch && periodMatch;
+        
+        const resultMap = {
+            'all': true,
+            'goles': shot.isGol,
+            'misses': !shot.isGol
+        };
+        const resultMatch = resultMap[shotmapResultFilter];
+
+        return playerMatch && periodMatch && resultMatch;
     });
-  }, [shots, shotmapPlayer, mapPeriodFilter]);
+  }, [shots, shotmapPlayer, mapPeriodFilter, shotmapResultFilter]);
 
   const playerStats = useMemo<PlayerStats[]>(() => {
     const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
@@ -239,10 +308,14 @@ function App() {
   }
 
   // --- RENDER ---
+  if (!isSetupComplete) {
+    return <PlayerSetup onSetupComplete={handleSetupComplete} />;
+  }
+  
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans">
       <div className="w-full max-w-4xl flex-grow">
-        <header className="text-center mb-6">
+        <header className="relative text-center mb-6">
           <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker</h1>
           <p className="text-lg text-gray-400 mt-2">
             {activeTab === 'logger' && 'Registra tiros o cambia de pestaña para analizar.'}
@@ -250,6 +323,14 @@ function App() {
             {activeTab === 'shotmap' && 'Visualiza la ubicación de cada tiro en la cancha.'}
             {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
           </p>
+          <button
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="absolute top-0 right-0 p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+            aria-label="Abrir configuración"
+            title="Abrir configuración"
+          >
+            <GearIcon className="h-7 w-7" />
+          </button>
         </header>
 
         {/* Tab Switcher */}
@@ -272,15 +353,24 @@ function App() {
         <main className="flex flex-col gap-8">
           {activeTab === 'logger' && (
             <>
-              {/* Period Selector */}
+              {/* Period Selector & Actions */}
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <div className="flex justify-center gap-4">
-                  {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
-                    <button key={period} onClick={() => setCurrentPeriod(period)}
-                      className={`flex-1 max-w-xs font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 shadow-lg ${ currentPeriod === period ? 'bg-cyan-600 text-white ring-cyan-500 scale-105' : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'}`}>
-                      {periodTranslations[period]}
-                    </button>
-                  ))}
+                <div className='flex justify-between items-center mb-4'>
+                    <h2 className="text-2xl font-bold text-cyan-400">Sesión Actual</h2>
+                </div>
+                <div className="flex justify-center">
+                  <select
+                    id="period-selector"
+                    value={currentPeriod}
+                    onChange={(e) => setCurrentPeriod(e.target.value as GamePeriod)}
+                    className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                  >
+                    {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
+                      <option key={period} value={period}>
+                        {periodTranslations[period]}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -288,7 +378,7 @@ function App() {
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                 <div className="flex justify-center items-center gap-4 mb-4">
                   <h2 className="text-2xl font-bold text-cyan-400 text-center">
-                    {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : 'Seleccionar Jugador'}
+                    {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
                   </h2>
                   <button
                     onClick={handleEditPlayerName}
@@ -300,11 +390,22 @@ function App() {
                     <PencilIcon className="h-5 w-5" />
                   </button>
                 </div>
-                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} playerNames={playerNames} />
+                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} playerNames={playerNames} availablePlayers={availablePlayers} />
               </div>
 
-              {/* Court for Logging */}
-              <div className="w-full">
+              {/* Undo Button & Court */}
+              <div className="w-full flex flex-col gap-4">
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleRequestUndo}
+                        disabled={shots.length === 0}
+                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-yellow-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        aria-label="Deshacer último tiro"
+                    >
+                        <UndoIcon className="h-5 w-5" />
+                        <span className="hidden sm:inline">Deshacer</span>
+                    </button>
+                </div>
                 <Court
                   shots={shots}
                   onCourtClick={handleCourtClick}
@@ -325,11 +426,44 @@ function App() {
                 {/* Shotmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
-                  <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} />
+                  <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
                 
-                {/* Period Filter */}
-                <PeriodFilter currentFilter={mapPeriodFilter} setFilter={setMapPeriodFilter} translations={periodTranslations} />
+                {/* Filters container */}
+                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
+                    {/* Result Filter */}
+                    <div className="flex-1">
+                        <label htmlFor="shotmap-result-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</label>
+                        <div className="flex justify-center">
+                            <select
+                                id="shotmap-result-filter"
+                                value={shotmapResultFilter}
+                                onChange={(e) => setShotmapResultFilter(e.target.value as HeatmapFilter)}
+                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                            >
+                                <option value="all">Todos</option>
+                                <option value="goles">Goles</option>
+                                <option value="misses">Fallos</option>
+                            </select>
+                        </div>
+                    </div>
+                    {/* Period Filter */}
+                    <div className="flex-1">
+                         <label htmlFor="shotmap-period-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</label>
+                         <div className="flex justify-center">
+                            <select
+                                id="shotmap-period-filter"
+                                value={mapPeriodFilter}
+                                onChange={(e) => setMapPeriodFilter(e.target.value as MapPeriodFilter)}
+                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                            >
+                                <option value="all">Ambos</option>
+                                <option value="First Half">{periodTranslations['First Half']}</option>
+                                <option value="Second Half">{periodTranslations['Second Half']}</option>
+                            </select>
+                         </div>
+                    </div>
+                </div>
 
                 {/* Court for Shotmap */}
                 <div className="w-full">
@@ -340,34 +474,51 @@ function App() {
 
           {activeTab === 'heatmap' && (
             <>
-              <div ref={heatmapRef} className="flex flex-col gap-8">
+              <div className="flex flex-col gap-8">
                 {/* Heatmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
-                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} />
+                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
 
-                {/* Heatmap Filter Toggle */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h2>
-                  <div className="flex justify-center gap-2 sm:gap-4">
-                    {(['all', 'goles', 'misses'] as HeatmapFilter[]).map((filter) => (
-                      <button key={filter} onClick={() => setHeatmapFilter(filter)}
-                        className={`flex-1 max-w-xs capitalize font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 shadow-lg ${
-                          heatmapFilter === filter ? 'bg-cyan-600 text-white ring-cyan-500 scale-105' : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
-                        }`}
-                      >
-                        {filter === 'all' ? 'Todos' : filter === 'goles' ? 'Goles' : 'Fallos'}
-                      </button>
-                    ))}
-                  </div>
+                {/* Filters container */}
+                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
+                    {/* Result Filter */}
+                    <div className="flex-1">
+                        <label htmlFor="heatmap-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</label>
+                        <div className="flex justify-center">
+                            <select
+                                id="heatmap-filter"
+                                value={heatmapFilter}
+                                onChange={(e) => setHeatmapFilter(e.target.value as HeatmapFilter)}
+                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                            >
+                                <option value="all">Todos</option>
+                                <option value="goles">Goles</option>
+                                <option value="misses">Fallos</option>
+                            </select>
+                        </div>
+                    </div>
+                    {/* Period Filter */}
+                    <div className="flex-1">
+                         <label htmlFor="heatmap-period-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</label>
+                         <div className="flex justify-center">
+                            <select
+                                id="heatmap-period-filter"
+                                value={mapPeriodFilter}
+                                onChange={(e) => setMapPeriodFilter(e.target.value as MapPeriodFilter)}
+                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                            >
+                                <option value="all">Ambos</option>
+                                <option value="First Half">{periodTranslations['First Half']}</option>
+                                <option value="Second Half">{periodTranslations['Second Half']}</option>
+                            </select>
+                         </div>
+                    </div>
                 </div>
-
-                {/* Period Filter */}
-                <PeriodFilter currentFilter={mapPeriodFilter} setFilter={setMapPeriodFilter} translations={periodTranslations} />
 
                 {/* Court for Heatmap */}
-                <div className="w-full">
+                <div ref={heatmapCourtRef} className="w-full">
                   <Court shots={[]} showShotMarkers={false}>
                     <HeatmapOverlay shots={filteredHeatmapShots} filter={heatmapFilter} />
                   </Court>
@@ -382,7 +533,7 @@ function App() {
                     aria-label="Descargar mapa de calor como imagen"
                 >
                     <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-                    <span className="hidden sm:inline">Descargar PNG</span>
+                    <span>Descargar</span>
                 </button>
               </div>
             </>
@@ -397,9 +548,39 @@ function App() {
       <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
         Santiago Greco - All rights reserved. Gresolutions © 2025
       </footer>
+      
+      {isSettingsModalOpen && (
+        <SettingsModal 
+            settings={settings}
+            setSettings={setSettings}
+            onClose={() => setIsSettingsModalOpen(false)}
+        />
+      )}
 
       {pendingShotPosition && (
         <OutcomeModal onOutcomeSelect={handleOutcomeSelection} onClose={handleCancelShot} />
+      )}
+      
+      {isUndoModalOpen && (
+        <ConfirmationModal
+            title="Confirmar Acción"
+            message="¿Estás seguro de que quieres deshacer el último tiro registrado? Esta acción no se puede revertir."
+            confirmText="Sí, deshacer"
+            cancelText="Cancelar"
+            onConfirm={handleConfirmUndo}
+            onClose={handleCancelUndo}
+            confirmButtonColor="bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
+        />
+      )}
+      
+      {notificationPopup && (
+        <NotificationPopup
+            type={notificationPopup.type}
+            playerNumber={notificationPopup.playerNumber}
+            playerName={playerNames[notificationPopup.playerNumber] || ''}
+            threshold={notificationPopup.type === 'caliente' ? settings.manoCalienteThreshold : settings.manoFriaThreshold}
+            onClose={() => setNotificationPopup(null)}
+        />
       )}
 
       <a
