@@ -41,6 +41,12 @@ const UndoIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const TrashIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+    </svg>
+);
+
 interface Settings {
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
@@ -51,6 +57,13 @@ interface Settings {
 interface NotificationInfo {
     type: 'caliente' | 'fria';
     playerNumber: string;
+}
+
+interface PlayerStreak {
+    consecutiveGoles: number;
+    consecutiveMisses: number;
+    notifiedCaliente: boolean;
+    notifiedFria: boolean;
 }
 
 /**
@@ -99,6 +112,7 @@ function App() {
   const [currentPeriod, setCurrentPeriod] = useState<GamePeriod>('First Half');
   const [pendingShotPosition, setPendingShotPosition] = useState<ShotPosition | null>(null);
   const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
+  const [isClearSheetModalOpen, setIsClearSheetModalOpen] = useState(false);
   // UI State
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -118,7 +132,7 @@ function App() {
     isManoFriaEnabled: true,
     manoFriaThreshold: 3,
   });
-  const [playerStreaks, setPlayerStreaks] = useState<Record<string, { consecutiveGoles: number; consecutiveMisses: number }>>({});
+  const [playerStreaks, setPlayerStreaks] = useState<Record<string, PlayerStreak>>({});
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
 
 
@@ -167,21 +181,25 @@ function App() {
       
       // Update streaks and check for notifications
       const { playerNumber } = newShot;
-      const currentStreak = playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0 };
+      const currentStreak = playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
       let newStreak = { ...currentStreak };
       let triggeredNotification: NotificationInfo | null = null;
 
       if (isGol) {
         newStreak.consecutiveGoles += 1;
         newStreak.consecutiveMisses = 0;
-        if (settings.isManoCalienteEnabled && newStreak.consecutiveGoles === settings.manoCalienteThreshold) {
+        newStreak.notifiedFria = false; // Reset opposite streak flag
+        if (settings.isManoCalienteEnabled && newStreak.consecutiveGoles >= settings.manoCalienteThreshold && !newStreak.notifiedCaliente) {
           triggeredNotification = { type: 'caliente', playerNumber };
+          newStreak.notifiedCaliente = true; // Mark as notified for this streak
         }
       } else { // is Miss
         newStreak.consecutiveMisses += 1;
         newStreak.consecutiveGoles = 0;
-        if (settings.isManoFriaEnabled && newStreak.consecutiveMisses === settings.manoFriaThreshold) {
+        newStreak.notifiedCaliente = false; // Reset opposite streak flag
+        if (settings.isManoFriaEnabled && newStreak.consecutiveMisses >= settings.manoFriaThreshold && !newStreak.notifiedFria) {
           triggeredNotification = { type: 'fria', playerNumber };
+          newStreak.notifiedFria = true; // Mark as notified for this streak
         }
       }
       setPlayerStreaks(prev => ({ ...prev, [playerNumber]: newStreak }));
@@ -225,6 +243,22 @@ function App() {
     setIsUndoModalOpen(false);
   }, []);
 
+  const handleRequestClearSheet = useCallback(() => {
+    if (shots.length > 0) {
+      setIsClearSheetModalOpen(true);
+    }
+  }, [shots.length]);
+
+  const handleConfirmClearSheet = useCallback(() => {
+    setShots([]);
+    setPlayerStreaks({}); // Also reset streaks
+    setIsClearSheetModalOpen(false);
+  }, []);
+
+  const handleCancelClearSheet = useCallback(() => {
+    setIsClearSheetModalOpen(false);
+  }, []);
+
   const handleCancelShot = useCallback(() => setPendingShotPosition(null), []);
 
   const handleDownloadHeatmap = useCallback(() => {
@@ -240,6 +274,19 @@ function App() {
       });
     }
   }, [heatmapPlayer, heatmapFilter]);
+  
+  const handleSettingsChange = useCallback((newSettings: Settings) => {
+    // Check if thresholds have changed before resetting streaks.
+    const calienteThresholdChanged = newSettings.manoCalienteThreshold !== settings.manoCalienteThreshold;
+    const friaThresholdChanged = newSettings.manoFriaThreshold !== settings.manoFriaThreshold;
+
+    if (calienteThresholdChanged || friaThresholdChanged) {
+        // Reset all player streaks to ensure new thresholds are applied cleanly from zero.
+        setPlayerStreaks({});
+    }
+    
+    setSettings(newSettings);
+  }, [settings]); // The dependency on 'settings' is crucial.
 
   // --- MEMOIZED DERIVED STATE ---
   const filteredHeatmapShots = useMemo(() => {
@@ -353,11 +400,9 @@ function App() {
         <main className="flex flex-col gap-8">
           {activeTab === 'logger' && (
             <>
-              {/* Period Selector & Actions */}
+              {/* Period Selector */}
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <div className='flex justify-between items-center mb-4'>
-                    <h2 className="text-2xl font-bold text-cyan-400">Sesión Actual</h2>
-                </div>
+                <h2 className="text-2xl font-bold text-cyan-400 mb-4 text-center">Sesión Actual</h2>
                 <div className="flex justify-center">
                   <select
                     id="period-selector"
@@ -393,9 +438,9 @@ function App() {
                 <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} playerNames={playerNames} availablePlayers={availablePlayers} />
               </div>
 
-              {/* Undo Button & Court */}
+              {/* Action Buttons & Court */}
               <div className="w-full flex flex-col gap-4">
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-4">
                     <button
                         onClick={handleRequestUndo}
                         disabled={shots.length === 0}
@@ -404,6 +449,16 @@ function App() {
                     >
                         <UndoIcon className="h-5 w-5" />
                         <span className="hidden sm:inline">Deshacer</span>
+                    </button>
+                    <button
+                        onClick={handleRequestClearSheet}
+                        disabled={shots.length === 0}
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-red-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        aria-label="Limpiar planilla"
+                        title="Limpiar planilla"
+                    >
+                        <TrashIcon className="h-5 w-5" />
+                        <span className="hidden sm:inline">Limpiar Planilla</span>
                     </button>
                 </div>
                 <Court
@@ -423,12 +478,6 @@ function App() {
           
           {activeTab === 'shotmap' && (
              <div className="flex flex-col gap-8">
-                {/* Shotmap Player Selector */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
-                  <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
-                </div>
-                
                 {/* Filters container */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
                     {/* Result Filter */}
@@ -464,6 +513,12 @@ function App() {
                          </div>
                     </div>
                 </div>
+                
+                {/* Shotmap Player Selector */}
+                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
+                  <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
+                </div>
 
                 {/* Court for Shotmap */}
                 <div className="w-full">
@@ -475,12 +530,6 @@ function App() {
           {activeTab === 'heatmap' && (
             <>
               <div className="flex flex-col gap-8">
-                {/* Heatmap Player Selector */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
-                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
-                </div>
-
                 {/* Filters container */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
                     {/* Result Filter */}
@@ -517,6 +566,12 @@ function App() {
                     </div>
                 </div>
 
+                {/* Heatmap Player Selector */}
+                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
+                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
+                </div>
+                
                 {/* Court for Heatmap */}
                 <div ref={heatmapCourtRef} className="w-full">
                   <Court shots={[]} showShotMarkers={false}>
@@ -552,7 +607,7 @@ function App() {
       {isSettingsModalOpen && (
         <SettingsModal 
             settings={settings}
-            setSettings={setSettings}
+            setSettings={handleSettingsChange}
             onClose={() => setIsSettingsModalOpen(false)}
         />
       )}
@@ -573,6 +628,18 @@ function App() {
         />
       )}
       
+      {isClearSheetModalOpen && (
+        <ConfirmationModal
+            title="Limpiar Planilla"
+            message="¿Estás seguro de que quieres borrar todos los tiros registrados? Esta acción no se puede deshacer."
+            confirmText="Sí, borrar todo"
+            cancelText="Cancelar"
+            onConfirm={handleConfirmClearSheet}
+            onClose={handleCancelClearSheet}
+            confirmButtonColor="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+        />
+      )}
+
       {notificationPopup && (
         <NotificationPopup
             type={notificationPopup.type}

@@ -20,9 +20,9 @@ const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurre
         {showAllPlayersOption && (
           <button
             onClick={() => setCurrentPlayer('Todos')}
-            className={`font-bold py-3 px-5 rounded-lg transition duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg ${
+            className={`font-bold py-3 px-5 rounded-lg transition duration-300 ease-in-out transform focus:outline-none shadow-lg ${
               currentPlayer === 'Todos'
-                ? 'bg-cyan-600 text-white ring-cyan-500 scale-105'
+                ? 'bg-cyan-600 text-white scale-105'
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
             }`}
           >

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface OutcomeModalProps {
   onOutcomeSelect: (isGol: boolean) => void;
@@ -11,12 +11,24 @@ interface OutcomeModalProps {
  * asking the user to confirm the outcome.
  */
 const OutcomeModal: React.FC<OutcomeModalProps> = ({ onOutcomeSelect, onClose }) => {
+  const [isClickable, setIsClickable] = useState(false);
+
+  useEffect(() => {
+    // Prevent immediate click-through by delaying clickability of the modal.
+    const timer = setTimeout(() => {
+      setIsClickable(true);
+    }, 100); // A small delay is enough for the initial click event to pass.
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity"
       aria-labelledby="modal-title"
       role="dialog"
       aria-modal="true"
+      style={{ pointerEvents: isClickable ? 'auto' : 'none' }}
     >
       <div className="bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-sm w-full text-center transform transition-all scale-100">
         <h2 id="modal-title" className="text-2xl font-bold text-white mb-4">Resultado del Tiro</h2>

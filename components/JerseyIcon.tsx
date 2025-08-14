@@ -17,7 +17,7 @@ const JerseyIcon: React.FC<{
   return (
     <button
       onClick={() => onClick(number)}
-      className="transition-transform duration-200 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-cyan-400 rounded-lg"
+      className="transition-transform duration-200 ease-in-out transform hover:-translate-y-1 focus:outline-none rounded-lg"
       aria-pressed={isSelected}
       aria-label={`Seleccionar ${name || `Jugador ${number}`}`}
       title={name || `Jugador ${number}`}

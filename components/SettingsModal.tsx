@@ -19,8 +19,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
     
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
-        if (!isNaN(numValue) && numValue > 0) {
+        if (value === '') {
+            // Use 0 as a temporary placeholder for an empty input
+            setSettings({ ...settings, [key]: 0 });
+        } else if (!isNaN(numValue)) {
             setSettings({ ...settings, [key]: numValue });
+        }
+    };
+
+    const handleThresholdBlur = (key: 'manoCalienteThreshold' | 'manoFriaThreshold') => {
+        const currentValue = settings[key];
+        if (currentValue < 3) {
+            setSettings({ ...settings, [key]: 3 });
         }
     };
 
@@ -49,15 +59,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                         </div>
                         <p className="text-gray-400 mt-2 mb-4">Notificar cuando un jugador mete varios goles seguidos.</p>
                         <div className="flex items-center gap-4">
-                            <label htmlFor="manoCalienteThreshold" className="text-gray-300">Tiros seguidos para notificar:</label>
+                            <label htmlFor="manoCalienteThreshold" className="text-gray-300">Goles seguidos para notificar:</label>
                             <input
                                 type="number"
                                 id="manoCalienteThreshold"
-                                value={settings.manoCalienteThreshold}
+                                value={settings.manoCalienteThreshold === 0 ? '' : settings.manoCalienteThreshold}
                                 onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
+                                onBlur={() => handleThresholdBlur('manoCalienteThreshold')}
                                 disabled={!settings.isManoCalienteEnabled}
                                 className="w-20 bg-gray-900 border border-gray-600 text-white text-center text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 disabled:opacity-50"
-                                min="1"
+                                min="3"
                             />
                         </div>
                     </div>
@@ -77,11 +88,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                             <input
                                 type="number"
                                 id="manoFriaThreshold"
-                                value={settings.manoFriaThreshold}
+                                value={settings.manoFriaThreshold === 0 ? '' : settings.manoFriaThreshold}
                                 onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
+                                onBlur={() => handleThresholdBlur('manoFriaThreshold')}
                                 disabled={!settings.isManoFriaEnabled}
                                 className="w-20 bg-gray-900 border border-gray-600 text-white text-center text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 disabled:opacity-50"
-                                min="1"
+                                min="3"
                             />
                         </div>
                     </div>
