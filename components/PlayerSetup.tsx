@@ -2,15 +2,24 @@
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
 import WhatsappIcon from './WhatsappIcon';
+import { Settings } from '../types';
+import ToggleSwitch from './ToggleSwitch';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 interface PlayerSetupProps {
-  onSetupComplete: (selectedPlayers: string[]) => void;
+  onSetupComplete: (selectedPlayers: string[], settings: Settings) => void;
 }
 
 const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [settings, setSettings] = useState<Settings>({
+    isManoCalienteEnabled: true,
+    manoCalienteThreshold: 3,
+    isManoFriaEnabled: true,
+    manoFriaThreshold: 3,
+  });
+
 
   const togglePlayer = (playerNumber: string) => {
     setSelectedPlayers(prev => {
@@ -26,8 +35,26 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
 
   const handleStart = () => {
     const sortedPlayers = Array.from(selectedPlayers).sort((a, b) => Number(a) - Number(b));
-    onSetupComplete(sortedPlayers);
+    onSetupComplete(sortedPlayers, settings);
   };
+  
+    const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
+        const numValue = parseInt(value, 10);
+        if (value === '') {
+            // Use 0 as a temporary placeholder for an empty input
+            setSettings({ ...settings, [key]: 0 });
+        } else if (!isNaN(numValue)) {
+            setSettings({ ...settings, [key]: numValue });
+        }
+    };
+
+    const handleThresholdBlur = (key: 'manoCalienteThreshold' | 'manoFriaThreshold') => {
+        const currentValue = settings[key];
+        if (currentValue < 3) {
+            setSettings({ ...settings, [key]: 3 });
+        }
+    };
+
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
@@ -35,12 +62,9 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
         <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-4">
           Bienvenido a Cesto Tracker 🏐
         </h1>
-        <div className="text-gray-300 mb-8 space-y-4 max-w-xl mx-auto">
+        <div className="text-gray-300 mb-8 max-w-xl mx-auto">
             <p className="text-lg">
-                Lleva el registro preciso de cada tiro, analiza el rendimiento del equipo y de los jugadores, y mejora tu estrategia partido a partido.
-            </p>
-            <p className="text-base text-gray-400">
-                Selecciona los jugadores que participarán en el partido, registra cada tiro con precisión y analiza el rendimiento del equipo y de los jugadores para mejorar partido a partido.
+                Selecciona los jugadores que participarán en el partido.
             </p>
         </div>
         
@@ -58,6 +82,60 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
           })}
         </div>
         
+        <div className="border-t border-gray-700 my-8 pt-8 space-y-6 text-left">
+            <h2 className="text-2xl font-bold text-cyan-400 text-center mb-6">Configuración de Notificaciones</h2>
+            {/* Mano Caliente Settings */}
+            <div className="bg-gray-700/50 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-white">Mano Caliente 🔥</h3>
+                    <ToggleSwitch
+                        isEnabled={settings.isManoCalienteEnabled}
+                        onToggle={() => setSettings({ ...settings, isManoCalienteEnabled: !settings.isManoCalienteEnabled })}
+                    />
+                </div>
+                <p className="text-gray-400 mt-2 mb-4">Notificar cuando un jugador mete varios goles seguidos.</p>
+                <div className="flex flex-wrap items-center gap-4">
+                    <label htmlFor="manoCalienteThreshold" className="text-gray-300 flex-shrink-0">Goles seguidos para notificar:</label>
+                    <input
+                        type="number"
+                        id="manoCalienteThreshold"
+                        value={settings.manoCalienteThreshold === 0 ? '' : settings.manoCalienteThreshold}
+                        onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
+                        onBlur={() => handleThresholdBlur('manoCalienteThreshold')}
+                        disabled={!settings.isManoCalienteEnabled}
+                        className="w-20 bg-gray-900 border border-gray-600 text-white text-center text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 disabled:opacity-50"
+                        min="3"
+                    />
+                </div>
+            </div>
+
+            {/* Mano Fría Settings */}
+            <div className="bg-gray-700/50 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-white">Mano Fría ❄️</h3>
+                    <ToggleSwitch
+                        isEnabled={settings.isManoFriaEnabled}
+                        onToggle={() => setSettings({ ...settings, isManoFriaEnabled: !settings.isManoFriaEnabled })}
+                    />
+                </div>
+                <p className="text-gray-400 mt-2 mb-4">Notificar cuando un jugador falla varios tiros seguidos.</p>
+                <div className="flex flex-wrap items-center gap-4">
+                    <label htmlFor="manoFriaThreshold" className="text-gray-300 flex-shrink-0">Fallos seguidos para notificar:</label>
+                    <input
+                        type="number"
+                        id="manoFriaThreshold"
+                        value={settings.manoFriaThreshold === 0 ? '' : settings.manoFriaThreshold}
+                        onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
+                        onBlur={() => handleThresholdBlur('manoFriaThreshold')}
+                        disabled={!settings.isManoFriaEnabled}
+                        className="w-20 bg-gray-900 border border-gray-600 text-white text-center text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 disabled:opacity-50"
+                        min="3"
+                    />
+                </div>
+            </div>
+        </div>
+
+
         <button
           onClick={handleStart}
           disabled={selectedPlayers.size === 0}

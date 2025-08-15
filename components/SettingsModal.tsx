@@ -1,13 +1,7 @@
 
 import React from 'react';
 import ToggleSwitch from './ToggleSwitch';
-
-interface Settings {
-  isManoCalienteEnabled: boolean;
-  manoCalienteThreshold: number;
-  isManoFriaEnabled: boolean;
-  manoFriaThreshold: number;
-}
+import { Settings } from '../types';
 
 interface SettingsModalProps {
   settings: Settings;

@@ -24,3 +24,10 @@ export interface PlayerStats {
   totalPoints: number;
   golPercentage: number;
 }
+
+export interface Settings {
+  isManoCalienteEnabled: boolean;
+  manoCalienteThreshold: number;
+  isManoFriaEnabled: boolean;
+  manoFriaThreshold: number;
+}

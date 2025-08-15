@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter } from './types';
+import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings } from './types';
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
@@ -46,13 +46,6 @@ const TrashIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
     </svg>
 );
-
-interface Settings {
-  isManoCalienteEnabled: boolean;
-  manoCalienteThreshold: number;
-  isManoFriaEnabled: boolean;
-  manoFriaThreshold: number;
-}
 
 interface NotificationInfo {
     type: 'caliente' | 'fria';
@@ -139,13 +132,14 @@ function App() {
   const heatmapCourtRef = useRef<HTMLDivElement>(null);
 
   // --- HANDLERS ---
-  const handleSetupComplete = useCallback((selectedPlayers: string[]) => {
+  const handleSetupComplete = useCallback((selectedPlayers: string[], newSettings: Settings) => {
     if (selectedPlayers.length === 0) {
         alert('Debes seleccionar al menos un jugador.');
         return;
     }
     const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
     setAvailablePlayers(sortedPlayers);
+    setSettings(newSettings);
     // Set default selections
     setCurrentPlayer(sortedPlayers[0]);
     setHeatmapPlayer('Todos'); // 'Todos' is a good default for maps
