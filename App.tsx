@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -368,6 +369,11 @@ function App() {
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
   const { shots, isSetupComplete, availablePlayers, playerNames, currentPlayer, currentPeriod, settings } = gameState;
 
+  const getFilterButtonClass = (isActive: boolean) =>
+    `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
+      isActive ? 'bg-cyan-600 text-white shadow' : 'text-gray-300 hover:bg-gray-600/50'
+    }`;
+
   // --- RENDER ---
   if (!isSetupComplete) {
     return <PlayerSetup onSetupComplete={handleSetupComplete} />;
@@ -414,25 +420,6 @@ function App() {
         <main className="flex flex-col gap-8">
           {activeTab === 'logger' && (
             <>
-              {/* Period Selector */}
-              <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold text-cyan-400 mb-4 text-center">Sesión Actual</h2>
-                <div className="flex justify-center">
-                  <select
-                    id="period-selector"
-                    value={currentPeriod}
-                    onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                    className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
-                  >
-                    {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
-                      <option key={period} value={period}>
-                        {periodTranslations[period]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {/* Logger Player Selector */}
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                 <div className="flex justify-center items-center gap-4 mb-4" style={{ minHeight: '48px' }}>
@@ -514,6 +501,25 @@ function App() {
                   currentPlayer={currentPlayer}
                 />
               </div>
+              
+              {/* Period Selector */}
+              <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                <h2 className="text-2xl font-bold text-cyan-400 mb-4 text-center">Sesión Actual</h2>
+                <div className="flex justify-center">
+                  <select
+                    id="period-selector"
+                    value={currentPeriod}
+                    onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                    className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                  >
+                    {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
+                      <option key={period} value={period}>
+                        {periodTranslations[period]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
               {/* Player Performance & Actions */}
               <div className="w-full">
@@ -524,42 +530,6 @@ function App() {
           
           {activeTab === 'shotmap' && (
              <div className="flex flex-col gap-8">
-                {/* Filters container */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
-                    {/* Result Filter */}
-                    <div className="flex-1">
-                        <label htmlFor="shotmap-result-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</label>
-                        <div className="flex justify-center">
-                            <select
-                                id="shotmap-result-filter"
-                                value={shotmapResultFilter}
-                                onChange={(e) => setShotmapResultFilter(e.target.value as HeatmapFilter)}
-                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
-                            >
-                                <option value="all">Todos</option>
-                                <option value="goles">Goles</option>
-                                <option value="misses">Fallos</option>
-                            </select>
-                        </div>
-                    </div>
-                    {/* Period Filter */}
-                    <div className="flex-1">
-                         <label htmlFor="shotmap-period-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</label>
-                         <div className="flex justify-center">
-                            <select
-                                id="shotmap-period-filter"
-                                value={mapPeriodFilter}
-                                onChange={(e) => setMapPeriodFilter(e.target.value as MapPeriodFilter)}
-                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
-                            >
-                                <option value="all">Ambos</option>
-                                <option value="First Half">{periodTranslations['First Half']}</option>
-                                <option value="Second Half">{periodTranslations['Second Half']}</option>
-                            </select>
-                         </div>
-                    </div>
-                </div>
-                
                 {/* Shotmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
@@ -570,48 +540,33 @@ function App() {
                 <div className="w-full">
                   <Court shots={filteredShotmapShots} showShotMarkers={true} />
                 </div>
-             </div>
-          )}
 
-          {activeTab === 'heatmap' && (
-            <>
-              <div className="flex flex-col gap-8">
                 {/* Filters container */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
                     {/* Result Filter */}
                     <div className="flex-1">
-                        <label htmlFor="heatmap-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</label>
-                        <div className="flex justify-center">
-                            <select
-                                id="heatmap-filter"
-                                value={heatmapFilter}
-                                onChange={(e) => setHeatmapFilter(e.target.value as HeatmapFilter)}
-                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
-                            >
-                                <option value="all">Todos</option>
-                                <option value="goles">Goles</option>
-                                <option value="misses">Fallos</option>
-                            </select>
+                        <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
+                        <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                            <button onClick={() => setShotmapResultFilter('all')} className={getFilterButtonClass(shotmapResultFilter === 'all')}>Todos</button>
+                            <button onClick={() => setShotmapResultFilter('goles')} className={getFilterButtonClass(shotmapResultFilter === 'goles')}>Goles</button>
+                            <button onClick={() => setShotmapResultFilter('misses')} className={getFilterButtonClass(shotmapResultFilter === 'misses')}>Fallos</button>
                         </div>
                     </div>
                     {/* Period Filter */}
                     <div className="flex-1">
-                         <label htmlFor="heatmap-period-filter" className="block text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</label>
-                         <div className="flex justify-center">
-                            <select
-                                id="heatmap-period-filter"
-                                value={mapPeriodFilter}
-                                onChange={(e) => setMapPeriodFilter(e.target.value as MapPeriodFilter)}
-                                className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
-                            >
-                                <option value="all">Ambos</option>
-                                <option value="First Half">{periodTranslations['First Half']}</option>
-                                <option value="Second Half">{periodTranslations['Second Half']}</option>
-                            </select>
+                         <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
+                         <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                            <button onClick={() => setMapPeriodFilter('all')} className={getFilterButtonClass(mapPeriodFilter === 'all')}>Ambos</button>
+                            <button onClick={() => setMapPeriodFilter('First Half')} className={getFilterButtonClass(mapPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+                            <button onClick={() => setMapPeriodFilter('Second Half')} className={getFilterButtonClass(mapPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
                          </div>
                     </div>
                 </div>
+             </div>
+          )}
 
+          {activeTab === 'heatmap' && (
+            <div className="flex flex-col gap-8">
                 {/* Heatmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
@@ -624,20 +579,42 @@ function App() {
                     <HeatmapOverlay shots={filteredHeatmapShots} filter={heatmapFilter} />
                   </Court>
                 </div>
-              </div>
-
-              {/* Download Button */}
-              <div className="mt-4 flex justify-end">
-                <button
-                    onClick={handleDownloadHeatmap}
-                    className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-                    aria-label="Descargar mapa de calor como imagen"
-                >
-                    <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-                    <span>Descargar</span>
-                </button>
-              </div>
-            </>
+              
+                {/* Filters container */}
+                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                    <div className="flex flex-col sm:flex-row gap-8 justify-center">
+                        {/* Result Filter */}
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
+                            <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                                <button onClick={() => setHeatmapFilter('all')} className={getFilterButtonClass(heatmapFilter === 'all')}>Todos</button>
+                                <button onClick={() => setHeatmapFilter('goles')} className={getFilterButtonClass(heatmapFilter === 'goles')}>Goles</button>
+                                <button onClick={() => setHeatmapFilter('misses')} className={getFilterButtonClass(heatmapFilter === 'misses')}>Fallos</button>
+                            </div>
+                        </div>
+                        {/* Period Filter */}
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
+                            <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                                <button onClick={() => setMapPeriodFilter('all')} className={getFilterButtonClass(mapPeriodFilter === 'all')}>Ambos</button>
+                                <button onClick={() => setMapPeriodFilter('First Half')} className={getFilterButtonClass(mapPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+                                <button onClick={() => setMapPeriodFilter('Second Half')} className={getFilterButtonClass(mapPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Download Button */}
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={handleDownloadHeatmap}
+                            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+                            aria-label="Descargar mapa de calor como imagen"
+                        >
+                            <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+                            <span>Descargar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
           )}
 
           {activeTab === 'statistics' && (

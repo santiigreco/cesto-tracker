@@ -43,7 +43,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                             />
                         </div>
                         <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 relative">
                             <span className="text-gray-300 font-mono">3</span>
                             <input
                                 type="range"
@@ -56,6 +56,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                                 max="10"
                             />
                             <span className="text-gray-300 font-mono">10</span>
+                            {!settings.isManoCalienteEnabled && (
+                                <div
+                                    className="absolute inset-0 cursor-pointer"
+                                    onClick={() => setSettings({ ...settings, isManoCalienteEnabled: true })}
+                                    aria-hidden="true"
+                                ></div>
+                            )}
                         </div>
                     </div>
 
@@ -69,7 +76,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                             />
                         </div>
                         <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 relative">
                              <span className="text-gray-300 font-mono">3</span>
                             <input
                                 type="range"
@@ -82,6 +89,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                                 max="10"
                             />
                             <span className="text-gray-300 font-mono">10</span>
+                             {!settings.isManoFriaEnabled && (
+                                <div
+                                    className="absolute inset-0 cursor-pointer"
+                                    onClick={() => setSettings({ ...settings, isManoFriaEnabled: true })}
+                                    aria-hidden="true"
+                                ></div>
+                            )}
                         </div>
                     </div>
                 </div>
