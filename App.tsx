@@ -1,6 +1,6 @@
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings } from './types';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
@@ -13,9 +13,10 @@ import SettingsModal from './components/SettingsModal';
 import GearIcon from './components/GearIcon';
 import NotificationPopup from './components/NotificationPopup';
 import DownloadIcon from './components/DownloadIcon';
-import PencilIcon from './components/PencilIcon';
 import UndoIcon from './components/UndoIcon';
 import TrashIcon from './components/TrashIcon';
+import CheckIcon from './components/CheckIcon';
+import XIcon from './components/XIcon';
 
 
 // TypeScript declaration for html2canvas global variable
@@ -26,16 +27,28 @@ const HEATMAP_POINT_RADIUS = 40; // px, increased for more intensity
 const HEATMAP_BLUR = 25; // px, increased for more intensity
 const HEATMAP_OPACITY = 0.7; // increased opacity
 
+const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
+
+const initialGameState: GameState = {
+    shots: [],
+    isSetupComplete: false,
+    availablePlayers: [],
+    playerNames: {},
+    currentPlayer: '1',
+    currentPeriod: 'First Half',
+    settings: {
+        isManoCalienteEnabled: false,
+        manoCalienteThreshold: 3,
+        isManoFriaEnabled: true,
+        manoFriaThreshold: 3,
+    },
+    playerStreaks: {},
+};
+
+
 interface NotificationInfo {
     type: 'caliente' | 'fria';
     playerNumber: string;
-}
-
-interface PlayerStreak {
-    consecutiveGoles: number;
-    consecutiveMisses: number;
-    notifiedCaliente: boolean;
-    notifiedFria: boolean;
 }
 
 /**
@@ -73,42 +86,51 @@ const HeatmapOverlay: React.FC<{ shots: Shot[], filter: HeatmapFilter }> = ({ sh
  */
 function App() {
   // --- STATE MANAGEMENT ---
-  const [shots, setShots] = useState<Shot[]>([]);
-  // Setup State
-  const [isSetupComplete, setIsSetupComplete] = useState<boolean>(false);
-  const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
-  // Player State
-  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
-  // Logger State
-  const [currentPlayer, setCurrentPlayer] = useState<string>('1');
-  const [currentPeriod, setCurrentPeriod] = useState<GamePeriod>('First Half');
+  const [gameState, setGameState] = useState<GameState>(initialGameState);
+  
+  // Transient UI State (not saved)
   const [pendingShotPosition, setPendingShotPosition] = useState<ShotPosition | null>(null);
   const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
   const [isClearSheetModalOpen, setIsClearSheetModalOpen] = useState(false);
-  // UI State
+  const [isNewGameConfirmOpen, setIsNewGameConfirmOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  // Heatmap State
   const [heatmapPlayer, setHeatmapPlayer] = useState<string>('Todos');
   const [heatmapFilter, setHeatmapFilter] = useState<HeatmapFilter>('all');
-  // Shotmap State
   const [shotmapPlayer, setShotmapPlayer] = useState<string>('Todos');
   const [shotmapResultFilter, setShotmapResultFilter] = useState<HeatmapFilter>('all');
-  // Shared Map Filter State
   const [mapPeriodFilter, setMapPeriodFilter] = useState<MapPeriodFilter>('all');
-
-  // "Mano Caliente / Fría" Feature State
-  const [settings, setSettings] = useState<Settings>({
-    isManoCalienteEnabled: true,
-    manoCalienteThreshold: 3,
-    isManoFriaEnabled: true,
-    manoFriaThreshold: 3,
-  });
-  const [playerStreaks, setPlayerStreaks] = useState<Record<string, PlayerStreak>>({});
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
-
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempPlayerName, setTempPlayerName] = useState('');
 
   const heatmapCourtRef = useRef<HTMLDivElement>(null);
+
+  // --- PERSISTENCE ---
+  // Load state from localStorage on initial mount
+  useEffect(() => {
+    try {
+      const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
+      if (savedStateJSON) {
+        const savedState = JSON.parse(savedStateJSON);
+        setGameState(savedState);
+      }
+    } catch (error) {
+      console.error("Failed to load game state from localStorage:", error);
+      setGameState(initialGameState); // Fallback to initial state on error
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const gameStateJSON = JSON.stringify(gameState);
+      localStorage.setItem(GAME_STATE_STORAGE_KEY, gameStateJSON);
+    } catch (error) {
+      console.error("Failed to save game state to localStorage:", error);
+    }
+  }, [gameState]);
+
 
   // --- HANDLERS ---
   const handleSetupComplete = useCallback((selectedPlayers: string[], newSettings: Settings) => {
@@ -117,122 +139,148 @@ function App() {
         return;
     }
     const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
-    setAvailablePlayers(sortedPlayers);
-    setSettings(newSettings);
+    
+    setGameState(prev => ({
+        ...prev,
+        availablePlayers: sortedPlayers,
+        settings: newSettings,
+        isSetupComplete: true,
+        currentPlayer: sortedPlayers[0] || '1',
+    }));
+    
     // Set default selections
-    setCurrentPlayer(sortedPlayers[0]);
-    setHeatmapPlayer('Todos'); // 'Todos' is a good default for maps
+    setHeatmapPlayer('Todos');
     setShotmapPlayer('Todos');
-    setIsSetupComplete(true);
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
-    if (!currentPlayer.trim() || currentPlayer === 'Todos') {
+    if (!gameState.currentPlayer.trim() || gameState.currentPlayer === 'Todos') {
       alert('Por favor, selecciona un jugador antes de marcar un tiro.');
       return;
     }
     setPendingShotPosition(position);
-  }, [currentPlayer]);
+  }, [gameState.currentPlayer]);
 
   const handleOutcomeSelection = useCallback((isGol: boolean) => {
     if (pendingShotPosition) {
       const HALF_COURT_LINE_Y = 1; // From Court.tsx, represents the behind-the-arc line
       let golValue = 0;
       if (isGol) {
-        // If shot y-position is below the line, it's a triple (3 points). Otherwise, it's 2.
         golValue = pendingShotPosition.y < HALF_COURT_LINE_Y ? 3 : 2;
       }
 
       const newShot: Shot = {
         id: new Date().toISOString() + Math.random(),
-        playerNumber: currentPlayer,
+        playerNumber: gameState.currentPlayer,
         position: pendingShotPosition,
         isGol,
         golValue,
-        period: currentPeriod,
+        period: gameState.currentPeriod,
       };
       
-      // Update streaks and check for notifications
-      const { playerNumber } = newShot;
-      const currentStreak = playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
-      let newStreak = { ...currentStreak };
-      let triggeredNotification: NotificationInfo | null = null;
-
-      if (isGol) {
-        newStreak.consecutiveGoles += 1;
-        newStreak.consecutiveMisses = 0;
-        newStreak.notifiedFria = false; // Reset opposite streak flag
-        if (settings.isManoCalienteEnabled && newStreak.consecutiveGoles >= settings.manoCalienteThreshold && !newStreak.notifiedCaliente) {
-          triggeredNotification = { type: 'caliente', playerNumber };
-          newStreak.notifiedCaliente = true; // Mark as notified for this streak
-        }
-      } else { // is Miss
-        newStreak.consecutiveMisses += 1;
-        newStreak.consecutiveGoles = 0;
-        newStreak.notifiedCaliente = false; // Reset opposite streak flag
-        if (settings.isManoFriaEnabled && newStreak.consecutiveMisses >= settings.manoFriaThreshold && !newStreak.notifiedFria) {
-          triggeredNotification = { type: 'fria', playerNumber };
-          newStreak.notifiedFria = true; // Mark as notified for this streak
-        }
-      }
-      setPlayerStreaks(prev => ({ ...prev, [playerNumber]: newStreak }));
-
-      setShots(prevShots => [...prevShots, newShot]);
-      setPendingShotPosition(null);
-
-      // Show notification after a brief delay
-      if (triggeredNotification) {
-        setTimeout(() => setNotificationPopup(triggeredNotification), 200);
-      }
-    }
-  }, [currentPlayer, pendingShotPosition, currentPeriod, playerStreaks, settings]);
+      setGameState(prev => {
+        // Update streaks and check for notifications
+        const { playerNumber } = newShot;
+        const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
+        let newStreak = { ...currentStreak };
+        let triggeredNotification: NotificationInfo | null = null;
   
-  const handleEditPlayerName = useCallback(() => {
-    if (!currentPlayer || currentPlayer === 'Todos') return;
-    const currentName = playerNames[currentPlayer] || '';
-    const newName = prompt(`Ingresa el nombre para el jugador #${currentPlayer}:`, currentName);
-    if (newName !== null) { // prompt returns null if cancelled
-      setPlayerNames(prev => ({
-        ...prev,
-        [currentPlayer]: newName.trim(),
-      }));
+        if (isGol) {
+          newStreak.consecutiveGoles += 1;
+          newStreak.consecutiveMisses = 0;
+          newStreak.notifiedFria = false; // Reset opposite streak flag
+          if (prev.settings.isManoCalienteEnabled && newStreak.consecutiveGoles >= prev.settings.manoCalienteThreshold && !newStreak.notifiedCaliente) {
+            triggeredNotification = { type: 'caliente', playerNumber };
+            newStreak.notifiedCaliente = true; // Mark as notified for this streak
+          }
+        } else { // is Miss
+          newStreak.consecutiveMisses += 1;
+          newStreak.consecutiveGoles = 0;
+          newStreak.notifiedCaliente = false; // Reset opposite streak flag
+          if (prev.settings.isManoFriaEnabled && newStreak.consecutiveMisses >= prev.settings.manoFriaThreshold && !newStreak.notifiedFria) {
+            triggeredNotification = { type: 'fria', playerNumber };
+            newStreak.notifiedFria = true; // Mark as notified for this streak
+          }
+        }
+        
+        // Show notification after a brief delay
+        if (triggeredNotification) {
+            setTimeout(() => setNotificationPopup(triggeredNotification), 200);
+        }
+
+        return {
+            ...prev,
+            shots: [...prev.shots, newShot],
+            playerStreaks: { ...prev.playerStreaks, [playerNumber]: newStreak }
+        };
+      });
+
+      setPendingShotPosition(null);
     }
-  }, [currentPlayer, playerNames]);
+  }, [pendingShotPosition, gameState.currentPlayer, gameState.currentPeriod, gameState.settings, gameState.playerStreaks]);
+  
+  const handleStartEditingName = useCallback(() => {
+    if (!gameState.currentPlayer || gameState.currentPlayer === 'Todos') return;
+    setTempPlayerName(gameState.playerNames[gameState.currentPlayer] || '');
+    setIsEditingName(true);
+  }, [gameState.currentPlayer, gameState.playerNames]);
+
+  const handleCancelEditingName = useCallback(() => {
+    setIsEditingName(false);
+    setTempPlayerName('');
+  }, []);
+
+  const handleSavePlayerName = useCallback(() => {
+    if (!gameState.currentPlayer || gameState.currentPlayer === 'Todos') return;
+    setGameState(prev => ({
+      ...prev,
+      playerNames: { ...prev.playerNames, [gameState.currentPlayer]: tempPlayerName.trim() }
+    }));
+    setIsEditingName(false);
+    setTempPlayerName('');
+  }, [gameState.currentPlayer, tempPlayerName]);
   
   const handleRequestUndo = useCallback(() => {
-    if (shots.length > 0) {
+    if (gameState.shots.length > 0) {
       setIsUndoModalOpen(true);
     }
-  }, [shots.length]);
+  }, [gameState.shots.length]);
   
   const handleConfirmUndo = useCallback(() => {
-    // Note: This simple undo does not revert the streak counters,
-    // as it would add significant complexity. It just removes the shot.
-    setShots(prevShots => prevShots.slice(0, -1));
+    // Note: This simple undo does not revert the streak counters for simplicity.
+    setGameState(prev => ({...prev, shots: prev.shots.slice(0, -1)}));
     setIsUndoModalOpen(false);
   }, []);
   
-  const handleCancelUndo = useCallback(() => {
-    setIsUndoModalOpen(false);
-  }, []);
+  const handleCancelUndo = useCallback(() => setIsUndoModalOpen(false), []);
 
   const handleRequestClearSheet = useCallback(() => {
-    if (shots.length > 0) {
+    if (gameState.shots.length > 0) {
       setIsClearSheetModalOpen(true);
     }
-  }, [shots.length]);
+  }, [gameState.shots.length]);
 
   const handleConfirmClearSheet = useCallback(() => {
-    setShots([]);
-    setPlayerStreaks({}); // Also reset streaks
+    setGameState(prev => ({...prev, shots: [], playerStreaks: {}}));
     setIsClearSheetModalOpen(false);
   }, []);
 
-  const handleCancelClearSheet = useCallback(() => {
-    setIsClearSheetModalOpen(false);
-  }, []);
+  const handleCancelClearSheet = useCallback(() => setIsClearSheetModalOpen(false), []);
 
   const handleCancelShot = useCallback(() => setPendingShotPosition(null), []);
+
+  const handleRequestNewGame = useCallback(() => {
+      setIsSettingsModalOpen(false);
+      setIsNewGameConfirmOpen(true);
+  }, []);
+  
+  const handleConfirmNewGame = useCallback(() => {
+      localStorage.removeItem(GAME_STATE_STORAGE_KEY);
+      setGameState(initialGameState);
+      setIsNewGameConfirmOpen(false);
+  }, []);
+
+  const handleCancelNewGame = useCallback(() => setIsNewGameConfirmOpen(false), []);
 
   const handleDownloadHeatmap = useCallback(() => {
     if (heatmapCourtRef.current && typeof html2canvas === 'function') {
@@ -249,21 +297,26 @@ function App() {
   }, [heatmapPlayer, heatmapFilter]);
   
   const handleSettingsChange = useCallback((newSettings: Settings) => {
-    // Check if thresholds have changed before resetting streaks.
-    const calienteThresholdChanged = newSettings.manoCalienteThreshold !== settings.manoCalienteThreshold;
-    const friaThresholdChanged = newSettings.manoFriaThreshold !== settings.manoFriaThreshold;
+    setGameState(prev => {
+      const calienteThresholdChanged = newSettings.manoCalienteThreshold !== prev.settings.manoCalienteThreshold;
+      const friaThresholdChanged = newSettings.manoFriaThreshold !== prev.settings.manoFriaThreshold;
 
-    if (calienteThresholdChanged || friaThresholdChanged) {
-        // Reset all player streaks to ensure new thresholds are applied cleanly from zero.
-        setPlayerStreaks({});
-    }
-    
-    setSettings(newSettings);
-  }, [settings]); // The dependency on 'settings' is crucial.
+      return {
+        ...prev,
+        settings: newSettings,
+        // Reset streaks if thresholds change to apply new rules cleanly
+        playerStreaks: (calienteThresholdChanged || friaThresholdChanged) ? {} : prev.playerStreaks,
+      };
+    });
+  }, []);
 
   // --- MEMOIZED DERIVED STATE ---
+  const filteredLoggerTabShots = useMemo(() => {
+    return gameState.shots.filter(shot => shot.period === gameState.currentPeriod);
+  }, [gameState.shots, gameState.currentPeriod]);
+
   const filteredHeatmapShots = useMemo(() => {
-    return shots.filter(shot => {
+    return gameState.shots.filter(shot => {
       const playerMatch = heatmapPlayer === 'Todos' || shot.playerNumber === heatmapPlayer;
       if (!playerMatch) return false;
       
@@ -277,28 +330,24 @@ function App() {
         default: return true;
       }
     });
-  }, [shots, heatmapPlayer, heatmapFilter, mapPeriodFilter]);
+  }, [gameState.shots, heatmapPlayer, heatmapFilter, mapPeriodFilter]);
   
   const filteredShotmapShots = useMemo(() => {
-    return shots.filter(shot => {
+    return gameState.shots.filter(shot => {
         const playerMatch = shotmapPlayer === 'Todos' || shot.playerNumber === shotmapPlayer;
         const periodMatch = mapPeriodFilter === 'all' || shot.period === mapPeriodFilter;
         
-        const resultMap = {
-            'all': true,
-            'goles': shot.isGol,
-            'misses': !shot.isGol
-        };
+        const resultMap = { 'all': true, 'goles': shot.isGol, 'misses': !shot.isGol };
         const resultMatch = resultMap[shotmapResultFilter];
 
         return playerMatch && periodMatch && resultMatch;
     });
-  }, [shots, shotmapPlayer, mapPeriodFilter, shotmapResultFilter]);
+  }, [gameState.shots, shotmapPlayer, mapPeriodFilter, shotmapResultFilter]);
 
   const playerStats = useMemo<PlayerStats[]>(() => {
     const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
 
-    shots.forEach(shot => {
+    gameState.shots.forEach(shot => {
       const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
       pStats.totalShots += 1;
       if (shot.isGol) {
@@ -313,19 +362,11 @@ function App() {
       ...data,
       golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
     }));
-  }, [shots]);
+  }, [gameState.shots]);
   
-  const tabTranslations: {[key in AppTab]: string} = {
-    logger: 'Registro',
-    heatmap: 'Mapa de Calor',
-    shotmap: 'Mapa de Tiros',
-    statistics: 'Estadísticas'
-  }
-  
-  const periodTranslations: {[key in GamePeriod]: string} = {
-      'First Half': 'Primer Tiempo',
-      'Second Half': 'Segundo Tiempo'
-  }
+  const tabTranslations: {[key in AppTab]: string} = { logger: 'Registro', heatmap: 'Mapa de Calor', shotmap: 'Mapa de Tiros', statistics: 'Estadísticas' };
+  const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
+  const { shots, isSetupComplete, availablePlayers, playerNames, currentPlayer, currentPeriod, settings } = gameState;
 
   // --- RENDER ---
   if (!isSetupComplete) {
@@ -380,7 +421,7 @@ function App() {
                   <select
                     id="period-selector"
                     value={currentPeriod}
-                    onChange={(e) => setCurrentPeriod(e.target.value as GamePeriod)}
+                    onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
                     className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
                   >
                     {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
@@ -394,21 +435,53 @@ function App() {
 
               {/* Logger Player Selector */}
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <div className="flex justify-center items-center gap-4 mb-4">
-                  <h2 className="text-2xl font-bold text-cyan-400 text-center">
-                    {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
-                  </h2>
-                  <button
-                    onClick={handleEditPlayerName}
-                    className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!currentPlayer || currentPlayer === 'Todos'}
-                    title="Editar nombre del jugador"
-                    aria-label="Editar nombre del jugador"
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
+                <div className="flex justify-center items-center gap-4 mb-4" style={{ minHeight: '48px' }}>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={tempPlayerName}
+                            onChange={(e) => setTempPlayerName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSavePlayerName();
+                                if (e.key === 'Escape') handleCancelEditingName();
+                            }}
+                            autoFocus
+                            className="bg-gray-700 border border-gray-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                            placeholder={`Nombre para #${currentPlayer}`}
+                        />
+                        <button 
+                            onClick={handleSavePlayerName} 
+                            className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" 
+                            title="Guardar nombre"
+                            aria-label="Guardar nombre"
+                        >
+                           <CheckIcon className="h-5 w-5" />
+                        </button>
+                        <button 
+                            onClick={handleCancelEditingName} 
+                            className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" 
+                            title="Cancelar edición"
+                            aria-label="Cancelar edición"
+                        >
+                           <XIcon className="h-5 w-5" />
+                        </button>
+                    </div>
+                  ) : (
+                    <button
+                        onClick={handleStartEditingName}
+                        disabled={!currentPlayer || currentPlayer === 'Todos'}
+                        className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-gray-700/50 transition-colors"
+                        title="Editar nombre del jugador"
+                        aria-label="Editar nombre del jugador"
+                    >
+                        <span className="group-hover:underline decoration-dotted underline-offset-4">
+                           {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
+                        </span>
+                    </button>
+                  )}
                 </div>
-                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} playerNames={playerNames} availablePlayers={availablePlayers} />
+                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={(p) => setGameState(prev => ({...prev, currentPlayer: p}))} playerNames={playerNames} availablePlayers={availablePlayers} />
               </div>
 
               {/* Action Buttons & Court */}
@@ -435,7 +508,7 @@ function App() {
                     </button>
                 </div>
                 <Court
-                  shots={shots}
+                  shots={filteredLoggerTabShots}
                   onCourtClick={handleCourtClick}
                   showShotMarkers={true}
                   currentPlayer={currentPlayer}
@@ -574,7 +647,7 @@ function App() {
       </div>
       
       <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
-        Santiago Greco - All rights reserved. Gresolutions © 2025
+        Santiago Greco - Gresolutions © 2025
       </footer>
       
       {isSettingsModalOpen && (
@@ -582,6 +655,7 @@ function App() {
             settings={settings}
             setSettings={handleSettingsChange}
             onClose={() => setIsSettingsModalOpen(false)}
+            onRequestNewGame={handleRequestNewGame}
         />
       )}
 
@@ -609,6 +683,18 @@ function App() {
             cancelText="Cancelar"
             onConfirm={handleConfirmClearSheet}
             onClose={handleCancelClearSheet}
+            confirmButtonColor="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+        />
+      )}
+
+      {isNewGameConfirmOpen && (
+        <ConfirmationModal
+            title="Comenzar Nuevo Partido"
+            message="¿Estás seguro? Todos los datos del partido actual se perderán y no se podrán recuperar."
+            confirmText="Sí, empezar de nuevo"
+            cancelText="Cancelar"
+            onConfirm={handleConfirmNewGame}
+            onClose={handleCancelNewGame}
             confirmButtonColor="bg-red-600 hover:bg-red-700 focus:ring-red-500"
         />
       )}

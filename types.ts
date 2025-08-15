@@ -31,3 +31,21 @@ export interface Settings {
   isManoFriaEnabled: boolean;
   manoFriaThreshold: number;
 }
+
+export interface PlayerStreak {
+    consecutiveGoles: number;
+    consecutiveMisses: number;
+    notifiedCaliente: boolean;
+    notifiedFria: boolean;
+}
+
+export interface GameState {
+    shots: Shot[];
+    isSetupComplete: boolean;
+    availablePlayers: string[];
+    playerNames: Record<string, string>;
+    currentPlayer: string;
+    currentPeriod: GamePeriod;
+    settings: Settings;
+    playerStreaks: Record<string, PlayerStreak>;
+}

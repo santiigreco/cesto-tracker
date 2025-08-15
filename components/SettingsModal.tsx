@@ -7,24 +7,15 @@ interface SettingsModalProps {
   settings: Settings;
   setSettings: (settings: Settings) => void;
   onClose: () => void;
+  onRequestNewGame: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, onClose }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, onClose, onRequestNewGame }) => {
     
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
-        if (value === '') {
-            // Use 0 as a temporary placeholder for an empty input
-            setSettings({ ...settings, [key]: 0 });
-        } else if (!isNaN(numValue)) {
+        if (!isNaN(numValue)) {
             setSettings({ ...settings, [key]: numValue });
-        }
-    };
-
-    const handleThresholdBlur = (key: 'manoCalienteThreshold' | 'manoFriaThreshold') => {
-        const currentValue = settings[key];
-        if (currentValue < 3) {
-            setSettings({ ...settings, [key]: 3 });
         }
     };
 
@@ -38,7 +29,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
             <div className="bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="settings-modal-title" className="text-3xl font-bold text-cyan-400">Configuración</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">&times;</button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
                 </div>
 
                 <div className="space-y-8">
@@ -51,19 +42,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                                 onToggle={() => setSettings({ ...settings, isManoCalienteEnabled: !settings.isManoCalienteEnabled })}
                             />
                         </div>
-                        <p className="text-gray-400 mt-2 mb-4">Notificar cuando un jugador mete varios goles seguidos.</p>
+                        <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
                         <div className="flex items-center gap-4">
-                            <label htmlFor="manoCalienteThreshold" className="text-gray-300">Goles seguidos para notificar:</label>
+                            <span className="text-gray-300 font-mono">3</span>
                             <input
-                                type="number"
+                                type="range"
                                 id="manoCalienteThreshold"
-                                value={settings.manoCalienteThreshold === 0 ? '' : settings.manoCalienteThreshold}
+                                value={settings.manoCalienteThreshold}
                                 onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
-                                onBlur={() => handleThresholdBlur('manoCalienteThreshold')}
                                 disabled={!settings.isManoCalienteEnabled}
-                                className="w-20 bg-gray-900 border border-gray-600 text-white text-center text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 disabled:opacity-50"
+                                className="w-full flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                                 min="3"
+                                max="10"
                             />
+                            <span className="text-gray-300 font-mono">10</span>
                         </div>
                     </div>
 
@@ -76,22 +68,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                                 onToggle={() => setSettings({ ...settings, isManoFriaEnabled: !settings.isManoFriaEnabled })}
                             />
                         </div>
-                        <p className="text-gray-400 mt-2 mb-4">Notificar cuando un jugador falla varios tiros seguidos.</p>
+                        <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
                         <div className="flex items-center gap-4">
-                            <label htmlFor="manoFriaThreshold" className="text-gray-300">Fallos seguidos para notificar:</label>
+                             <span className="text-gray-300 font-mono">3</span>
                             <input
-                                type="number"
+                                type="range"
                                 id="manoFriaThreshold"
-                                value={settings.manoFriaThreshold === 0 ? '' : settings.manoFriaThreshold}
+                                value={settings.manoFriaThreshold}
                                 onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
-                                onBlur={() => handleThresholdBlur('manoFriaThreshold')}
                                 disabled={!settings.isManoFriaEnabled}
-                                className="w-20 bg-gray-900 border border-gray-600 text-white text-center text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 disabled:opacity-50"
+                                className="w-full flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                                 min="3"
+                                max="10"
                             />
+                            <span className="text-gray-300 font-mono">10</span>
                         </div>
                     </div>
                 </div>
+
+                {/* Session Management Section */}
+                <div className="border-t border-gray-700 mt-8 pt-6">
+                    <h3 className="text-xl font-bold text-white mb-2">Gestión de la Sesión</h3>
+                    <p className="text-gray-400 mb-4">
+                        Esto eliminará todos los datos del partido actual (tiros, nombres de jugadores) y te permitirá comenzar de nuevo.
+                    </p>
+                    <button
+                        onClick={onRequestNewGame}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                    >
+                        Comenzar Nuevo Partido
+                    </button>
+                </div>
+
 
                 <div className="mt-8 text-right">
                     <button
