@@ -8,9 +8,10 @@ interface SettingsModalProps {
   setSettings: (settings: Settings) => void;
   onClose: () => void;
   onRequestNewGame: () => void;
+  onRequestReselectPlayers: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, onClose, onRequestNewGame }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers }) => {
     
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
@@ -104,14 +105,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                 <div className="border-t border-gray-700 mt-8 pt-6">
                     <h3 className="text-xl font-bold text-white mb-2">Gestión de la Sesión</h3>
                     <p className="text-gray-400 mb-4">
-                        Esto eliminará todos los datos del partido actual (tiros, nombres de jugadores) y te permitirá comenzar de nuevo.
+                        Estas acciones reiniciarán el partido actual. Úsalas para corregir la selección inicial de jugadores o para empezar un partido completamente nuevo.
                     </p>
-                    <button
-                        onClick={onRequestNewGame}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
-                    >
-                        Comenzar Nuevo Partido
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button
+                            onClick={onRequestReselectPlayers}
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        >
+                            Corregir Jugadores
+                        </button>
+                         <button
+                            onClick={onRequestNewGame}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        >
+                            Comenzar Nuevo Partido
+                        </button>
+                    </div>
                 </div>
 
 
@@ -120,7 +129,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                         onClick={onClose}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300"
                     >
-                        Cerrar
+                        Guardar y Salir
                     </button>
                 </div>
             </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Shot, ShotPosition } from '../types';
 
@@ -174,7 +175,7 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
               left: `${(shot.position.x / COURT_WIDTH) * 100}%`,
               top: `${((HALF_COURT_LENGTH - shot.position.y) / HALF_COURT_LENGTH) * 100}%`,
             }}
-            title={`Jugador ${shot.playerNumber} - ${shot.isGol ? `Gol (${shot.golValue} pts)` : 'Fallo'} en (${shot.position.x.toFixed(1)}, ${shot.position.y.toFixed(1)})`}
+            title={`Jugador ${shot.playerNumber} - ${shot.isGol ? `Gol (${shot.golValue} pts)` : 'Fallo'}.`}
           >
             {shot.playerNumber}
           </div>

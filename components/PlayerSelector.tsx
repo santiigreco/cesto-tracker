@@ -15,12 +15,12 @@ interface PlayerSelectorProps {
  */
 const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames, availablePlayers }) => {
   return (
-    <div>
-      <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
+    <div className="w-full">
+      <div className="custom-scrollbar flex flex-nowrap gap-2 sm:gap-3 items-center overflow-x-auto pb-2">
         {showAllPlayersOption && (
           <button
             onClick={() => setCurrentPlayer('Todos')}
-            className={`font-bold py-3 px-5 rounded-lg transition duration-300 ease-in-out transform focus:outline-none shadow-lg ${
+            className={`flex-shrink-0 font-bold py-3 px-5 rounded-lg transition duration-300 ease-in-out transform focus:outline-none shadow-lg ${
               currentPlayer === 'Todos'
                 ? 'bg-cyan-600 text-white scale-105'
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
@@ -30,13 +30,14 @@ const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurre
           </button>
         )}
         {availablePlayers.map((num) => (
-          <JerseyIcon
-            key={num}
-            number={num}
-            name={playerNames[num]}
-            isSelected={currentPlayer === num}
-            onClick={setCurrentPlayer}
-          />
+          <div key={num} className="flex-shrink-0">
+            <JerseyIcon
+              number={num}
+              name={playerNames[num]}
+              isSelected={currentPlayer === num}
+              onClick={setCurrentPlayer}
+            />
+          </div>
         ))}
       </div>
     </div>

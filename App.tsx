@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -16,6 +14,7 @@ import GearIcon from './components/GearIcon';
 import NotificationPopup from './components/NotificationPopup';
 import DownloadIcon from './components/DownloadIcon';
 import UndoIcon from './components/UndoIcon';
+import RedoIcon from './components/RedoIcon';
 import TrashIcon from './components/TrashIcon';
 import CheckIcon from './components/CheckIcon';
 import XIcon from './components/XIcon';
@@ -89,12 +88,13 @@ const HeatmapOverlay: React.FC<{ shots: Shot[], filter: HeatmapFilter }> = ({ sh
 function App() {
   // --- STATE MANAGEMENT ---
   const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const [redoStack, setRedoStack] = useState<Shot[]>([]);
   
   // Transient UI State (not saved)
   const [pendingShotPosition, setPendingShotPosition] = useState<ShotPosition | null>(null);
-  const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
   const [isClearSheetModalOpen, setIsClearSheetModalOpen] = useState(false);
   const [isNewGameConfirmOpen, setIsNewGameConfirmOpen] = useState(false);
+  const [isReselectConfirmOpen, setIsReselectConfirmOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [heatmapPlayer, setHeatmapPlayer] = useState<string>('Todos');
@@ -105,6 +105,7 @@ function App() {
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempPlayerName, setTempPlayerName] = useState('');
+
 
   const heatmapCourtRef = useRef<HTMLDivElement>(null);
 
@@ -142,17 +143,22 @@ function App() {
     }
     const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
     
-    setGameState(prev => ({
-        ...prev,
-        availablePlayers: sortedPlayers,
-        settings: newSettings,
-        isSetupComplete: true,
-        currentPlayer: sortedPlayers[0] || '1',
-    }));
+    setGameState(prev => {
+        // If the current player was removed, select the first available one
+        const newCurrentPlayer = sortedPlayers.includes(prev.currentPlayer) ? prev.currentPlayer : sortedPlayers[0];
+
+        return {
+            ...prev,
+            availablePlayers: sortedPlayers,
+            settings: newSettings,
+            isSetupComplete: true,
+            currentPlayer: newCurrentPlayer,
+        };
+    });
     
-    // Set default selections
-    setHeatmapPlayer('Todos');
-    setShotmapPlayer('Todos');
+    // Reset filters if the selected player was removed
+    setHeatmapPlayer(prevPlayer => sortedPlayers.includes(prevPlayer) || prevPlayer === 'Todos' ? prevPlayer : 'Todos');
+    setShotmapPlayer(prevPlayer => sortedPlayers.includes(prevPlayer) || prevPlayer === 'Todos' ? prevPlayer : 'Todos');
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
@@ -216,7 +222,8 @@ function App() {
             playerStreaks: { ...prev.playerStreaks, [playerNumber]: newStreak }
         };
       });
-
+      
+      setRedoStack([]); // Clear redo stack on new action
       setPendingShotPosition(null);
     }
   }, [pendingShotPosition, gameState.currentPlayer, gameState.currentPeriod, gameState.settings, gameState.playerStreaks]);
@@ -242,20 +249,30 @@ function App() {
     setTempPlayerName('');
   }, [gameState.currentPlayer, tempPlayerName]);
   
-  const handleRequestUndo = useCallback(() => {
-    if (gameState.shots.length > 0) {
-      setIsUndoModalOpen(true);
-    }
-  }, [gameState.shots.length]);
-  
-  const handleConfirmUndo = useCallback(() => {
+  const handleUndo = useCallback(() => {
+    if (gameState.shots.length === 0) return;
+    
+    const lastShot = gameState.shots[gameState.shots.length - 1];
+    setRedoStack(prev => [...prev, lastShot]);
+    setGameState(prev => ({
+        ...prev,
+        shots: prev.shots.slice(0, -1)
+    }));
     // Note: This simple undo does not revert the streak counters for simplicity.
-    setGameState(prev => ({...prev, shots: prev.shots.slice(0, -1)}));
-    setIsUndoModalOpen(false);
-  }, []);
-  
-  const handleCancelUndo = useCallback(() => setIsUndoModalOpen(false), []);
+  }, [gameState.shots]);
 
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+
+    const shotToRedo = redoStack[redoStack.length - 1];
+    setGameState(prev => ({
+        ...prev,
+        shots: [...prev.shots, shotToRedo]
+    }));
+    setRedoStack(prev => prev.slice(0, -1));
+    // Note: This simple redo does not re-apply streak logic for simplicity.
+  }, [redoStack]);
+  
   const handleRequestClearSheet = useCallback(() => {
     if (gameState.shots.length > 0) {
       setIsClearSheetModalOpen(true);
@@ -264,6 +281,7 @@ function App() {
 
   const handleConfirmClearSheet = useCallback(() => {
     setGameState(prev => ({...prev, shots: [], playerStreaks: {}}));
+    setRedoStack([]);
     setIsClearSheetModalOpen(false);
   }, []);
 
@@ -279,10 +297,28 @@ function App() {
   const handleConfirmNewGame = useCallback(() => {
       localStorage.removeItem(GAME_STATE_STORAGE_KEY);
       setGameState(initialGameState);
+      setRedoStack([]);
       setIsNewGameConfirmOpen(false);
   }, []);
 
   const handleCancelNewGame = useCallback(() => setIsNewGameConfirmOpen(false), []);
+
+  const handleRequestReselectPlayers = useCallback(() => {
+    setIsSettingsModalOpen(false);
+    setIsReselectConfirmOpen(true);
+  }, []);
+
+  const handleConfirmReselectPlayers = useCallback(() => {
+    setGameState(prev => ({
+        ...prev,
+        isSetupComplete: false
+    }));
+    setRedoStack([]); // Clear redo stack to avoid confusion
+    setIsReselectConfirmOpen(false);
+  }, []);
+  
+  const handleCancelReselectPlayers = useCallback(() => setIsReselectConfirmOpen(false), []);
+
 
   const handleDownloadHeatmap = useCallback(() => {
     if (heatmapCourtRef.current && typeof html2canvas === 'function') {
@@ -377,14 +413,18 @@ function App() {
 
   // --- RENDER ---
   if (!isSetupComplete) {
-    return <PlayerSetup onSetupComplete={handleSetupComplete} />;
+    return <PlayerSetup 
+              onSetupComplete={handleSetupComplete} 
+              initialSelectedPlayers={availablePlayers}
+              initialSettings={settings}
+            />;
   }
   
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans">
       <div className="w-full max-w-4xl flex-grow">
         <header className="relative text-center mb-6">
-          <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker 🏐</h1>
           <p className="text-lg text-gray-400 mt-2">
             {activeTab === 'logger' && 'Registra tiros o cambia de pestaña para analizar.'}
             {activeTab === 'heatmap' && 'Analiza la densidad de tiros de un jugador.'}
@@ -418,59 +458,51 @@ function App() {
           ))}
         </div>
 
-        <main className="flex flex-col gap-8">
+        <main className="flex flex-col gap-6">
           {activeTab === 'logger' && (
             <>
-              {/* Logger Player Selector */}
-              <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <div className="flex justify-center items-center gap-4 mb-2" style={{ minHeight: '48px' }}>
-                  {isEditingName ? (
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="text"
-                            value={tempPlayerName}
-                            onChange={(e) => setTempPlayerName(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSavePlayerName();
-                                if (e.key === 'Escape') handleCancelEditingName();
-                            }}
-                            autoFocus
-                            className="bg-gray-700 border border-gray-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
-                            placeholder={`Nombre para #${currentPlayer}`}
-                        />
-                        <button 
-                            onClick={handleSavePlayerName} 
-                            className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" 
-                            title="Guardar nombre"
-                            aria-label="Guardar nombre"
-                        >
-                           <CheckIcon className="h-5 w-5" />
-                        </button>
-                        <button 
-                            onClick={handleCancelEditingName} 
-                            className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" 
-                            title="Cancelar edición"
-                            aria-label="Cancelar edición"
-                        >
-                           <XIcon className="h-5 w-5" />
-                        </button>
-                    </div>
-                  ) : (
-                    <button
-                        onClick={handleStartEditingName}
-                        disabled={!currentPlayer || currentPlayer === 'Todos'}
-                        className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-gray-700/50 transition-colors"
-                        title="Editar nombre del jugador"
-                        aria-label="Editar nombre del jugador"
-                    >
-                        <span className="group-hover:underline decoration-dotted underline-offset-4">
-                           {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
-                        </span>
-                    </button>
-                  )}
+              {/* Player Control Panel */}
+              <div className="w-full bg-gray-800 p-4 rounded-lg shadow-lg">
+                <div className="flex flex-col items-center">
+                  <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2">
+                          <input
+                              type="text"
+                              value={tempPlayerName}
+                              onChange={(e) => setTempPlayerName(e.target.value)}
+                              onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSavePlayerName();
+                                  if (e.key === 'Escape') handleCancelEditingName();
+                              }}
+                              autoFocus
+                              className="bg-gray-700 border border-gray-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                              placeholder={`Nombre para #${currentPlayer}`}
+                          />
+                          <button onClick={handleSavePlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
+                             <CheckIcon className="h-5 w-5" />
+                          </button>
+                          <button onClick={handleCancelEditingName} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
+                             <XIcon className="h-5 w-5" />
+                          </button>
+                      </div>
+                    ) : (
+                      <button
+                          onClick={handleStartEditingName}
+                          disabled={!currentPlayer || currentPlayer === 'Todos'}
+                          className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-gray-700/50 transition-colors"
+                          title="Editar nombre del jugador"
+                          aria-label="Editar nombre del jugador"
+                      >
+                          <span className="group-hover:underline decoration-dotted underline-offset-4">
+                             {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
+                          </span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 text-center mb-3">Haz clic en el nombre para personalizarlo.</p>
+                  <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={(p) => setGameState(prev => ({...prev, currentPlayer: p}))} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
-                <p className="text-xs text-gray-500 text-center mb-4">Haz clic en el nombre para personalizarlo.</p>
-                <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={(p) => setGameState(prev => ({...prev, currentPlayer: p}))} playerNames={playerNames} availablePlayers={availablePlayers} />
               </div>
 
               {/* Court & Action Buttons */}
@@ -481,15 +513,24 @@ function App() {
                   showShotMarkers={true}
                   currentPlayer={currentPlayer}
                 />
-                <div className="flex justify-center gap-4 mt-4">
+                <div className="flex justify-center gap-4 mt-2">
                     <button
-                        onClick={handleRequestUndo}
+                        onClick={handleUndo}
                         disabled={shots.length === 0}
                         className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-yellow-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         aria-label="Deshacer último tiro"
                     >
                         <UndoIcon className="h-5 w-5" />
                         <span className="hidden sm:inline">Deshacer</span>
+                    </button>
+                    <button
+                        onClick={handleRedo}
+                        disabled={redoStack.length === 0}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        aria-label="Rehacer último tiro"
+                    >
+                        <RedoIcon className="h-5 w-5" />
+                        <span className="hidden sm:inline">Rehacer</span>
                     </button>
                     <button
                         onClick={handleRequestClearSheet}
@@ -503,16 +544,15 @@ function App() {
                     </button>
                 </div>
               </div>
-              
-              {/* Period Selector */}
-              <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold text-cyan-400 mb-4 text-center">Sesión Actual</h2>
-                <div className="flex justify-center">
+
+              {/* Period Controls */}
+              <div className="w-full bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
+                  <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
                   <select
-                    id="period-selector"
-                    value={currentPeriod}
-                    onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                    className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-3"
+                      id="period-selector"
+                      value={currentPeriod}
+                      onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                      className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
                   >
                     {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
                       <option key={period} value={period}>
@@ -520,10 +560,9 @@ function App() {
                       </option>
                     ))}
                   </select>
-                </div>
               </div>
-
-              {/* Player Performance & Actions */}
+              
+              {/* Player Performance */}
               <div className="w-full">
                 <ShotLog shots={shots} stats={playerStats} playerNames={playerNames}/>
               </div>
@@ -635,23 +674,12 @@ function App() {
             setSettings={handleSettingsChange}
             onClose={() => setIsSettingsModalOpen(false)}
             onRequestNewGame={handleRequestNewGame}
+            onRequestReselectPlayers={handleRequestReselectPlayers}
         />
       )}
 
       {pendingShotPosition && (
         <OutcomeModal onOutcomeSelect={handleOutcomeSelection} onClose={handleCancelShot} />
-      )}
-      
-      {isUndoModalOpen && (
-        <ConfirmationModal
-            title="Confirmar Acción"
-            message="¿Estás seguro de que quieres deshacer el último tiro registrado? Esta acción no se puede revertir."
-            confirmText="Sí, deshacer"
-            cancelText="Cancelar"
-            onConfirm={handleConfirmUndo}
-            onClose={handleCancelUndo}
-            confirmButtonColor="bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
-        />
       )}
       
       {isClearSheetModalOpen && (
@@ -678,6 +706,18 @@ function App() {
         />
       )}
 
+      {isReselectConfirmOpen && (
+        <ConfirmationModal
+          title="Volver a Selección de Jugadores"
+          message="¿Estás seguro? Volverás a la pantalla de selección para añadir o quitar jugadores. Los tiros ya registrados no se perderán."
+          confirmText="Sí, volver"
+          cancelText="Cancelar"
+          onConfirm={handleConfirmReselectPlayers}
+          onClose={handleCancelReselectPlayers}
+          confirmButtonColor="bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
+        />
+      )}
+      
       {notificationPopup && (
         <NotificationPopup
             type={notificationPopup.type}

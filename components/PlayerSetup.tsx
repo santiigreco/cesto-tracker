@@ -8,19 +8,23 @@ import ToggleSwitch from './ToggleSwitch';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
-interface PlayerSetupProps {
-  onSetupComplete: (selectedPlayers: string[], settings: Settings) => void;
-}
-
-const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
-  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [isNovedadesOpen, setIsNovedadesOpen] = useState(false);
-  const [settings, setSettings] = useState<Settings>({
+const defaultSettings: Settings = {
     isManoCalienteEnabled: false,
     manoCalienteThreshold: 3,
     isManoFriaEnabled: false,
     manoFriaThreshold: 3,
-  });
+};
+
+interface PlayerSetupProps {
+  onSetupComplete: (selectedPlayers: string[], settings: Settings) => void;
+  initialSelectedPlayers?: string[];
+  initialSettings?: Settings;
+}
+
+const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelectedPlayers = [], initialSettings = defaultSettings }) => {
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set(initialSelectedPlayers));
+  const [isNovedadesOpen, setIsNovedadesOpen] = useState(false);
+  const [settings, setSettings] = useState<Settings>(initialSettings);
 
 
   const togglePlayer = (playerNumber: string) => {
@@ -84,7 +88,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
           disabled={selectedPlayers.size === 0}
           className="w-full max-w-sm bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none"
         >
-          Comenzar Partido
+          {initialSelectedPlayers.length > 0 ? 'Continuar Partido' : 'Comenzar Partido'}
         </button>
 
         <div className="border-t border-gray-700 my-8 pt-8 flex flex-col items-center">
