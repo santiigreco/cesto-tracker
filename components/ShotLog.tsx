@@ -117,7 +117,7 @@ const ShotLog: React.FC<ShotLogProps> = ({ shots, stats, playerNames }) => {
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-cyan-400">Rendimiento de Jugadores</h2>
+        <h2 className="text-2xl font-bold text-cyan-400">Rendimiento</h2>
         {shots.length > 0 && (
           <button
             onClick={handleExportCSV}

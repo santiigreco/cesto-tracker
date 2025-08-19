@@ -10,9 +10,9 @@ const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 const defaultSettings: Settings = {
     isManoCalienteEnabled: false,
-    manoCalienteThreshold: 3,
+    manoCalienteThreshold: 5,
     isManoFriaEnabled: false,
-    manoFriaThreshold: 3,
+    manoFriaThreshold: 5,
 };
 
 interface PlayerSetupProps {

@@ -1,11 +1,17 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { PlayerStats } from '../types';
-import DownloadIcon from './DownloadIcon';
 import TrophyIcon from './TrophyIcon';
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
+
+const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
+        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+    </svg>
+);
+
 
 const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: number; }> = ({ percentage, size = 120, strokeWidth = 15 }) => {
   const radius = (size - strokeWidth) / 2;
@@ -49,6 +55,7 @@ const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: nu
 
 const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<string, string>; }> = ({ stats, playerNames }) => {
   const captureRef = useRef<HTMLDivElement>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
   
   // Team-wide stats calculation
@@ -58,18 +65,44 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
   const totalMisses = totalShots - totalGoles;
   const teamGolPercentage = totalShots > 0 ? (totalGoles / totalShots) * 100 : 0;
 
-  const handleDownload = () => {
-    if (captureRef.current && typeof html2canvas === 'function') {
-      html2canvas(captureRef.current, {
-        backgroundColor: null, // Use null to capture the actual background, fixing color issues
-        useCORS: true,
-        scale: 2, // Increase resolution for better quality
-      }).then((canvas: HTMLCanvasElement) => {
-        const link = document.createElement('a');
-        link.download = 'cestoball-estadisticas.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      });
+  const handleShare = async () => {
+    if (!navigator.share) {
+      alert('La función de compartir no está disponible en este navegador.');
+      return;
+    }
+    if (captureRef.current) {
+      setIsSharing(true);
+      try {
+        const canvas = await html2canvas(captureRef.current, {
+          backgroundColor: '#111827', // Tailwind's bg-gray-900
+          useCORS: true,
+          scale: 2,
+        });
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+        
+        if (!blob) {
+            throw new Error('Could not create image blob.');
+        }
+
+        const file = new File([blob], 'cestoball-estadisticas.png', { type: 'image/png' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Estadísticas de Cesto Tracker',
+            text: 'Revisa las estadísticas de mi partido de Cestoball.',
+          });
+        } else {
+            alert('No se pueden compartir archivos en este navegador.');
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') { // Don't show error if user cancels share
+            console.error('Error sharing:', error);
+            alert('Ocurrió un error al intentar compartir.');
+        }
+      } finally {
+        setIsSharing(false);
+      }
     }
   };
 
@@ -86,14 +119,17 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
     <div className="flex flex-col gap-8">
       <div className="flex justify-between items-center -mb-4">
         <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
-        <button
-          onClick={handleDownload}
-          className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-          aria-label="Descargar estadísticas como imagen"
-        >
-          <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-          <span className="hidden sm:inline">Descargar PNG</span>
-        </button>
+        {typeof navigator.share === 'function' && (
+          <button
+            onClick={handleShare}
+            disabled={isSharing}
+            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            aria-label="Compartir estadísticas"
+          >
+            <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+            <span className="hidden sm:inline">{isSharing ? 'Compartiendo...' : 'Compartir'}</span>
+          </button>
+        )}
       </div>
       
       <div ref={captureRef} className="pt-4 flex flex-col gap-8 bg-gray-900">

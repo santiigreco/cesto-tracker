@@ -16,7 +16,7 @@ interface PlayerSelectorProps {
 const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames, availablePlayers }) => {
   return (
     <div className="w-full">
-      <div className="custom-scrollbar flex flex-nowrap gap-2 sm:gap-3 items-center overflow-x-auto pb-2">
+      <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
         {showAllPlayersOption && (
           <button
             onClick={() => setCurrentPlayer('Todos')}

@@ -39,9 +39,9 @@ const initialGameState: GameState = {
     currentPeriod: 'First Half',
     settings: {
         isManoCalienteEnabled: false,
-        manoCalienteThreshold: 3,
+        manoCalienteThreshold: 5,
         isManoFriaEnabled: false,
-        manoFriaThreshold: 3,
+        manoFriaThreshold: 5,
     },
     playerStreaks: {},
 };
@@ -106,8 +106,6 @@ function App() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempPlayerName, setTempPlayerName] = useState('');
 
-
-  const heatmapCourtRef = useRef<HTMLDivElement>(null);
 
   // --- PERSISTENCE ---
   // Load state from localStorage on initial mount
@@ -319,20 +317,6 @@ function App() {
   
   const handleCancelReselectPlayers = useCallback(() => setIsReselectConfirmOpen(false), []);
 
-
-  const handleDownloadHeatmap = useCallback(() => {
-    if (heatmapCourtRef.current && typeof html2canvas === 'function') {
-      html2canvas(heatmapCourtRef.current, {
-        backgroundColor: null, // Let html2canvas use the element's background
-        useCORS: true,
-      }).then((canvas: HTMLCanvasElement) => {
-        const link = document.createElement('a');
-        link.download = `cestoball-mapa-calor-${heatmapPlayer.replace(' ', '_')}-${heatmapFilter}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      });
-    }
-  }, [heatmapPlayer, heatmapFilter]);
   
   const handleSettingsChange = useCallback((newSettings: Settings) => {
     setGameState(prev => {
@@ -573,7 +557,7 @@ function App() {
              <div className="flex flex-col gap-8">
                 {/* Shotmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
+                   <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
                   <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
 
@@ -610,12 +594,12 @@ function App() {
             <div className="flex flex-col gap-8">
                 {/* Heatmap Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                   <h2 className="text-2xl font-bold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h2>
+                   <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
                   <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
                 
                 {/* Court for Heatmap */}
-                <div ref={heatmapCourtRef} className="w-full">
+                <div className="w-full">
                   <Court shots={[]} showShotMarkers={false}>
                     <HeatmapOverlay shots={filteredHeatmapShots} filter={heatmapFilter} />
                   </Court>
@@ -642,17 +626,6 @@ function App() {
                                 <button onClick={() => setMapPeriodFilter('Second Half')} className={getFilterButtonClass(mapPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
                             </div>
                         </div>
-                    </div>
-                    {/* Download Button */}
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={handleDownloadHeatmap}
-                            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-                            aria-label="Descargar mapa de calor como imagen"
-                        >
-                            <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-                            <span>Descargar</span>
-                        </button>
                     </div>
                 </div>
             </div>
