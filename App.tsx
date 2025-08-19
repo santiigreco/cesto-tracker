@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -40,7 +41,7 @@ const initialGameState: GameState = {
     settings: {
         isManoCalienteEnabled: false,
         manoCalienteThreshold: 3,
-        isManoFriaEnabled: true,
+        isManoFriaEnabled: false,
         manoFriaThreshold: 3,
     },
     playerStreaks: {},
@@ -422,7 +423,7 @@ function App() {
             <>
               {/* Logger Player Selector */}
               <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                <div className="flex justify-center items-center gap-4 mb-4" style={{ minHeight: '48px' }}>
+                <div className="flex justify-center items-center gap-4 mb-2" style={{ minHeight: '48px' }}>
                   {isEditingName ? (
                     <div className="flex items-center gap-2">
                         <input
@@ -468,12 +469,19 @@ function App() {
                     </button>
                   )}
                 </div>
+                <p className="text-xs text-gray-500 text-center mb-4">Haz clic en el nombre para personalizarlo.</p>
                 <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={(p) => setGameState(prev => ({...prev, currentPlayer: p}))} playerNames={playerNames} availablePlayers={availablePlayers} />
               </div>
 
-              {/* Action Buttons & Court */}
+              {/* Court & Action Buttons */}
               <div className="w-full flex flex-col gap-4">
-                <div className="flex justify-end gap-4">
+                <Court
+                  shots={filteredLoggerTabShots}
+                  onCourtClick={handleCourtClick}
+                  showShotMarkers={true}
+                  currentPlayer={currentPlayer}
+                />
+                <div className="flex justify-center gap-4 mt-4">
                     <button
                         onClick={handleRequestUndo}
                         disabled={shots.length === 0}
@@ -494,12 +502,6 @@ function App() {
                         <span className="hidden sm:inline">Limpiar Planilla</span>
                     </button>
                 </div>
-                <Court
-                  shots={filteredLoggerTabShots}
-                  onCourtClick={handleCourtClick}
-                  showShotMarkers={true}
-                  currentPlayer={currentPlayer}
-                />
               </div>
               
               {/* Period Selector */}

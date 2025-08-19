@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
 import WhatsappIcon from './WhatsappIcon';
@@ -17,7 +18,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete }) => {
   const [settings, setSettings] = useState<Settings>({
     isManoCalienteEnabled: false,
     manoCalienteThreshold: 3,
-    isManoFriaEnabled: true,
+    isManoFriaEnabled: false,
     manoFriaThreshold: 3,
   });
 

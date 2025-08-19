@@ -99,7 +99,6 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
           backgroundColor: '#f0e0c0',
           backgroundImage: `url("${parquetBgUrl}")`,
           backgroundSize: '80px 20px',
-          touchAction: 'none', // Prevent default touch actions like scrolling
         }}
       >
         {/* Court Markings with borders */}

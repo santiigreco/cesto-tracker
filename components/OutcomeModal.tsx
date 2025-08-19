@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 
 interface OutcomeModalProps {
@@ -31,8 +32,7 @@ const OutcomeModal: React.FC<OutcomeModalProps> = ({ onOutcomeSelect, onClose })
       style={{ pointerEvents: isClickable ? 'auto' : 'none' }}
     >
       <div className="bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-sm w-full text-center transform transition-all scale-100">
-        <h2 id="modal-title" className="text-2xl font-bold text-white mb-4">Resultado del Tiro</h2>
-        <p className="text-gray-400 mb-8">¿El tiro fue gol o fallo?</p>
+        <h2 id="modal-title" className="text-2xl font-bold text-white mb-8">Resultado del Tiro</h2>
         <div className="flex justify-center gap-4">
           <button
             onClick={() => onOutcomeSelect(true)}
