@@ -39,6 +39,14 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
     });
   };
 
+  const handleSelectAll = () => {
+    setSelectedPlayers(new Set(allPlayers));
+  };
+
+  const handleClearAll = () => {
+    setSelectedPlayers(new Set());
+  };
+
   const handleStart = () => {
     const sortedPlayers = Array.from(selectedPlayers).sort((a, b) => Number(a) - Number(b));
     onSetupComplete(sortedPlayers, settings);
@@ -67,6 +75,21 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
             <p className="text-sm text-gray-400 mt-1">
                 (Podrás personalizar sus nombres más adelante)
             </p>
+        </div>
+
+        <div className="flex justify-center gap-4 mb-6">
+          <button
+            onClick={handleSelectAll}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
+          >
+            Seleccionar Todos
+          </button>
+          <button
+            onClick={handleClearAll}
+            className="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
+          >
+            Limpiar Selección
+          </button>
         </div>
         
         <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center mb-8">

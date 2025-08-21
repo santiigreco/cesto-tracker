@@ -23,6 +23,165 @@ import XIcon from './components/XIcon';
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
 
+// --- HELPER COMPONENT: ShareIcon ---
+const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
+        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+    </svg>
+);
+
+// --- HELPER COMPONENT: ZoneChart ---
+type VisualZone = 'ARO' | 'FONDO' | 'CENTRO' | 'MEDIA_DISTANCIA' | 'TRIPLE' | 'IZQUIERDA' | 'DERECHA';
+
+// Classifier function to bucket shots into one of the 7 granular zones, ensuring no overlaps.
+const getVisualZoneForShot = (shot: Shot): VisualZone => {
+    const { x, y } = shot.position;
+    const basketCenter = { x: 10, y: 11 };
+    // The distortion factor of the court container (aspect-[4/5]) vs the SVG viewbox (20x16)
+    // To calculate distance in a visually circular way, we must scale the y-distance.
+    const aspectRatioDistortion = (16 / 20) / (5 / 4); // (viewbox H/W) / (container H/W)
+    const distToBasket = Math.sqrt(Math.pow(x - basketCenter.x, 2) + Math.pow((y - basketCenter.y) / aspectRatioDistortion, 2));
+    const aroRadius = 2.5;
+
+    // Highest priority: Aro (perfect circle as requested)
+    if (distToBasket <= aroRadius) return 'ARO';
+
+    // Then, check by vertical position (y-axis) to partition the rest of the court
+    if (y < 1) return 'TRIPLE'; // Three-point area
+    if (y < 6) return 'MEDIA_DISTANCIA'; // Full width between 3pt line and free throw line
+    if (y > 11) return 'FONDO'; // Baseline zone
+
+    // Remaining area is y between 6 and 11 (free-throw line up to basket area)
+    // Partition this area horizontally
+    if (x < 7) return 'IZQUIERDA';  // Left side
+    if (x > 13) return 'DERECHA';   // Right side
+    
+    // The central rectangle is the Centro zone
+    return 'CENTRO'; // x is between 7 and 13
+};
+
+
+// Configuration for each zone's name and label position (in SVG coordinates)
+const zonesConfig: Record<VisualZone, { labelPos: { x: number; y: number }; name: string }> = {
+    ARO: { labelPos: { x: 10, y: 5 }, name: "Aro" },
+    FONDO: { labelPos: { x: 3.5, y: 2.5 }, name: "Fondo" },
+    CENTRO: { labelPos: { x: 10, y: 7.5 }, name: "Centro" },
+    MEDIA_DISTANCIA: { labelPos: { x: 10, y: 12.5 }, name: "Media Distancia" },
+    TRIPLE: { labelPos: { x: 10, y: 14.8 }, name: "Triple" },
+    IZQUIERDA: { labelPos: { x: 3.5, y: 7.5 }, name: "Izquierda" },
+    DERECHA: { labelPos: { x: 16.5, y: 7.5 }, name: "Derecha" },
+};
+
+
+const getZoneColor = (goles: number, total: number) => {
+    if (total === 0) return 'rgba(107, 114, 128, 0.2)'; // gray-500 for empty
+    const percentage = (goles / total) * 100;
+    if (percentage < 33.3) return 'rgba(59, 130, 246, 0.5)'; // blue-500 for cold
+    if (percentage < 66.6) return 'rgba(234, 179, 8, 0.5)';  // yellow-500 for average
+    return 'rgba(239, 68, 68, 0.5)'; // red-500 for hot
+};
+
+const ZoneChart: React.FC<{ shots: Shot[] }> = ({ shots }) => {
+    const zoneStats = React.useMemo(() => {
+        const stats: Record<VisualZone, { goles: number; total: number }> = {
+            ARO: { goles: 0, total: 0 }, FONDO: { goles: 0, total: 0 }, CENTRO: { goles: 0, total: 0 },
+            MEDIA_DISTANCIA: { goles: 0, total: 0 }, TRIPLE: { goles: 0, total: 0 },
+            IZQUIERDA: { goles: 0, total: 0 }, DERECHA: { goles: 0, total: 0 },
+        };
+        shots.forEach(shot => {
+            const zone = getVisualZoneForShot(shot);
+            stats[zone].total++;
+            if (shot.isGol) stats[zone].goles++;
+        });
+        return stats;
+    }, [shots]);
+    
+    // Note: SVG y-coordinate is inverted from shot data y-coordinate.
+    // Conversion: svg_y = 16 - data_y.
+    const aroMaskId = "aro-mask";
+    
+    // To make a circle appear perfectly round in a distorted container (aspect-[4/5]),
+    // we must render an ellipse that counteracts the distortion.
+    // Distortion = (Container H/W) / (ViewBox H/W) = (5/4) / (16/20) = 1.25 / 0.8 = 1.5625
+    // ry = rx / distortion_factor
+    const rx = 2.5;
+    const ry = 1.6; // 2.5 * ( (4/5) / (20/16) ) = 2.5 * (16/25) = 1.6
+
+
+    return (
+        <div className="absolute inset-0 pointer-events-none">
+            <svg width="100%" height="100%" viewBox="0 0 20 16" preserveAspectRatio="none">
+                <defs>
+                    {/* A mask to cut out the 'Aro' ellipse from other zones */}
+                    <mask id={aroMaskId}>
+                        <rect x="0" y="0" width="20" height="16" fill="white" />
+                        <ellipse cx="10" cy="5" rx={rx} ry={ry} fill="black" />
+                    </mask>
+                </defs>
+                
+                <g stroke="rgba(255, 255, 255, 0.5)" strokeWidth="0.05">
+                    {/* Zones that do NOT need the mask (drawn first) */}
+                    {/* Triple Zone (data_y: 0-1 -> svg_y: 15-16) */}
+                    <rect x="0" y="15" width="20" height="1" fill={getZoneColor(zoneStats.TRIPLE.goles, zoneStats.TRIPLE.total)} />
+                    {/* Media Distancia Zone (data_y: 1-6 -> svg_y: 10-15), full width */}
+                    <rect x="0" y="10" width="20" height="5" fill={getZoneColor(zoneStats.MEDIA_DISTANCIA.goles, zoneStats.MEDIA_DISTANCIA.total)} />
+
+                    {/* Masked Zones (These are all under/around the basket area) */}
+                    <g mask={`url(#${aroMaskId})`}>
+                        {/* Fondo Zone (data_y: 11-16 -> svg_y: 0-5) */}
+                        <rect x="0" y="0" width="20" height="5" fill={getZoneColor(zoneStats.FONDO.goles, zoneStats.FONDO.total)} />
+                        {/* Centro Zone (data_y: 6-11 -> svg_y: 5-10, x: 7-13) */}
+                        <rect x="7" y="5" width="6" height="5" fill={getZoneColor(zoneStats.CENTRO.goles, zoneStats.CENTRO.total)} />
+                        {/* Izquierda Zone (data_y: 6-11 -> svg_y: 5-10, x: 0-7) */}
+                        <rect x="0" y="5" width="7" height="5" fill={getZoneColor(zoneStats.IZQUIERDA.goles, zoneStats.IZQUIERDA.total)} />
+                        {/* Derecha Zone (data_y: 6-11 -> svg_y: 5-10, x: 13-20) */}
+                        <rect x="13" y="5" width="7" height="5" fill={getZoneColor(zoneStats.DERECHA.goles, zoneStats.DERECHA.total)} />
+                    </g>
+
+                    {/* Aro Zone (drawn on top of everything, no mask needed) */}
+                    <ellipse cx="10" cy="5" rx={rx} ry={ry} fill={getZoneColor(zoneStats.ARO.goles, zoneStats.ARO.total)} />
+                </g>
+
+                {/* Text labels (drawn last to be on top) */}
+                {Object.entries(zonesConfig).map(([zoneKey, config]) => {
+                    const zone = zoneKey as VisualZone;
+                    const stats = zoneStats[zone];
+                    const percentage = stats.total > 0 ? (stats.goles / stats.total) * 100 : 0;
+                    const hasShots = stats.total > 0;
+                    const isCompactZone = zone === 'CENTRO' || zone === 'MEDIA_DISTANCIA' || zone === 'FONDO' || zone === 'TRIPLE';
+
+                    return (
+                        <text
+                            key={zone}
+                            x={config.labelPos.x}
+                            y={config.labelPos.y}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fill="white"
+                            fontSize={isCompactZone ? "0.7" : "0.8"}
+                            fontWeight="bold"
+                            className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]"
+                        >
+                            <tspan x={config.labelPos.x} dy={hasShots ? "-0.6em" : "0"}>{config.name}</tspan>
+                            {hasShots && (
+                                <>
+                                    <tspan x={config.labelPos.x} dy="1.2em" fontSize={isCompactZone ? "0.9" : "1"} fontWeight="bold" fontFamily="monospace">
+                                        {`${stats.goles}/${stats.total}`}
+                                    </tspan>
+                                    <tspan x={config.labelPos.x} dy="1.1em" fontSize="0.7" fill="rgba(209, 213, 219, 1)">
+                                        {`${percentage.toFixed(0)}%`}
+                                    </tspan>
+                                </>
+                            )}
+                        </text>
+                    );
+                })}
+            </svg>
+        </div>
+    );
+};
+
+
 // Constants for Heatmap
 const HEATMAP_POINT_RADIUS = 40; // px, increased for more intensity
 const HEATMAP_BLUR = 25; // px, increased for more intensity
@@ -56,7 +215,7 @@ interface NotificationInfo {
  * The Heatmap overlay component.
  * It renders a visual representation of shot density.
  */
-const HeatmapOverlay: React.FC<{ shots: Shot[], filter: HeatmapFilter }> = ({ shots }) => {
+const HeatmapOverlay: React.FC<{ shots: Shot[] }> = ({ shots }) => {
   // Use red tones for all filters for high visibility, as requested.
   const gradientColor = 'rgba(239, 68, 68, '; // Tailwind's red-500
 
@@ -97,14 +256,15 @@ function App() {
   const [isReselectConfirmOpen, setIsReselectConfirmOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [heatmapPlayer, setHeatmapPlayer] = useState<string>('Todos');
-  const [heatmapFilter, setHeatmapFilter] = useState<HeatmapFilter>('all');
-  const [shotmapPlayer, setShotmapPlayer] = useState<string>('Todos');
-  const [shotmapResultFilter, setShotmapResultFilter] = useState<HeatmapFilter>('all');
-  const [mapPeriodFilter, setMapPeriodFilter] = useState<MapPeriodFilter>('all');
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempPlayerName, setTempPlayerName] = useState('');
+
+  // Analysis Tab State
+  const [mapView, setMapView] = useState<'shotmap' | 'heatmap' | 'zonemap'>('heatmap');
+  const [analysisPlayer, setAnalysisPlayer] = useState<string>('Todos');
+  const [analysisResultFilter, setAnalysisResultFilter] = useState<HeatmapFilter>('all');
+  const [analysisPeriodFilter, setAnalysisPeriodFilter] = useState<MapPeriodFilter>('all');
 
 
   // --- PERSISTENCE ---
@@ -155,8 +315,7 @@ function App() {
     });
     
     // Reset filters if the selected player was removed
-    setHeatmapPlayer(prevPlayer => sortedPlayers.includes(prevPlayer) || prevPlayer === 'Todos' ? prevPlayer : 'Todos');
-    setShotmapPlayer(prevPlayer => sortedPlayers.includes(prevPlayer) || prevPlayer === 'Todos' ? prevPlayer : 'Todos');
+    setAnalysisPlayer(prevPlayer => sortedPlayers.includes(prevPlayer) || prevPlayer === 'Todos' ? prevPlayer : 'Todos');
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
@@ -331,40 +490,46 @@ function App() {
       };
     });
   }, []);
+  
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Cesto Tracker App',
+      text: '¡Prueba Cesto Tracker para registrar y analizar los tiros de Cestoball!',
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        navigator.clipboard.writeText(shareData.url);
+        alert('Enlace de la app copiado al portapapeles.');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
 
   // --- MEMOIZED DERIVED STATE ---
   const filteredLoggerTabShots = useMemo(() => {
     return gameState.shots.filter(shot => shot.period === gameState.currentPeriod);
   }, [gameState.shots, gameState.currentPeriod]);
 
-  const filteredHeatmapShots = useMemo(() => {
+  const filteredAnalysisShots = useMemo(() => {
     return gameState.shots.filter(shot => {
-      const playerMatch = heatmapPlayer === 'Todos' || shot.playerNumber === heatmapPlayer;
+      const playerMatch = analysisPlayer === 'Todos' || shot.playerNumber === analysisPlayer;
       if (!playerMatch) return false;
       
-      const periodMatch = mapPeriodFilter === 'all' || shot.period === mapPeriodFilter;
+      const periodMatch = analysisPeriodFilter === 'all' || shot.period === analysisPeriodFilter;
       if (!periodMatch) return false;
 
-      switch (heatmapFilter) {
+      switch (analysisResultFilter) {
         case 'goles': return shot.isGol;
         case 'misses': return !shot.isGol;
         case 'all':
         default: return true;
       }
     });
-  }, [gameState.shots, heatmapPlayer, heatmapFilter, mapPeriodFilter]);
-  
-  const filteredShotmapShots = useMemo(() => {
-    return gameState.shots.filter(shot => {
-        const playerMatch = shotmapPlayer === 'Todos' || shot.playerNumber === shotmapPlayer;
-        const periodMatch = mapPeriodFilter === 'all' || shot.period === mapPeriodFilter;
-        
-        const resultMap = { 'all': true, 'goles': shot.isGol, 'misses': !shot.isGol };
-        const resultMatch = resultMap[shotmapResultFilter];
-
-        return playerMatch && periodMatch && resultMatch;
-    });
-  }, [gameState.shots, shotmapPlayer, mapPeriodFilter, shotmapResultFilter]);
+  }, [gameState.shots, analysisPlayer, analysisResultFilter, analysisPeriodFilter]);
 
   const playerStats = useMemo<PlayerStats[]>(() => {
     const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
@@ -386,7 +551,7 @@ function App() {
     }));
   }, [gameState.shots]);
   
-  const tabTranslations: {[key in AppTab]: string} = { logger: 'Registro', heatmap: 'Mapa de Calor', shotmap: 'Mapa de Tiros', statistics: 'Estadísticas' };
+  const tabTranslations: {[key in AppTab]: string} = { logger: 'Registro', courtAnalysis: 'Análisis de Cancha', statistics: 'Estadísticas', aiAnalysis: 'Análisis con IA' };
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
   const { shots, isSetupComplete, availablePlayers, playerNames, currentPlayer, currentPeriod, settings } = gameState;
 
@@ -411,23 +576,33 @@ function App() {
           <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker 🏐</h1>
           <p className="text-lg text-gray-400 mt-2">
             {activeTab === 'logger' && 'Registra tiros o cambia de pestaña para analizar.'}
-            {activeTab === 'heatmap' && 'Analiza la densidad de tiros de un jugador.'}
-            {activeTab === 'shotmap' && 'Visualiza la ubicación de cada tiro en la cancha.'}
+            {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
             {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
+            {activeTab === 'aiAnalysis' && 'Próximamente: Análisis avanzado con IA.'}
           </p>
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="absolute top-0 right-0 p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
-            aria-label="Abrir configuración"
-            title="Abrir configuración"
-          >
-            <GearIcon className="h-7 w-7" />
-          </button>
+          <div className="absolute top-0 right-0 flex items-center">
+            <button
+                onClick={handleShare}
+                className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                aria-label="Compartir aplicación"
+                title="Compartir aplicación"
+            >
+                <ShareIcon className="h-7 w-7" />
+            </button>
+            <button
+                onClick={() => setIsSettingsModalOpen(true)}
+                className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                aria-label="Abrir configuración"
+                title="Abrir configuración"
+            >
+                <GearIcon className="h-7 w-7" />
+            </button>
+          </div>
         </header>
 
         {/* Tab Switcher */}
         <div className="flex justify-center mb-8 border-b-2 border-gray-700">
-          {(['logger', 'heatmap', 'shotmap', 'statistics'] as AppTab[]).map(tab => (
+          {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis'] as AppTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -553,17 +728,30 @@ function App() {
             </>
           )}
           
-          {activeTab === 'shotmap' && (
+          {activeTab === 'courtAnalysis' && (
              <div className="flex flex-col gap-8">
-                {/* Shotmap Player Selector */}
+                {/* View Switcher */}
+                <div className="w-full bg-gray-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
+                    <button onClick={() => setMapView('shotmap')} className={getFilterButtonClass(mapView === 'shotmap')}>Mapa de Tiros</button>
+                    <button onClick={() => setMapView('heatmap')} className={getFilterButtonClass(mapView === 'heatmap')}>Mapa de Calor</button>
+                    <button onClick={() => setMapView('zonemap')} className={getFilterButtonClass(mapView === 'zonemap')}>Gráfico de Zonas</button>
+                </div>
+                
+                {/* Player Selector */}
                 <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
-                  <PlayerSelector currentPlayer={shotmapPlayer} setCurrentPlayer={setShotmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
+                  <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
 
-                {/* Court for Shotmap */}
+                {/* Court */}
                 <div className="w-full">
-                  <Court shots={filteredShotmapShots} showShotMarkers={true} />
+                  <Court
+                    shots={mapView === 'shotmap' ? filteredAnalysisShots : []}
+                    showShotMarkers={mapView === 'shotmap'}
+                  >
+                    {mapView === 'heatmap' && <HeatmapOverlay shots={filteredAnalysisShots} />}
+                    {mapView === 'zonemap' && <ZoneChart shots={filteredAnalysisShots} />}
+                  </Court>
                 </div>
 
                 {/* Filters container */}
@@ -572,67 +760,64 @@ function App() {
                     <div className="flex-1">
                         <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
                         <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                            <button onClick={() => setShotmapResultFilter('all')} className={getFilterButtonClass(shotmapResultFilter === 'all')}>Todos</button>
-                            <button onClick={() => setShotmapResultFilter('goles')} className={getFilterButtonClass(shotmapResultFilter === 'goles')}>Goles</button>
-                            <button onClick={() => setShotmapResultFilter('misses')} className={getFilterButtonClass(shotmapResultFilter === 'misses')}>Fallos</button>
+                            <button onClick={() => setAnalysisResultFilter('all')} className={getFilterButtonClass(analysisResultFilter === 'all')}>Todos</button>
+                            <button onClick={() => setAnalysisResultFilter('goles')} className={getFilterButtonClass(analysisResultFilter === 'goles')}>Goles</button>
+                            <button onClick={() => setAnalysisResultFilter('misses')} className={getFilterButtonClass(analysisResultFilter === 'misses')}>Fallos</button>
                         </div>
                     </div>
                     {/* Period Filter */}
                     <div className="flex-1">
                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
                          <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                            <button onClick={() => setMapPeriodFilter('all')} className={getFilterButtonClass(mapPeriodFilter === 'all')}>Ambos</button>
-                            <button onClick={() => setMapPeriodFilter('First Half')} className={getFilterButtonClass(mapPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
-                            <button onClick={() => setMapPeriodFilter('Second Half')} className={getFilterButtonClass(mapPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+                            <button onClick={() => setAnalysisPeriodFilter('all')} className={getFilterButtonClass(analysisPeriodFilter === 'all')}>Ambos</button>
+                            <button onClick={() => setAnalysisPeriodFilter('First Half')} className={getFilterButtonClass(analysisPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+                            <button onClick={() => setAnalysisPeriodFilter('Second Half')} className={getFilterButtonClass(analysisPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
                          </div>
                     </div>
                 </div>
              </div>
           )}
 
-          {activeTab === 'heatmap' && (
-            <div className="flex flex-col gap-8">
-                {/* Heatmap Player Selector */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                   <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
-                  <PlayerSelector currentPlayer={heatmapPlayer} setCurrentPlayer={setHeatmapPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
-                </div>
-                
-                {/* Court for Heatmap */}
-                <div className="w-full">
-                  <Court shots={[]} showShotMarkers={false}>
-                    <HeatmapOverlay shots={filteredHeatmapShots} filter={heatmapFilter} />
-                  </Court>
-                </div>
-              
-                {/* Filters container */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                    <div className="flex flex-col sm:flex-row gap-8 justify-center">
-                        {/* Result Filter */}
-                        <div className="flex-1">
-                            <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
-                            <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                                <button onClick={() => setHeatmapFilter('all')} className={getFilterButtonClass(heatmapFilter === 'all')}>Todos</button>
-                                <button onClick={() => setHeatmapFilter('goles')} className={getFilterButtonClass(heatmapFilter === 'goles')}>Goles</button>
-                                <button onClick={() => setHeatmapFilter('misses')} className={getFilterButtonClass(heatmapFilter === 'misses')}>Fallos</button>
+          {activeTab === 'statistics' && (
+            <StatisticsView stats={playerStats} playerNames={playerNames} />
+          )}
+
+          {activeTab === 'aiAnalysis' && (
+            <div className="relative bg-gray-800 p-8 rounded-lg shadow-lg">
+                <div className="blur-sm pointer-events-none select-none">
+                    {/* Fake chat UI */}
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0"></div>
+                            <div className="bg-gray-700 p-3 rounded-lg w-3/4">
+                                <div className="h-4 bg-gray-600 rounded w-5/6"></div>
+                                <div className="h-4 bg-gray-600 rounded w-1/2 mt-2"></div>
                             </div>
                         </div>
-                        {/* Period Filter */}
-                        <div className="flex-1">
-                            <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
-                            <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                                <button onClick={() => setMapPeriodFilter('all')} className={getFilterButtonClass(mapPeriodFilter === 'all')}>Ambos</button>
-                                <button onClick={() => setMapPeriodFilter('First Half')} className={getFilterButtonClass(mapPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
-                                <button onClick={() => setMapPeriodFilter('Second Half')} className={getFilterButtonClass(mapPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+                        <div className="flex items-start gap-3 justify-end">
+                            <div className="bg-cyan-700 p-3 rounded-lg w-3/4">
+                                <div className="h-4 bg-cyan-600 rounded w-full"></div>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0"></div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0"></div>
+                            <div className="bg-gray-700 p-3 rounded-lg w-1/2">
+                                <div className="h-4 bg-gray-600 rounded w-full animate-pulse"></div>
                             </div>
                         </div>
                     </div>
+                    <div className="mt-6 flex items-center gap-3">
+                        <div className="flex-grow h-12 bg-gray-700 rounded-lg"></div>
+                        <div className="w-24 h-12 bg-gray-700 rounded-lg"></div>
+                    </div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 rounded-lg">
+                    <span className="text-3xl font-bold text-cyan-400 bg-gray-900 px-6 py-3 rounded-lg shadow-xl">
+                        Próximamente
+                    </span>
                 </div>
             </div>
-          )}
-
-          {activeTab === 'statistics' && (
-            <StatisticsView stats={playerStats} playerNames={playerNames} />
           )}
         </main>
       </div>
