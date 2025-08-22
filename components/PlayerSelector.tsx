@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import JerseyIcon from './JerseyIcon';
 
@@ -8,12 +9,13 @@ interface PlayerSelectorProps {
   showAllPlayersOption?: boolean;
   playerNames: Record<string, string>;
   availablePlayers: string[];
+  isTutorialActive?: boolean;
 }
 
 /**
  * A component that displays clickable jersey icons for player selection.
  */
-const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames, availablePlayers }) => {
+const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames, availablePlayers, isTutorialActive = false }) => {
   return (
     <div className="w-full">
       <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
@@ -29,13 +31,14 @@ const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurre
             Todos
           </button>
         )}
-        {availablePlayers.map((num) => (
+        {availablePlayers.map((num, index) => (
           <div key={num} className="flex-shrink-0">
             <JerseyIcon
               number={num}
               name={playerNames[num]}
               isSelected={currentPlayer === num}
               onClick={setCurrentPlayer}
+              isBlinking={isTutorialActive && index === 0 && !currentPlayer}
             />
           </div>
         ))}

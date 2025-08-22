@@ -2,9 +2,9 @@ import React from 'react';
 import { Shot } from '../types';
 
 // Constants for Heatmap
-const HEATMAP_POINT_RADIUS = 40; // px, increased for more intensity
-const HEATMAP_BLUR = 25; // px, increased for more intensity
-const HEATMAP_OPACITY = 0.7; // increased opacity
+const HEATMAP_POINT_RADIUS = 60; // px, increased for more intensity
+const HEATMAP_BLUR = 35; // px, increased for more intensity
+const HEATMAP_OPACITY = 0.8; // increased opacity
 
 /**
  * The Heatmap overlay component.

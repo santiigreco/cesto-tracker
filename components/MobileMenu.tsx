@@ -1,5 +1,6 @@
 
 
+
 import React, { useEffect } from 'react';
 import { AppTab } from '../types';
 import ShareIcon from './ShareIcon';
@@ -50,10 +51,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
     };
   }, [isOpen, onClose]);
 
-  const menuContainerClass = `fixed inset-0 z-40 transform transition-all duration-300 ease-in-out ${
+  const menuContainerClass = `fixed inset-0 z-40 transform transition-all duration-300 ease-out ${
     isOpen ? 'translate-x-0' : '-translate-x-full'
   }`;
-  const backdropClass = `absolute inset-0 bg-black transition-opacity duration-300 ease-in-out ${
+  const backdropClass = `absolute inset-0 bg-black transition-opacity duration-300 ease-out ${
     isOpen ? 'opacity-60' : 'opacity-0'
   }`;
   const menuClass = 'relative z-10 w-64 h-full bg-gray-800 shadow-xl flex flex-col';
@@ -65,7 +66,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
           <h2 id="menu-title" className="text-xl font-bold text-cyan-400">Menú</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-700 transition-colors" aria-label="Cerrar menú">
-            <XIcon className="h-6 w-6" />
+            <XIcon className="h-5 w-5" />
           </button>
         </div>
         <nav className="flex-grow p-2 overflow-y-auto">

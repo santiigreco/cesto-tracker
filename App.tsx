@@ -1,3 +1,5 @@
+
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -24,6 +26,7 @@ import TutorialOverlay from './components/TutorialOverlay';
 import HomePage from './components/HomePage';
 import ZoneChart from './components/ZoneChart';
 import HeatmapOverlay from './components/HeatmapOverlay';
+import Scoreboard from './components/Scoreboard';
 
 
 // TypeScript declaration for html2canvas global variable
@@ -37,7 +40,7 @@ const initialGameState: GameState = {
     hasSeenHomepage: false,
     availablePlayers: [],
     playerNames: {},
-    currentPlayer: '1',
+    currentPlayer: '',
     currentPeriod: 'First Half',
     settings: {
         isManoCalienteEnabled: true,
@@ -68,6 +71,7 @@ function App() {
   const [pendingShotPosition, setPendingShotPosition] = useState<ShotPosition | null>(null);
   const [isClearSheetModalOpen, setIsClearSheetModalOpen] = useState(false);
   const [isNewGameConfirmOpen, setIsNewGameConfirmOpen] = useState(false);
+  const [isReturnHomeConfirmOpen, setIsReturnHomeConfirmOpen] = useState(false);
   const [isReselectConfirmOpen, setIsReselectConfirmOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -130,10 +134,6 @@ function App() {
   const handleStartApp = useCallback(() => {
     setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
   }, []);
-
-  const handleDismissTutorial = useCallback(() => {
-    setGameState(prev => ({ ...prev, tutorialStep: 3 }));
-  }, []);
   
   const handleSetupComplete = useCallback((selectedPlayers: string[], newSettings: Settings) => {
     if (selectedPlayers.length < 6) {
@@ -143,8 +143,12 @@ function App() {
     const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
     
     setGameState(prev => {
-        // If the current player was removed, select the first available one
-        const newCurrentPlayer = sortedPlayers.includes(prev.currentPlayer) ? prev.currentPlayer : sortedPlayers[0];
+        // For the very first time (tutorial step 1), start with no player selected to guide the user.
+        // Otherwise, maintain selection or default to the first player.
+        const isFirstTimeSetup = !prev.isSetupComplete;
+        const newCurrentPlayer = isFirstTimeSetup 
+            ? '' // No player selected initially for the tutorial
+            : (sortedPlayers.includes(prev.currentPlayer) ? prev.currentPlayer : sortedPlayers[0]);
 
         return {
             ...prev,
@@ -160,12 +164,18 @@ function App() {
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
+    // If tutorial is on step 2, tapping the court just completes the tutorial.
+    if (gameState.tutorialStep === 2) {
+        setGameState(prev => ({ ...prev, tutorialStep: 3 }));
+        return;
+    }
+
     if (!gameState.currentPlayer.trim() || gameState.currentPlayer === 'Todos') {
       alert('Por favor, selecciona un jugador antes de marcar un tiro.');
       return;
     }
     setPendingShotPosition(position);
-  }, [gameState.currentPlayer]);
+  }, [gameState.currentPlayer, gameState.tutorialStep]);
 
   const handleOutcomeSelection = useCallback((isGol: boolean) => {
     if (pendingShotPosition) {
@@ -185,7 +195,7 @@ function App() {
       };
       
       setGameState(prev => {
-        // Update streaks and check for notifications
+        // --- Create the new state object ---
         const { playerNumber } = newShot;
         const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
         let newStreak = { ...currentStreak };
@@ -214,11 +224,18 @@ function App() {
             setTimeout(() => setNotificationPopup(triggeredNotification), 200);
         }
 
-        return {
+        const newState = {
             ...prev,
             shots: [...prev.shots, newShot],
             playerStreaks: { ...prev.playerStreaks, [playerNumber]: newStreak }
         };
+
+        // If this is the very first shot being logged, the tutorial is now complete.
+        if (prev.tutorialStep === 2) {
+            newState.tutorialStep = 3;
+        }
+
+        return newState;
       });
       
       setRedoStack([]); // Clear redo stack on new action
@@ -320,6 +337,21 @@ function App() {
   
   const handleCancelReselectPlayers = useCallback(() => setIsReselectConfirmOpen(false), []);
 
+  const handleRequestReturnHome = useCallback(() => {
+    // Always confirm if a game is in progress
+    if (gameState.isSetupComplete) {
+      setIsReturnHomeConfirmOpen(true);
+    }
+  }, [gameState.isSetupComplete]);
+
+  const handleConfirmReturnHome = useCallback(() => {
+      // Reset state completely to show homepage and start fresh
+      setGameState({ ...initialGameState, hasSeenHomepage: false, tutorialStep: 1 });
+      setRedoStack([]);
+      setIsReturnHomeConfirmOpen(false);
+  }, []);
+
+  const handleCancelReturnHome = useCallback(() => setIsReturnHomeConfirmOpen(false), []);
   
   const handleSettingsChange = useCallback((newSettings: Settings) => {
     setGameState(prev => {
@@ -405,6 +437,10 @@ function App() {
     }));
   }, [gameState.shots]);
   
+  const totalPoints = useMemo(() => {
+    return playerStats.reduce((acc, player) => acc + player.totalPoints, 0);
+  }, [playerStats]);
+
   const tabTranslations: {[key in AppTab]: string} = { 
     logger: 'Registro de tiros', 
     courtAnalysis: 'Análisis de Cancha', 
@@ -420,7 +456,7 @@ function App() {
       isActive ? 'bg-cyan-600 text-white shadow' : 'text-gray-300 hover:bg-gray-600/50'
     }`;
 
-  const showTutorial = isSetupComplete && shots.length === 0 && tutorialStep < 3;
+  const showTutorial = isSetupComplete && tutorialStep < 3;
 
   // --- RENDER ---
   if (!hasSeenHomepage) {
@@ -445,7 +481,14 @@ function App() {
                  </button>
             </div>
             <div className="flex-grow text-center"> {/* Center container */}
-                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">Cesto Tracker 🏐</h1>
+                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
+                    <button
+                        onClick={handleRequestReturnHome}
+                        className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
+                        disabled={!isSetupComplete}
+                        title={isSetupComplete ? "Volver a la página de inicio" : ""}
+                    >Cesto Tracker 🏐</button>
+                </h1>
                 <p className="text-lg text-gray-400 mt-2">
                     {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
                     {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
@@ -492,7 +535,7 @@ function App() {
           {activeTab === 'logger' && (
             <>
               {showTutorial && (
-                <TutorialOverlay step={tutorialStep} onClose={handleDismissTutorial} />
+                <TutorialOverlay step={tutorialStep} />
               )}
               
               {/* Player Control Panel */}
@@ -535,12 +578,18 @@ function App() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 text-center mb-3">Haz clic en el nombre para personalizarlo.</p>
-                  <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={handlePlayerChange} playerNames={playerNames} availablePlayers={availablePlayers} />
+                  <PlayerSelector 
+                    currentPlayer={currentPlayer} 
+                    setCurrentPlayer={handlePlayerChange} 
+                    playerNames={playerNames} 
+                    availablePlayers={availablePlayers}
+                    isTutorialActive={showTutorial}
+                  />
                 </div>
               </div>
 
               {/* Court & Action Buttons */}
-              <div className="w-full flex flex-col gap-4">
+              <div className={`w-full flex flex-col gap-4 ${showTutorial && tutorialStep === 2 ? 'relative z-50' : ''}`}>
                 <Court
                   shots={filteredLoggerTabShots}
                   onCourtClick={handleCourtClick}
@@ -578,6 +627,9 @@ function App() {
                     </button>
                 </div>
               </div>
+              
+              {/* Scoreboard */}
+              <Scoreboard totalPoints={totalPoints} />
 
               {/* Period Controls */}
               <div className="w-full bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
@@ -752,6 +804,18 @@ function App() {
             onConfirm={handleConfirmNewGame}
             onClose={handleCancelNewGame}
             confirmButtonColor="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+        />
+      )}
+
+      {isReturnHomeConfirmOpen && (
+        <ConfirmationModal
+          title="Volver a la Página de Inicio"
+          message="¿Estás seguro? Todos los datos del partido actual se perderán y no se podrán recuperar."
+          confirmText="Sí, volver al inicio"
+          cancelText="Cancelar"
+          onConfirm={handleConfirmReturnHome}
+          onClose={handleCancelReturnHome}
+          confirmButtonColor="bg-red-600 hover:bg-red-700 focus:ring-red-500"
         />
       )}
 
