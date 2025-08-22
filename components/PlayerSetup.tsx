@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
 import { Settings } from '../types';
@@ -21,7 +19,9 @@ interface PlayerSetupProps {
 }
 
 const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelectedPlayers = [], initialSettings = defaultSettings }) => {
-  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set(initialSelectedPlayers));
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(
+      new Set(initialSelectedPlayers.length > 0 ? initialSelectedPlayers : allPlayers)
+  );
   const [isNovedadesOpen, setIsNovedadesOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(initialSettings);
 

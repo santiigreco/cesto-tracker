@@ -1,7 +1,9 @@
 
-import React, { useRef, useState } from 'react';
-import { PlayerStats } from '../types';
+
+import React, { useRef, useState, useMemo } from 'react';
+import { PlayerStats, Shot } from '../types';
 import TrophyIcon from './TrophyIcon';
+import DownloadIcon from './DownloadIcon';
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
@@ -52,8 +54,24 @@ const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: nu
   );
 };
 
+// Helper component for a progress bar
+const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
+  <div className="w-full bg-gray-600 rounded-full h-2.5">
+    <div
+      className="bg-cyan-500 h-2.5 rounded-full"
+      style={{ width: `${percentage}%` }}
+    ></div>
+  </div>
+);
 
-const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<string, string>; }> = ({ stats, playerNames }) => {
+
+interface StatisticsViewProps {
+  stats: PlayerStats[];
+  playerNames: Record<string, string>;
+  shots: Shot[];
+}
+
+const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, shots }) => {
   const captureRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
   const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
@@ -64,6 +82,66 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
   const totalPoints = stats.reduce((acc, player) => acc + player.totalPoints, 0);
   const totalMisses = totalShots - totalGoles;
   const teamGolPercentage = totalShots > 0 ? (totalGoles / totalShots) * 100 : 0;
+  
+  // --- Logic from old ShotLog component ---
+  const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerStats; direction: 'ascending' | 'descending' } | null>({ key: 'playerNumber', direction: 'ascending' });
+  
+  const sortedStats = useMemo(() => {
+    let sortableItems = [...stats];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (sortConfig.key === 'playerNumber') {
+          const numA = Number(a.playerNumber);
+          const numB = Number(b.playerNumber);
+          if (numA < numB) return sortConfig.direction === 'ascending' ? -1 : 1;
+          if (numA > numB) return sortConfig.direction === 'ascending' ? 1 : -1;
+          return 0;
+        }
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [stats, sortConfig]);
+
+  const requestSort = (key: keyof PlayerStats) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIndicator = (key: keyof PlayerStats) => {
+    if (!sortConfig || sortConfig.key !== key) return <span className="text-gray-500 opacity-50">↕</span>;
+    return <span className={`text-cyan-400`}>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
+  };
+
+  const handleExportCSV = () => {
+    if (shots.length === 0) {
+      alert("No hay tiros para exportar.");
+      return;
+    }
+    const headers = ['ID Tiro', 'Jugador', 'Nombre Jugador', 'Período', 'Posición X', 'Posición Y', 'Resultado', 'Puntos'];
+    const csvRows = [headers.join(',')];
+    shots.forEach(shot => {
+      const row = [`"${shot.id}"`, shot.playerNumber, playerNames[shot.playerNumber] || '', shot.period === 'First Half' ? 'Primer Tiempo' : 'Segundo Tiempo', shot.position.x.toFixed(2), shot.position.y.toFixed(2), shot.isGol ? 'Gol' : 'Fallo', shot.golValue.toString()];
+      csvRows.push(row.join(','));
+    });
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'cestoball_registro_tiros.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  // --- End of logic from old ShotLog ---
 
   const handleShare = async () => {
     if (!navigator.share) {
@@ -116,7 +194,7 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <>
       <div className="flex justify-between items-center -mb-4">
         <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
         {typeof navigator.share === 'function' && (
@@ -137,12 +215,9 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
         <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
           <div className="flex flex-col md:flex-row items-center justify-around gap-8">
-            {/* Donut Chart on the left */}
             <div className="text-cyan-400">
               <DonutChart percentage={teamGolPercentage} />
             </div>
-
-            {/* Stats details on the right */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-center">
               <div className="p-4 bg-gray-700/50 rounded-lg">
                 <p className="text-3xl font-bold text-white">{totalPoints}</p>
@@ -182,7 +257,51 @@ const StatisticsView: React.FC<{ stats: PlayerStats[]; playerNames: Record<strin
           </div>
         </div>
       </div>
-    </div>
+      
+      {/* Performance Table Section */}
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-3xl font-bold text-cyan-400">Rendimiento por Jugador</h3>
+          {shots.length > 0 && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+              aria-label="Exportar todos los tiros como CSV"
+            >
+              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+              <span className="hidden sm:inline">Exportar Logs</span>
+            </button>
+          )}
+        </div>
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left table-auto">
+            <thead>
+              <tr className="border-b-2 border-gray-600">
+                <th className="p-3 text-sm tracking-wider"><button onClick={() => requestSort('playerNumber')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Jugador {getSortIndicator('playerNumber')}</button></th>
+                <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalPoints')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Puntos {getSortIndicator('totalPoints')}</button></th>
+                <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalShots')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Tiros (G/T) {getSortIndicator('totalShots')}</button></th>
+                <th className="p-3 text-sm tracking-wider w-[30%]"><button onClick={() => requestSort('golPercentage')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">% Goles {getSortIndicator('golPercentage')}</button></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedStats.map(player => (
+                <tr key={player.playerNumber} className="border-b border-gray-700 hover:bg-gray-700/50">
+                  <td className="p-3 font-mono text-cyan-300 font-bold text-lg">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
+                  <td className="p-3 font-mono text-white text-center text-lg">{player.totalPoints}</td>
+                  <td className="p-3 font-mono text-gray-300 text-center">{`${player.totalGoles}/${player.totalShots}`}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-3">
+                      <PercentageBar percentage={player.golPercentage} />
+                      <span className="font-mono text-gray-300 w-12 text-right">{player.golPercentage.toFixed(1)}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 };
 

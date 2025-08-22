@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -22,182 +20,21 @@ import XIcon from './components/XIcon';
 import HamburgerIcon from './components/HamburgerIcon';
 import MobileMenu from './components/MobileMenu';
 import HowToUseView from './components/HowToUseView';
+import TutorialOverlay from './components/TutorialOverlay';
+import HomePage from './components/HomePage';
+import ZoneChart from './components/ZoneChart';
+import HeatmapOverlay from './components/HeatmapOverlay';
 
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
-
-// --- HELPER COMPONENT: ZoneChart ---
-type VisualZone = 'ARO' | 'FONDO' | 'CENTRO' | 'MEDIA_DISTANCIA' | 'TRIPLE' | 'IZQUIERDA' | 'DERECHA';
-
-// Classifier function to bucket shots into one of the 7 granular zones, ensuring no overlaps.
-const getVisualZoneForShot = (shot: Shot): VisualZone => {
-    const { x, y } = shot.position;
-    const basketCenter = { x: 10, y: 11 };
-    // The distortion factor of the court container (aspect-[4/5]) vs the SVG viewbox (20x16)
-    // To calculate distance in a visually circular way, we must scale the y-distance.
-    const aspectRatioDistortion = (16 / 20) / (5 / 4); // (viewbox H/W) / (container H/W)
-    const distToBasket = Math.sqrt(Math.pow(x - basketCenter.x, 2) + Math.pow((y - basketCenter.y) / aspectRatioDistortion, 2));
-    const aroRadius = 2.5;
-
-    // Highest priority: Aro (perfect circle as requested)
-    if (distToBasket <= aroRadius) return 'ARO';
-
-    // Then, check by vertical position (y-axis) to partition the rest of the court
-    if (y < 1) return 'TRIPLE'; // Three-point area
-    if (y < 6) return 'MEDIA_DISTANCIA'; // Full width between 3pt line and free throw line
-    if (y > 11) return 'FONDO'; // Baseline zone
-
-    // Remaining area is y between 6 and 11 (free-throw line up to basket area)
-    // Partition this area horizontally
-    if (x < 7) return 'IZQUIERDA';  // Left side
-    if (x > 13) return 'DERECHA';   // Right side
-    
-    // The central rectangle is the Centro zone
-    return 'CENTRO'; // x is between 7 and 13
-};
-
-
-// Configuration for each zone's name and label position (in SVG coordinates)
-const zonesConfig: Record<VisualZone, { labelPos: { x: number; y: number }; name: string }> = {
-    ARO: { labelPos: { x: 10, y: 5 }, name: "Aro" },
-    FONDO: { labelPos: { x: 3.5, y: 2.5 }, name: "Fondo" },
-    CENTRO: { labelPos: { x: 10, y: 7.5 }, name: "Centro" },
-    MEDIA_DISTANCIA: { labelPos: { x: 10, y: 12.5 }, name: "Media Distancia" },
-    TRIPLE: { labelPos: { x: 10, y: 14.8 }, name: "Triple" },
-    IZQUIERDA: { labelPos: { x: 3.5, y: 7.5 }, name: "Izquierda" },
-    DERECHA: { labelPos: { x: 16.5, y: 7.5 }, name: "Derecha" },
-};
-
-
-const getZoneColor = (goles: number, total: number) => {
-    if (total === 0) return 'rgba(107, 114, 128, 0.2)'; // gray-500 for empty
-    const percentage = (goles / total); // value from 0 to 1
-
-    // Map the percentage (0-1) to a hue value in the HSL color space.
-    // 0 -> Red (Hue: 0)
-    // 0.5 -> Yellow (Hue: 60)
-    // 1 -> Green (Hue: 120)
-    // The mapping is linear: hue = percentage * 120
-    const hue = percentage * 120;
-    const saturation = 90; // Keep it vibrant
-    const lightness = 50;  // Good brightness
-    const alpha = 0.6;     // A good level of transparency
-
-    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
-};
-
-const ZoneChart: React.FC<{ shots: Shot[] }> = ({ shots }) => {
-    const zoneStats = React.useMemo(() => {
-        const stats: Record<VisualZone, { goles: number; total: number }> = {
-            ARO: { goles: 0, total: 0 }, FONDO: { goles: 0, total: 0 }, CENTRO: { goles: 0, total: 0 },
-            MEDIA_DISTANCIA: { goles: 0, total: 0 }, TRIPLE: { goles: 0, total: 0 },
-            IZQUIERDA: { goles: 0, total: 0 }, DERECHA: { goles: 0, total: 0 },
-        };
-        shots.forEach(shot => {
-            const zone = getVisualZoneForShot(shot);
-            stats[zone].total++;
-            if (shot.isGol) stats[zone].goles++;
-        });
-        return stats;
-    }, [shots]);
-    
-    // Note: SVG y-coordinate is inverted from shot data y-coordinate.
-    // Conversion: svg_y = 16 - data_y.
-    const aroMaskId = "aro-mask";
-    
-    // To make a circle appear perfectly round in a distorted container (aspect-[4/5]),
-    // we must render an ellipse that counteracts the distortion.
-    // Distortion = (Container H/W) / (ViewBox H/W) = (5/4) / (16/20) = 1.25 / 0.8 = 1.5625
-    // ry = rx / distortion_factor
-    const rx = 2.5;
-    const ry = 1.6; // 2.5 * ( (4/5) / (20/16) ) = 2.5 * (16/25) = 1.6
-
-
-    return (
-        <div className="absolute inset-0 pointer-events-none">
-            <svg width="100%" height="100%" viewBox="0 0 20 16" preserveAspectRatio="none">
-                <defs>
-                    {/* A mask to cut out the 'Aro' ellipse from other zones */}
-                    <mask id={aroMaskId}>
-                        <rect x="0" y="0" width="20" height="16" fill="white" />
-                        <ellipse cx="10" cy="5" rx={rx} ry={ry} fill="black" />
-                    </mask>
-                </defs>
-                
-                <g stroke="rgba(255, 255, 255, 0.5)" strokeWidth="0.05">
-                    {/* Zones that do NOT need the mask (drawn first) */}
-                    {/* Triple Zone (data_y: 0-1 -> svg_y: 15-16) */}
-                    <rect x="0" y="15" width="20" height="1" fill={getZoneColor(zoneStats.TRIPLE.goles, zoneStats.TRIPLE.total)} />
-                    {/* Media Distancia Zone (data_y: 1-6 -> svg_y: 10-15), full width */}
-                    <rect x="0" y="10" width="20" height="5" fill={getZoneColor(zoneStats.MEDIA_DISTANCIA.goles, zoneStats.MEDIA_DISTANCIA.total)} />
-
-                    {/* Masked Zones (These are all under/around the basket area) */}
-                    <g mask={`url(#${aroMaskId})`}>
-                        {/* Fondo Zone (data_y: 11-16 -> svg_y: 0-5) */}
-                        <rect x="0" y="0" width="20" height="5" fill={getZoneColor(zoneStats.FONDO.goles, zoneStats.FONDO.total)} />
-                        {/* Centro Zone (data_y: 6-11 -> svg_y: 5-10, x: 7-13) */}
-                        <rect x="7" y="5" width="6" height="5" fill={getZoneColor(zoneStats.CENTRO.goles, zoneStats.CENTRO.total)} />
-                        {/* Izquierda Zone (data_y: 6-11 -> svg_y: 5-10, x: 0-7) */}
-                        <rect x="0" y="5" width="7" height="5" fill={getZoneColor(zoneStats.IZQUIERDA.goles, zoneStats.IZQUIERDA.total)} />
-                        {/* Derecha Zone (data_y: 6-11 -> svg_y: 5-10, x: 13-20) */}
-                        <rect x="13" y="5" width="7" height="5" fill={getZoneColor(zoneStats.DERECHA.goles, zoneStats.DERECHA.total)} />
-                    </g>
-
-                    {/* Aro Zone (drawn on top of everything, no mask needed) */}
-                    <ellipse cx="10" cy="5" rx={rx} ry={ry} fill={getZoneColor(zoneStats.ARO.goles, zoneStats.ARO.total)} />
-                </g>
-
-                {/* Text labels (drawn last to be on top) */}
-                {Object.entries(zonesConfig).map(([zoneKey, config]) => {
-                    const zone = zoneKey as VisualZone;
-                    const stats = zoneStats[zone];
-                    const percentage = stats.total > 0 ? (stats.goles / stats.total) * 100 : 0;
-                    const hasShots = stats.total > 0;
-                    const isCompactZone = zone === 'CENTRO' || zone === 'MEDIA_DISTANCIA' || zone === 'FONDO' || zone === 'TRIPLE';
-
-                    return (
-                        <text
-                            key={zone}
-                            x={config.labelPos.x}
-                            y={config.labelPos.y}
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            fill="white"
-                            fontSize={isCompactZone ? "0.7" : "0.8"}
-                            fontWeight="bold"
-                            className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]"
-                        >
-                            <tspan x={config.labelPos.x} dy={hasShots ? "-0.6em" : "0"}>{config.name}</tspan>
-                            {hasShots && (
-                                <>
-                                    <tspan x={config.labelPos.x} dy="1.2em" fontSize={isCompactZone ? "0.9" : "1"} fontWeight="bold" fontFamily="monospace">
-                                        {`${stats.goles}/${stats.total}`}
-                                    </tspan>
-                                    <tspan x={config.labelPos.x} dy="1.1em" fontSize="0.7" fill="rgba(209, 213, 219, 1)">
-                                        {`${percentage.toFixed(0)}%`}
-                                    </tspan>
-                                </>
-                            )}
-                        </text>
-                    );
-                })}
-            </svg>
-        </div>
-    );
-};
-
-
-// Constants for Heatmap
-const HEATMAP_POINT_RADIUS = 40; // px, increased for more intensity
-const HEATMAP_BLUR = 25; // px, increased for more intensity
-const HEATMAP_OPACITY = 0.7; // increased opacity
 
 const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
 const initialGameState: GameState = {
     shots: [],
     isSetupComplete: false,
+    hasSeenHomepage: false,
     availablePlayers: [],
     playerNames: {},
     currentPlayer: '1',
@@ -209,6 +46,7 @@ const initialGameState: GameState = {
         manoFriaThreshold: 5,
     },
     playerStreaks: {},
+    tutorialStep: 1, // 1: Select Player, 2: Tap Court, 3: Done
 };
 
 
@@ -216,35 +54,6 @@ interface NotificationInfo {
     type: 'caliente' | 'fria';
     playerNumber: string;
 }
-
-/**
- * The Heatmap overlay component.
- * It renders a visual representation of shot density.
- */
-const HeatmapOverlay: React.FC<{ shots: Shot[] }> = ({ shots }) => {
-  // Use red tones for all filters for high visibility, as requested.
-  const gradientColor = 'rgba(239, 68, 68, '; // Tailwind's red-500
-
-  return (
-    <div className="absolute inset-0 pointer-events-none">
-      {shots.map(shot => (
-        <div
-          key={shot.id}
-          className="absolute rounded-full"
-          style={{
-            left: `${(shot.position.x / 20) * 100}%`, // COURT_WIDTH is 20
-            top: `${((16 - shot.position.y) / 16) * 100}%`, // HALF_COURT_LENGTH is 16
-            width: `${HEATMAP_POINT_RADIUS * 2}px`,
-            height: `${HEATMAP_POINT_RADIUS * 2}px`,
-            transform: 'translate(-50%, -50%)',
-            background: `radial-gradient(circle, ${gradientColor}${HEATMAP_OPACITY}) 0%, ${gradientColor}0) 70%)`,
-            filter: `blur(${HEATMAP_BLUR}px)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
 
 /**
  * The main application component.
@@ -281,9 +90,24 @@ function App() {
       const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
       if (savedStateJSON) {
         const savedState = JSON.parse(savedStateJSON);
+        
+        // Migration from old hasSeenTutorial to new tutorialStep
+        if (savedState.hasSeenTutorial === true && savedState.tutorialStep === undefined) {
+            savedState.tutorialStep = 3; // 3 means completed
+        } else if (savedState.hasSeenTutorial === false && savedState.tutorialStep === undefined) {
+            savedState.tutorialStep = 1;
+        }
+        delete savedState.hasSeenTutorial;
+
+        // Any saved state implies they have used the app. Don't show homepage.
+        // New users will not have savedStateJSON and will get initial state.
+        if (savedState.hasSeenHomepage === undefined) {
+            savedState.hasSeenHomepage = true;
+        }
+
         // Ensure settings from old saves get new defaults if they are missing
         const combinedSettings = { ...initialGameState.settings, ...savedState.settings };
-        setGameState({ ...savedState, settings: combinedSettings });
+        setGameState({ ...initialGameState, ...savedState, settings: combinedSettings });
       }
     } catch (error) {
       console.error("Failed to load game state from localStorage:", error);
@@ -303,6 +127,14 @@ function App() {
 
 
   // --- HANDLERS ---
+  const handleStartApp = useCallback(() => {
+    setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
+  }, []);
+
+  const handleDismissTutorial = useCallback(() => {
+    setGameState(prev => ({ ...prev, tutorialStep: 3 }));
+  }, []);
+  
   const handleSetupComplete = useCallback((selectedPlayers: string[], newSettings: Settings) => {
     if (selectedPlayers.length < 6) {
         alert('Debes seleccionar al menos 6 jugadores.');
@@ -461,8 +293,11 @@ function App() {
   }, []);
   
   const handleConfirmNewGame = useCallback(() => {
-      localStorage.removeItem(GAME_STATE_STORAGE_KEY);
-      setGameState(initialGameState);
+      setGameState(prev => ({
+          ...initialGameState,
+          hasSeenHomepage: true, // Keep homepage seen
+          tutorialStep: prev.tutorialStep === 3 ? 3 : 1, // Keep tutorial completed if it was
+      }));
       setRedoStack([]);
       setIsNewGameConfirmOpen(false);
   }, []);
@@ -518,6 +353,16 @@ function App() {
     }
   };
 
+  const handlePlayerChange = useCallback((player: string) => {
+    setGameState(prev => {
+        const newState = {...prev, currentPlayer: player };
+        if (prev.tutorialStep === 1) {
+            newState.tutorialStep = 2;
+        }
+        return newState;
+    })
+  }, []);
+
   // --- MEMOIZED DERIVED STATE ---
   const filteredLoggerTabShots = useMemo(() => {
     return gameState.shots.filter(shot => shot.period === gameState.currentPeriod);
@@ -568,14 +413,20 @@ function App() {
     aiAnalysis: 'Análisis con IA'
   };
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
-  const { shots, isSetupComplete, availablePlayers, playerNames, currentPlayer, currentPeriod, settings } = gameState;
+  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep } = gameState;
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
       isActive ? 'bg-cyan-600 text-white shadow' : 'text-gray-300 hover:bg-gray-600/50'
     }`;
 
+  const showTutorial = isSetupComplete && shots.length === 0 && tutorialStep < 3;
+
   // --- RENDER ---
+  if (!hasSeenHomepage) {
+    return <HomePage onStart={handleStartApp} />;
+  }
+
   if (!isSetupComplete) {
     return <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
@@ -640,8 +491,12 @@ function App() {
         <main className="flex flex-col gap-6">
           {activeTab === 'logger' && (
             <>
+              {showTutorial && (
+                <TutorialOverlay step={tutorialStep} onClose={handleDismissTutorial} />
+              )}
+              
               {/* Player Control Panel */}
-              <div className="w-full bg-gray-800 p-4 rounded-lg shadow-lg">
+              <div className={`w-full bg-gray-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
                 <div className="flex flex-col items-center">
                   <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
                     {isEditingName ? (
@@ -680,7 +535,7 @@ function App() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 text-center mb-3">Haz clic en el nombre para personalizarlo.</p>
-                  <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={(p) => setGameState(prev => ({...prev, currentPlayer: p}))} playerNames={playerNames} availablePlayers={availablePlayers} />
+                  <PlayerSelector currentPlayer={currentPlayer} setCurrentPlayer={handlePlayerChange} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
               </div>
 
@@ -740,11 +595,9 @@ function App() {
                     ))}
                   </select>
               </div>
-              
-              {/* Player Performance */}
-              <div className="w-full">
-                <ShotLog shots={shots} stats={playerStats} playerNames={playerNames}/>
-              </div>
+
+              {/* Chronological Shot Log */}
+              <ShotLog shots={shots} playerNames={playerNames} />
             </>
           )}
           
@@ -799,7 +652,9 @@ function App() {
           )}
 
           {activeTab === 'statistics' && (
-            <StatisticsView stats={playerStats} playerNames={playerNames} />
+            <div className="flex flex-col gap-8">
+              <StatisticsView stats={playerStats} playerNames={playerNames} shots={shots} />
+            </div>
           )}
 
           {activeTab === 'howToUse' && (

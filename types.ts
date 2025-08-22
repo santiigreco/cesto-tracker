@@ -42,10 +42,12 @@ export interface PlayerStreak {
 export interface GameState {
     shots: Shot[];
     isSetupComplete: boolean;
+    hasSeenHomepage: boolean;
     availablePlayers: string[];
     playerNames: Record<string, string>;
     currentPlayer: string;
     currentPeriod: GamePeriod;
     settings: Settings;
     playerStreaks: Record<string, PlayerStreak>;
+    tutorialStep: number; // 1: Select Player, 2: Tap Court, 3: Done
 }
