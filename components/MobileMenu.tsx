@@ -5,6 +5,11 @@ import { AppTab } from '../types';
 import ShareIcon from './ShareIcon';
 import XIcon from './XIcon';
 import WhatsappIcon from './WhatsappIcon';
+import ClipboardIcon from './ClipboardIcon';
+import ChartPieIcon from './ChartPieIcon';
+import ChartBarIcon from './ChartBarIcon';
+import SparklesIcon from './SparklesIcon';
+import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -16,7 +21,14 @@ interface MobileMenuProps {
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations }) => {
-  const tabs: AppTab[] = ['logger', 'courtAnalysis', 'statistics', 'howToUse', 'aiAnalysis'];
+  const mainTabs: AppTab[] = ['logger', 'courtAnalysis', 'statistics', 'aiAnalysis'];
+  const tabIcons: Record<AppTab, React.FC<{ className?: string }>> = {
+    logger: ClipboardIcon,
+    courtAnalysis: ChartPieIcon,
+    statistics: ChartBarIcon,
+    aiAnalysis: SparklesIcon,
+    howToUse: QuestionMarkCircleIcon,
+  };
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -57,24 +69,42 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
           </button>
         </div>
         <nav className="flex-grow p-2 overflow-y-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => onSelectTab(tab)}
-              className={`w-full flex items-center justify-between text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
-                activeTab === tab
-                  ? 'bg-cyan-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-              }`}
-            >
-              <span>{tabTranslations[tab]}</span>
-              {tab === 'aiAnalysis' && (
+          {mainTabs.map((tab) => {
+            const Icon = tabIcons[tab];
+            return (
+              <button
+                key={tab}
+                onClick={() => onSelectTab(tab)}
+                className={`w-full flex items-center text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
+                  activeTab === tab
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                <Icon className="h-6 w-6 mr-4" />
+                <span className="flex-grow">{tabTranslations[tab]}</span>
+                {tab === 'aiAnalysis' && (
                   <span className="bg-white text-cyan-600 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                      Nuevo
+                    Nuevo
                   </span>
-              )}
-            </button>
-          ))}
+                )}
+              </button>
+            );
+          })}
+          
+          <div className="my-2 border-t border-gray-700 mx-2"></div>
+
+          <button
+            onClick={() => onSelectTab('howToUse')}
+            className={`w-full flex items-center text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
+              activeTab === 'howToUse'
+                ? 'bg-cyan-600 text-white'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            <QuestionMarkCircleIcon className="h-6 w-6 mr-4" />
+            <span>{tabTranslations['howToUse']}</span>
+          </button>
         </nav>
         <div className="p-4 border-t border-gray-700 space-y-2">
           <button

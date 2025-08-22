@@ -2,16 +2,15 @@
 
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
-import WhatsappIcon from './WhatsappIcon';
 import { Settings } from '../types';
 import ToggleSwitch from './ToggleSwitch';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 const defaultSettings: Settings = {
-    isManoCalienteEnabled: false,
+    isManoCalienteEnabled: true,
     manoCalienteThreshold: 5,
-    isManoFriaEnabled: false,
+    isManoFriaEnabled: true,
     manoFriaThreshold: 5,
 };
 
@@ -63,7 +62,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
       <div className="w-full max-w-2xl bg-gray-800 p-8 rounded-xl shadow-2xl text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-4">
+        <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-4 whitespace-nowrap">
           Cesto Tracker 🏐
         </h1>
         <p className="text-lg text-gray-400 mb-8">La app definitiva para seguimiento y estadísticas de Cestoball.</p>
@@ -92,7 +91,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
           </button>
         </div>
         
-        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center mb-8">
+        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center mb-2">
           {allPlayers.map(num => {
             const isSelected = selectedPlayers.has(num);
             return (
@@ -105,10 +104,13 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
             );
           })}
         </div>
+        <p className={`text-sm text-gray-500 mb-8 transition-opacity duration-300 ${selectedPlayers.size < 6 ? 'opacity-100' : 'opacity-0'}`}>
+          Selecciona al menos 6 jugadores para comenzar.
+        </p>
         
         <button
           onClick={handleStart}
-          disabled={selectedPlayers.size === 0}
+          disabled={selectedPlayers.size < 6}
           className="w-full max-w-sm bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none"
         >
           {initialSelectedPlayers.length > 0 ? 'Continuar Partido' : 'Comenzar Partido'}

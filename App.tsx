@@ -203,9 +203,9 @@ const initialGameState: GameState = {
     currentPlayer: '1',
     currentPeriod: 'First Half',
     settings: {
-        isManoCalienteEnabled: false,
+        isManoCalienteEnabled: true,
         manoCalienteThreshold: 5,
-        isManoFriaEnabled: false,
+        isManoFriaEnabled: true,
         manoFriaThreshold: 5,
     },
     playerStreaks: {},
@@ -281,7 +281,9 @@ function App() {
       const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
       if (savedStateJSON) {
         const savedState = JSON.parse(savedStateJSON);
-        setGameState(savedState);
+        // Ensure settings from old saves get new defaults if they are missing
+        const combinedSettings = { ...initialGameState.settings, ...savedState.settings };
+        setGameState({ ...savedState, settings: combinedSettings });
       }
     } catch (error) {
       console.error("Failed to load game state from localStorage:", error);
@@ -302,8 +304,8 @@ function App() {
 
   // --- HANDLERS ---
   const handleSetupComplete = useCallback((selectedPlayers: string[], newSettings: Settings) => {
-    if (selectedPlayers.length === 0) {
-        alert('Debes seleccionar al menos un jugador.');
+    if (selectedPlayers.length < 6) {
+        alert('Debes seleccionar al menos 6 jugadores.');
         return;
     }
     const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
@@ -592,7 +594,7 @@ function App() {
                  </button>
             </div>
             <div className="flex-grow text-center"> {/* Center container */}
-                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker 🏐</h1>
+                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">Cesto Tracker 🏐</h1>
                 <p className="text-lg text-gray-400 mt-2">
                     {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
                     {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
@@ -615,7 +617,7 @@ function App() {
 
         {/* Tab Switcher - Desktop */}
         <div className="hidden md:flex justify-center mb-8 border-b-2 border-gray-700">
-          {(['logger', 'courtAnalysis', 'statistics', 'howToUse', 'aiAnalysis'] as AppTab[]).map(tab => (
+          {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis', 'howToUse'] as AppTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
