@@ -202,18 +202,6 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
        <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
         Santiago Greco - Gresolutions © 2025
       </footer>
-
-      <a
-        href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Estuve%20probando%20la%20app%20Cesto%20Tracker%20y...."
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-400 flex items-center gap-2"
-        aria-label="Enviar feedback por WhatsApp"
-        title="Enviar feedback por WhatsApp"
-      >
-        <WhatsappIcon className="h-6 w-6" />
-        <span className="text-sm">Feedback</span>
-      </a>
     </div>
   );
 };

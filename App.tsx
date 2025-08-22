@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -18,17 +19,13 @@ import RedoIcon from './components/RedoIcon';
 import TrashIcon from './components/TrashIcon';
 import CheckIcon from './components/CheckIcon';
 import XIcon from './components/XIcon';
+import HamburgerIcon from './components/HamburgerIcon';
+import MobileMenu from './components/MobileMenu';
+import HowToUseView from './components/HowToUseView';
 
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
-
-// --- HELPER COMPONENT: ShareIcon ---
-const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
-        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-    </svg>
-);
 
 // --- HELPER COMPONENT: ZoneChart ---
 type VisualZone = 'ARO' | 'FONDO' | 'CENTRO' | 'MEDIA_DISTANCIA' | 'TRIPLE' | 'IZQUIERDA' | 'DERECHA';
@@ -75,10 +72,19 @@ const zonesConfig: Record<VisualZone, { labelPos: { x: number; y: number }; name
 
 const getZoneColor = (goles: number, total: number) => {
     if (total === 0) return 'rgba(107, 114, 128, 0.2)'; // gray-500 for empty
-    const percentage = (goles / total) * 100;
-    if (percentage < 33.3) return 'rgba(59, 130, 246, 0.5)'; // blue-500 for cold
-    if (percentage < 66.6) return 'rgba(234, 179, 8, 0.5)';  // yellow-500 for average
-    return 'rgba(239, 68, 68, 0.5)'; // red-500 for hot
+    const percentage = (goles / total); // value from 0 to 1
+
+    // Map the percentage (0-1) to a hue value in the HSL color space.
+    // 0 -> Red (Hue: 0)
+    // 0.5 -> Yellow (Hue: 60)
+    // 1 -> Green (Hue: 120)
+    // The mapping is linear: hue = percentage * 120
+    const hue = percentage * 120;
+    const saturation = 90; // Keep it vibrant
+    const lightness = 50;  // Good brightness
+    const alpha = 0.6;     // A good level of transparency
+
+    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
 };
 
 const ZoneChart: React.FC<{ shots: Shot[] }> = ({ shots }) => {
@@ -259,6 +265,7 @@ function App() {
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempPlayerName, setTempPlayerName] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Analysis Tab State
   const [mapView, setMapView] = useState<'shotmap' | 'heatmap' | 'zonemap'>('heatmap');
@@ -551,7 +558,13 @@ function App() {
     }));
   }, [gameState.shots]);
   
-  const tabTranslations: {[key in AppTab]: string} = { logger: 'Registro', courtAnalysis: 'Análisis de Cancha', statistics: 'Estadísticas', aiAnalysis: 'Análisis con IA' };
+  const tabTranslations: {[key in AppTab]: string} = { 
+    logger: 'Registro de tiros', 
+    courtAnalysis: 'Análisis de Cancha', 
+    statistics: 'Estadísticas', 
+    howToUse: 'Cómo usar',
+    aiAnalysis: 'Análisis con IA'
+  };
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
   const { shots, isSetupComplete, availablePlayers, playerNames, currentPlayer, currentPeriod, settings } = gameState;
 
@@ -572,47 +585,52 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans">
       <div className="w-full max-w-4xl flex-grow">
-        <header className="relative text-center mb-6">
-          <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker 🏐</h1>
-          <p className="text-lg text-gray-400 mt-2">
-            {activeTab === 'logger' && 'Registra tiros o cambia de pestaña para analizar.'}
-            {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
-            {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
-            {activeTab === 'aiAnalysis' && 'Próximamente: Análisis avanzado con IA.'}
-          </p>
-          <div className="absolute top-0 right-0 flex items-center">
-            <button
-                onClick={handleShare}
-                className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
-                aria-label="Compartir aplicación"
-                title="Compartir aplicación"
-            >
-                <ShareIcon className="h-7 w-7" />
-            </button>
-            <button
-                onClick={() => setIsSettingsModalOpen(true)}
-                className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
-                aria-label="Abrir configuración"
-                title="Abrir configuración"
-            >
-                <GearIcon className="h-7 w-7" />
-            </button>
-          </div>
+        <header className="relative flex items-center mb-6">
+            <div className="flex-none w-12 md:w-0"> {/* Left side container */}
+                 <button className="p-2 -ml-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
+                    <HamburgerIcon />
+                 </button>
+            </div>
+            <div className="flex-grow text-center"> {/* Center container */}
+                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight">Cesto Tracker 🏐</h1>
+                <p className="text-lg text-gray-400 mt-2">
+                    {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
+                    {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
+                    {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
+                    {activeTab === 'howToUse' && 'Aprende a usar la aplicación paso a paso.'}
+                    {activeTab === 'aiAnalysis' && 'Próximamente: Análisis avanzado con IA.'}
+                </p>
+            </div>
+            <div className="flex-none w-12 flex justify-end"> {/* Right side container */}
+                 <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                    aria-label="Abrir configuración"
+                    title="Abrir configuración"
+                >
+                    <GearIcon className="h-7 w-7" />
+                </button>
+            </div>
         </header>
 
-        {/* Tab Switcher */}
-        <div className="flex justify-center mb-8 border-b-2 border-gray-700">
-          {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis'] as AppTab[]).map(tab => (
+        {/* Tab Switcher - Desktop */}
+        <div className="hidden md:flex justify-center mb-8 border-b-2 border-gray-700">
+          {(['logger', 'courtAnalysis', 'statistics', 'howToUse', 'aiAnalysis'] as AppTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
+              className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
                 activeTab === tab
                   ? 'border-b-4 border-cyan-500 text-cyan-400'
                   : 'text-gray-500 hover:text-cyan-400'
               }`}
             >
               {tabTranslations[tab]}
+               {tab === 'aiAnalysis' && (
+                <span className="ml-2 bg-cyan-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                  Nuevo
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -782,6 +800,10 @@ function App() {
             <StatisticsView stats={playerStats} playerNames={playerNames} />
           )}
 
+          {activeTab === 'howToUse' && (
+            <HowToUseView />
+          )}
+
           {activeTab === 'aiAnalysis' && (
             <div className="relative bg-gray-800 p-8 rounded-lg shadow-lg">
                 <div className="blur-sm pointer-events-none select-none">
@@ -825,6 +847,18 @@ function App() {
       <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
         Santiago Greco - Gresolutions © 2025
       </footer>
+      
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+            setActiveTab(tab);
+            setIsMobileMenuOpen(false);
+        }}
+        onShare={handleShare}
+        tabTranslations={tabTranslations}
+      />
       
       {isSettingsModalOpen && (
         <SettingsModal 
@@ -886,17 +920,6 @@ function App() {
         />
       )}
 
-      <a
-        href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Estuve%20probando%20la%20app%20Cesto%20Tracker%20y...."
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-400 flex items-center gap-2"
-        aria-label="Enviar feedback por WhatsApp"
-        title="Enviar feedback por WhatsApp"
-      >
-        <WhatsappIcon className="h-6 w-6" />
-        <span className="text-sm">Feedback</span>
-      </a>
     </div>
   );
 }
