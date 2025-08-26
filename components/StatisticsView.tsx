@@ -1,19 +1,14 @@
 
 
+
 import React, { useRef, useState, useMemo } from 'react';
 import { PlayerStats, Shot } from '../types';
 import TrophyIcon from './TrophyIcon';
 import DownloadIcon from './DownloadIcon';
+import ShareIcon from './ShareIcon';
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
-
-const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} viewBox="0 0 20 20" fill="currentColor">
-        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-    </svg>
-);
-
 
 const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: number; }> = ({ percentage, size = 120, strokeWidth = 15 }) => {
   const radius = (size - strokeWidth) / 2;
@@ -71,7 +66,7 @@ interface StatisticsViewProps {
   shots: Shot[];
 }
 
-const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, shots }) => {
+const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playerNames, shots }) => {
   const captureRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
   const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
@@ -303,6 +298,6 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
       </div>
     </>
   );
-};
+});
 
 export default StatisticsView;

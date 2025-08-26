@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Shot } from '../types';
 
@@ -10,7 +11,7 @@ const HEATMAP_OPACITY = 0.8; // increased opacity
  * The Heatmap overlay component.
  * It renders a visual representation of shot density.
  */
-const HeatmapOverlay: React.FC<{ shots: Shot[] }> = ({ shots }) => {
+const HeatmapOverlay: React.FC<{ shots: Shot[] }> = React.memo(({ shots }) => {
   // Use red tones for all filters for high visibility, as requested.
   const gradientColor = 'rgba(239, 68, 68, '; // Tailwind's red-500
 
@@ -33,6 +34,6 @@ const HeatmapOverlay: React.FC<{ shots: Shot[] }> = ({ shots }) => {
       ))}
     </div>
   );
-};
+});
 
 export default HeatmapOverlay;

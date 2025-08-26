@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 
 interface NotificationPopupProps {
@@ -10,7 +11,7 @@ interface NotificationPopupProps {
   onClose: () => void;
 }
 
-const NotificationPopup: React.FC<NotificationPopupProps> = ({ type, playerNumber, playerName, threshold, onClose }) => {
+const NotificationPopup: React.FC<NotificationPopupProps> = React.memo(({ type, playerNumber, playerName, threshold, onClose }) => {
   const isCaliente = type === 'caliente';
   
   const content = {
@@ -49,6 +50,6 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ type, playerNumbe
       </div>
     </div>
   );
-};
+});
 
 export default NotificationPopup;

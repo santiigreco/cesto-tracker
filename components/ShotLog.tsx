@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { Shot } from '../types';
 
@@ -11,7 +12,7 @@ interface ShotLogProps {
 /**
  * Displays a chronological log of all shots registered during the game.
  */
-const ShotLog: React.FC<ShotLogProps> = ({ shots, playerNames }) => {
+const ShotLog: React.FC<ShotLogProps> = React.memo(({ shots, playerNames }) => {
   return (
     <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
       <h3 className="text-3xl font-bold text-cyan-400 mb-4">Registro de Tiros</h3>
@@ -38,6 +39,6 @@ const ShotLog: React.FC<ShotLogProps> = ({ shots, playerNames }) => {
       )}
     </div>
   );
-};
+});
 
 export default ShotLog;

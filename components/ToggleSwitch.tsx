@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 
 interface ToggleSwitchProps {
@@ -7,7 +8,7 @@ interface ToggleSwitchProps {
   onToggle: () => void;
 }
 
-const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ isEnabled, onToggle }) => {
+const ToggleSwitch: React.FC<ToggleSwitchProps> = React.memo(({ isEnabled, onToggle }) => {
   return (
     <button
       onClick={onToggle}
@@ -24,6 +25,6 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ isEnabled, onToggle }) => {
       />
     </button>
   );
-};
+});
 
 export default ToggleSwitch;

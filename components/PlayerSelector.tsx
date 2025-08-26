@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import JerseyIcon from './JerseyIcon';
 
@@ -15,7 +16,7 @@ interface PlayerSelectorProps {
 /**
  * A component that displays clickable jersey icons for player selection.
  */
-const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames, availablePlayers, isTutorialActive = false }) => {
+const PlayerSelector: React.FC<PlayerSelectorProps> = React.memo(({ currentPlayer, setCurrentPlayer, showAllPlayersOption = false, playerNames, availablePlayers, isTutorialActive = false }) => {
   return (
     <div className="w-full">
       <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
@@ -45,6 +46,6 @@ const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurre
       </div>
     </div>
   );
-};
+});
 
 export default PlayerSelector;

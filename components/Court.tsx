@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef } from 'react';
 import { Shot, ShotPosition } from '../types';
 
@@ -25,7 +26,7 @@ const PENALTY_LINE_LENGTH = 1.5; // Made longer for visibility
 
 const parquetBgUrl = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='20' viewBox='0 0 80 20'%3e%3crect width='80' height='20' fill='%23f0e0c0'/%3e%3cpath d='M10 0v20 M30 0v20 M50 0v20 M70 0v20' stroke='%23d9c0a0' stroke-width='0.5'/%3e%3c/svg%3e";
 
-const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = true, children, currentPlayer }) => {
+const Court: React.FC<CourtProps> = React.memo(({ shots, onCourtClick, showShotMarkers = true, children, currentPlayer }) => {
   const [pressPosition, setPressPosition] = useState<ShotPosition | null>(null);
   const pointerStartRef = useRef<{ x: number, y: number } | null>(null);
   const isDraggingRef = useRef(false);
@@ -187,6 +188,6 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
       </div>
     </div>
   );
-};
+});
 
 export default Court;

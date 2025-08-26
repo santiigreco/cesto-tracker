@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useEffect } from 'react';
 import { AppTab } from '../types';
 import ShareIcon from './ShareIcon';
@@ -21,7 +22,7 @@ interface MobileMenuProps {
   tabTranslations: { [key in AppTab]: string };
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations }) => {
+const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations }) => {
   const mainTabs: AppTab[] = ['logger', 'courtAnalysis', 'statistics', 'aiAnalysis'];
   const tabIcons: Record<AppTab, React.FC<{ className?: string }>> = {
     logger: ClipboardIcon,
@@ -128,6 +129,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
       </div>
     </div>
   );
-};
+});
 
 export default MobileMenu;

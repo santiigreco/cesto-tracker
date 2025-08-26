@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 
 interface ConfirmationModalProps {
@@ -12,7 +13,7 @@ interface ConfirmationModalProps {
   confirmButtonColor?: string;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
+const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({ 
   title, 
   message, 
   confirmText, 
@@ -48,6 +49,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default ConfirmationModal;

@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
@@ -12,7 +13,7 @@ interface SettingsModalProps {
   onRequestReselectPlayers: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers }) => {
     
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
@@ -136,6 +137,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
             </div>
         </div>
     );
-};
+});
 
 export default SettingsModal;

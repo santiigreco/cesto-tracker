@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 
 /**
@@ -11,7 +12,7 @@ const JerseyIcon: React.FC<{
   isSelected: boolean;
   onClick: (number: string) => void;
   isBlinking?: boolean;
-}> = ({ number, name, isSelected, onClick, isBlinking = false }) => {
+}> = React.memo(({ number, name, isSelected, onClick, isBlinking = false }) => {
   const jerseyColor = isSelected ? 'fill-cyan-500' : 'fill-slate-700';
   const textColor = isSelected ? 'fill-white' : 'fill-slate-200';
   const strokeColor = isSelected ? 'stroke-cyan-300' : 'stroke-slate-600';
@@ -87,6 +88,6 @@ const JerseyIcon: React.FC<{
       </button>
     </>
   );
-};
+});
 
 export default JerseyIcon;

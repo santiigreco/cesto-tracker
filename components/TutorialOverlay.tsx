@@ -1,12 +1,13 @@
 
 
+
 import React from 'react';
 
 interface TutorialOverlayProps {
     step: number;
 }
 
-const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step }) => {
+const TutorialOverlay: React.FC<TutorialOverlayProps> = React.memo(({ step }) => {
     const backdropStyle = "fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300";
 
     if (step === 1) {
@@ -42,6 +43,6 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step }) => {
     }
 
     return null;
-};
+});
 
 export default TutorialOverlay;

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -9,11 +10,9 @@ import OutcomeModal from './components/OutcomeModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import StatisticsView from './components/StatisticsView';
 import PlayerSetup from './components/PlayerSetup';
-import WhatsappIcon from './components/WhatsappIcon';
 import SettingsModal from './components/SettingsModal';
 import GearIcon from './components/GearIcon';
 import NotificationPopup from './components/NotificationPopup';
-import DownloadIcon from './components/DownloadIcon';
 import UndoIcon from './components/UndoIcon';
 import RedoIcon from './components/RedoIcon';
 import TrashIcon from './components/TrashIcon';

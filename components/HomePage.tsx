@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { Shot } from '../types';
 import Court from './Court';
@@ -130,7 +131,7 @@ const LoggingExample = () => (
     </PhoneMockup>
 );
 
-const HomePage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
+const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => {
     return (
         <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden">
              <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-700/[0.05]"></div>
@@ -143,7 +144,7 @@ const HomePage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                 <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 text-transparent bg-clip-text">
                     Cesto Tracker
                 </span>{' '}
-                🏐
+                🏐{'\uFE0F'}
                 </h1>
                     <p className="text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
                         La herramienta definitiva para registrar, analizar y mejorar el rendimiento en Cestoball.
@@ -209,6 +210,6 @@ const HomePage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             </footer>
         </div>
     );
-};
+});
 
 export default HomePage;

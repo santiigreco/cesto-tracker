@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 
 interface OutcomeModalProps {
@@ -11,7 +12,7 @@ interface OutcomeModalProps {
  * A modal that appears after a shot location is selected,
  * asking the user to confirm the outcome.
  */
-const OutcomeModal: React.FC<OutcomeModalProps> = ({ onOutcomeSelect, onClose }) => {
+const OutcomeModal: React.FC<OutcomeModalProps> = React.memo(({ onOutcomeSelect, onClose }) => {
   const [isClickable, setIsClickable] = useState(false);
 
   useEffect(() => {
@@ -57,6 +58,6 @@ const OutcomeModal: React.FC<OutcomeModalProps> = ({ onOutcomeSelect, onClose })
       </div>
     </div>
   );
-};
+});
 
 export default OutcomeModal;

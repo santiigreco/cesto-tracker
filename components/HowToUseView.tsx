@@ -1,11 +1,20 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import Court from './Court';
 import TapIcon from './TapIcon';
 import { Shot, ShotPosition } from '../types';
 
-const HowToUseView: React.FC = () => {
+const demoText = [
+    "1. Toca en cualquier lugar de la cancha para marcar la posición del tiro.",
+    "2. El círculo azul confirma la posición y el jugador seleccionado.",
+    "3. Selecciona 'Gol' en el menú que aparece para registrar un acierto.",
+    "4. Para registrar un fallo, simplemente toca otra posición y...",
+    "5. ...selecciona 'Fallo'. ¡Así de fácil!",
+];
+
+const HowToUseView: React.FC = React.memo(() => {
     const [demoStep, setDemoStep] = useState(0);
     const demoPositions: ShotPosition[] = [
         { x: 12, y: 7 }, // Media distancia
@@ -67,14 +76,6 @@ const HowToUseView: React.FC = () => {
 
         return () => clearTimeout(timeoutId);
     }, []);
-
-    const demoText = [
-        "1. Toca en cualquier lugar de la cancha para marcar la posición del tiro.",
-        "2. El círculo azul confirma la posición y el jugador seleccionado.",
-        "3. Selecciona 'Gol' en el menú que aparece para registrar un acierto.",
-        "4. Para registrar un fallo, simplemente toca otra posición y...",
-        "5. ...selecciona 'Fallo'. ¡Así de fácil!",
-    ];
 
     return (
         <div className="bg-slate-800 p-4 sm:p-8 rounded-lg shadow-lg text-slate-300 space-y-8">
@@ -151,6 +152,6 @@ const HowToUseView: React.FC = () => {
             </div>
         </div>
     );
-};
+});
 
 export default HowToUseView;

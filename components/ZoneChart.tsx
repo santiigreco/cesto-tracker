@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Shot } from '../types';
 
@@ -61,7 +62,7 @@ const getZoneColor = (goles: number, total: number) => {
     return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
 };
 
-const ZoneChart: React.FC<{ shots: Shot[] }> = ({ shots }) => {
+const ZoneChart: React.FC<{ shots: Shot[] }> = React.memo(({ shots }) => {
     const zoneStats = useMemo(() => {
         const stats: Record<VisualZone, { goles: number; total: number }> = {
             ARO: { goles: 0, total: 0 }, FONDO: { goles: 0, total: 0 }, CENTRO: { goles: 0, total: 0 },
@@ -159,6 +160,6 @@ const ZoneChart: React.FC<{ shots: Shot[] }> = ({ shots }) => {
             </svg>
         </div>
     );
-};
+});
 
 export default ZoneChart;
