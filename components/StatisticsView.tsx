@@ -48,7 +48,7 @@ const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: nu
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-white">{percentage.toFixed(1)}%</span>
-        <span className="text-xs text-gray-400">Goles</span>
+        <span className="text-xs text-slate-400">Goles</span>
       </div>
     </div>
   );
@@ -56,7 +56,7 @@ const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: nu
 
 // Helper component for a progress bar
 const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
-  <div className="w-full bg-gray-600 rounded-full h-2.5">
+  <div className="w-full bg-slate-600 rounded-full h-2.5">
     <div
       className="bg-cyan-500 h-2.5 rounded-full"
       style={{ width: `${percentage}%` }}
@@ -114,7 +114,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
   };
   
   const getSortIndicator = (key: keyof PlayerStats) => {
-    if (!sortConfig || sortConfig.key !== key) return <span className="text-gray-500 opacity-50">↕</span>;
+    if (!sortConfig || sortConfig.key !== key) return <span className="text-slate-500 opacity-50">↕</span>;
     return <span className={`text-cyan-400`}>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
   };
 
@@ -152,7 +152,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
       setIsSharing(true);
       try {
         const canvas = await html2canvas(captureRef.current, {
-          backgroundColor: '#111827', // Tailwind's bg-gray-900
+          backgroundColor: '#0f172a', // Tailwind's bg-slate-900
           useCORS: true,
           scale: 2,
         });
@@ -186,9 +186,9 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
 
   if (stats.length === 0) {
     return (
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg text-center">
+      <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
         <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
-        <p className="text-gray-400">Registra algunos tiros para ver las estadísticas de los jugadores aquí.</p>
+        <p className="text-slate-400">Registra algunos tiros para ver las estadísticas de los jugadores aquí.</p>
       </div>
     );
   }
@@ -201,7 +201,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
           <button
             onClick={handleShare}
             disabled={isSharing}
-            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             aria-label="Compartir estadísticas"
           >
             <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
@@ -210,62 +210,62 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
         )}
       </div>
       
-      <div ref={captureRef} className="pt-4 flex flex-col gap-8 bg-gray-900">
+      <div ref={captureRef} className="pt-4 flex flex-col gap-8 bg-slate-900">
         {/* Team Statistics Section */}
-        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
           <div className="flex flex-col md:flex-row items-center justify-around gap-8">
             <div className="text-cyan-400">
               <DonutChart percentage={teamGolPercentage} />
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-center">
-              <div className="p-4 bg-gray-700/50 rounded-lg">
+              <div className="p-4 bg-slate-700/50 rounded-lg">
                 <p className="text-3xl font-bold text-white">{totalPoints}</p>
-                <p className="text-sm text-gray-400">Puntos Totales</p>
+                <p className="text-sm text-slate-400">Puntos Totales</p>
               </div>
-              <div className="p-4 bg-gray-700/50 rounded-lg">
+              <div className="p-4 bg-slate-700/50 rounded-lg">
                 <p className="text-3xl font-bold text-white">{totalShots}</p>
-                <p className="text-sm text-gray-400">Tiros Totales</p>
+                <p className="text-sm text-slate-400">Tiros Totales</p>
               </div>
-              <div className="p-4 bg-gray-700/50 rounded-lg">
+              <div className="p-4 bg-slate-700/50 rounded-lg">
                 <p className="text-3xl font-bold text-green-400">{totalGoles}</p>
-                <p className="text-sm text-gray-400">Goles</p>
+                <p className="text-sm text-slate-400">Goles</p>
               </div>
-              <div className="p-4 bg-gray-700/50 rounded-lg">
+              <div className="p-4 bg-slate-700/50 rounded-lg">
                 <p className="text-3xl font-bold text-red-400">{totalMisses}</p>
-                <p className="text-sm text-gray-400">Fallos</p>
+                <p className="text-sm text-slate-400">Fallos</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Top Scorers Section */}
-        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {topScorers.map((player, index) => (
-              <div key={player.playerNumber} className="bg-gray-700/50 p-6 rounded-xl flex flex-col items-center gap-2 border border-gray-600">
+              <div key={player.playerNumber} className="bg-slate-700/50 p-6 rounded-xl flex flex-col items-center gap-2 border border-slate-600">
                 <div className="flex items-center gap-3">
                   <TrophyIcon rank={index + 1} />
                   <p className="text-2xl font-bold text-white">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</p>
                 </div>
                 <p className="text-5xl font-extrabold text-cyan-400">{player.totalPoints}</p>
-                <p className="text-gray-400">Puntos Totales</p>
+                <p className="text-slate-400">Puntos Totales</p>
               </div>
             ))}
-            {topScorers.length === 0 && <p className="text-gray-400 text-center col-span-3">Aún no se han anotado puntos.</p>}
+            {topScorers.length === 0 && <p className="text-slate-400 text-center col-span-3">Aún no se han anotado puntos.</p>}
           </div>
         </div>
       </div>
       
       {/* Performance Table Section */}
-      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-3xl font-bold text-cyan-400">Rendimiento por Jugador</h3>
           {shots.length > 0 && (
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-blue-500"
               aria-label="Exportar todos los tiros como CSV"
             >
               <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
@@ -276,7 +276,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left table-auto">
             <thead>
-              <tr className="border-b-2 border-gray-600">
+              <tr className="border-b-2 border-slate-600">
                 <th className="p-3 text-sm tracking-wider"><button onClick={() => requestSort('playerNumber')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Jugador {getSortIndicator('playerNumber')}</button></th>
                 <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalPoints')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Puntos {getSortIndicator('totalPoints')}</button></th>
                 <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalShots')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Tiros (G/T) {getSortIndicator('totalShots')}</button></th>
@@ -285,14 +285,14 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ stats, playerNames, sho
             </thead>
             <tbody>
               {sortedStats.map(player => (
-                <tr key={player.playerNumber} className="border-b border-gray-700 hover:bg-gray-700/50">
+                <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
                   <td className="p-3 font-mono text-cyan-300 font-bold text-lg">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
                   <td className="p-3 font-mono text-white text-center text-lg">{player.totalPoints}</td>
-                  <td className="p-3 font-mono text-gray-300 text-center">{`${player.totalGoles}/${player.totalShots}`}</td>
+                  <td className="p-3 font-mono text-slate-300 text-center">{`${player.totalGoles}/${player.totalShots}`}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-3">
                       <PercentageBar percentage={player.golPercentage} />
-                      <span className="font-mono text-gray-300 w-12 text-right">{player.golPercentage.toFixed(1)}%</span>
+                      <span className="font-mono text-slate-300 w-12 text-right">{player.golPercentage.toFixed(1)}%</span>
                     </div>
                   </td>
                 </tr>

@@ -25,7 +25,7 @@ const PlayerSelector: React.FC<PlayerSelectorProps> = ({ currentPlayer, setCurre
             className={`flex-shrink-0 font-bold py-3 px-5 rounded-lg transition duration-300 ease-in-out transform focus:outline-none shadow-lg ${
               currentPlayer === 'Todos'
                 ? 'bg-cyan-600 text-white scale-105'
-                : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:scale-105'
+                : 'bg-slate-700 hover:bg-slate-600 text-slate-300 hover:scale-105'
             }`}
           >
             Todos

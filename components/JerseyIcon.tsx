@@ -12,9 +12,9 @@ const JerseyIcon: React.FC<{
   onClick: (number: string) => void;
   isBlinking?: boolean;
 }> = ({ number, name, isSelected, onClick, isBlinking = false }) => {
-  const jerseyColor = isSelected ? 'fill-cyan-500' : 'fill-gray-700';
-  const textColor = isSelected ? 'fill-white' : 'fill-gray-200';
-  const strokeColor = isSelected ? 'stroke-cyan-300' : 'stroke-gray-600';
+  const jerseyColor = isSelected ? 'fill-cyan-500' : 'fill-slate-700';
+  const textColor = isSelected ? 'fill-white' : 'fill-slate-200';
+  const strokeColor = isSelected ? 'stroke-cyan-300' : 'stroke-slate-600';
 
   return (
     <>

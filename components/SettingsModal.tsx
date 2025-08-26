@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
@@ -27,15 +28,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
             role="dialog"
             aria-modal="true"
         >
-            <div className="bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100">
+            <div className="bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="settings-modal-title" className="text-3xl font-bold text-cyan-400">Configuración</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
                 </div>
 
                 <div className="space-y-8">
                     {/* Mano Caliente Settings */}
-                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <div className="bg-slate-700/50 p-4 rounded-lg">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white">Mano Caliente 🔥</h3>
                             <ToggleSwitch
@@ -43,20 +44,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                                 onToggle={() => setSettings({ ...settings, isManoCalienteEnabled: !settings.isManoCalienteEnabled })}
                             />
                         </div>
-                        <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
+                        <p className="text-slate-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
                         <div className="flex items-center gap-4 relative">
-                            <span className="text-gray-300 font-mono">3</span>
+                            <span className="text-slate-300 font-mono">3</span>
                             <input
                                 type="range"
                                 id="manoCalienteThreshold"
                                 value={settings.manoCalienteThreshold}
                                 onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
                                 disabled={!settings.isManoCalienteEnabled}
-                                className="w-full flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                                className="w-full flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                                 min="3"
                                 max="10"
                             />
-                            <span className="text-gray-300 font-mono">10</span>
+                            <span className="text-slate-300 font-mono">10</span>
                             {!settings.isManoCalienteEnabled && (
                                 <div
                                     className="absolute inset-0 cursor-pointer"
@@ -68,7 +69,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                     </div>
 
                     {/* Mano Fría Settings */}
-                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <div className="bg-slate-700/50 p-4 rounded-lg">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white">Mano Fría ❄️</h3>
                             <ToggleSwitch
@@ -76,20 +77,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                                 onToggle={() => setSettings({ ...settings, isManoFriaEnabled: !settings.isManoFriaEnabled })}
                             />
                         </div>
-                        <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
+                        <p className="text-slate-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
                         <div className="flex items-center gap-4 relative">
-                             <span className="text-gray-300 font-mono">3</span>
+                             <span className="text-slate-300 font-mono">3</span>
                             <input
                                 type="range"
                                 id="manoFriaThreshold"
                                 value={settings.manoFriaThreshold}
                                 onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
                                 disabled={!settings.isManoFriaEnabled}
-                                className="w-full flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                                className="w-full flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                                 min="3"
                                 max="10"
                             />
-                            <span className="text-gray-300 font-mono">10</span>
+                            <span className="text-slate-300 font-mono">10</span>
                              {!settings.isManoFriaEnabled && (
                                 <div
                                     className="absolute inset-0 cursor-pointer"
@@ -102,9 +103,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, setSettings, on
                 </div>
 
                 {/* Session Management Section */}
-                <div className="border-t border-gray-700 mt-8 pt-6">
+                <div className="border-t border-slate-700 mt-8 pt-6">
                     <h3 className="text-xl font-bold text-white mb-2">Gestión de la Sesión</h3>
-                    <p className="text-gray-400 mb-4">
+                    <p className="text-slate-400 mb-4">
                         Estas acciones reiniciarán el partido actual. Úsalas para corregir la selección inicial de jugadores o para empezar un partido completamente nuevo.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

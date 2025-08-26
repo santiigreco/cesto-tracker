@@ -60,18 +60,18 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
 
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
-      <div className="w-full max-w-2xl bg-gray-800 p-8 rounded-xl shadow-2xl text-center">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
+      <div className="w-full max-w-2xl bg-slate-800 p-8 rounded-xl shadow-2xl text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-4 whitespace-nowrap">
-          Cesto Tracker 🏐
+          Cesto Tracker 🏐{'\uFE0F'}
         </h1>
-        <p className="text-lg text-gray-400 mb-8">La app definitiva para seguimiento y estadísticas de Cestoball.</p>
+        <p className="text-lg text-slate-400 mb-8">La app definitiva para seguimiento y estadísticas de Cestoball.</p>
         
-        <div className="text-gray-300 mb-8 max-w-xl mx-auto">
+        <div className="text-slate-300 mb-8 max-w-xl mx-auto">
             <p className="text-lg">
                 Selecciona los jugadores que participarán en el partido.
             </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
                 (Podrás personalizar sus nombres más adelante)
             </p>
         </div>
@@ -85,7 +85,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
           </button>
           <button
             onClick={handleClearAll}
-            className="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
+            className="bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
           >
             Limpiar Selección
           </button>
@@ -104,22 +104,22 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
             );
           })}
         </div>
-        <p className={`text-sm text-gray-500 mb-8 transition-opacity duration-300 ${selectedPlayers.size < 6 ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-sm text-slate-500 mb-8 transition-opacity duration-300 ${selectedPlayers.size < 6 ? 'opacity-100' : 'opacity-0'}`}>
           Selecciona al menos 6 jugadores para comenzar.
         </p>
         
         <button
           onClick={handleStart}
           disabled={selectedPlayers.size < 6}
-          className="w-full max-w-sm bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none"
+          className="w-full max-w-sm bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:cursor-not-allowed disabled:transform-none"
         >
           {initialSelectedPlayers.length > 0 ? 'Continuar Partido' : 'Comenzar Partido'}
         </button>
 
-        <div className="border-t border-gray-700 my-8 pt-8 flex flex-col items-center">
+        <div className="border-t border-slate-700 my-8 pt-8 flex flex-col items-center">
             <button
               onClick={() => setIsNovedadesOpen(!isNovedadesOpen)}
-              className="w-full max-w-md flex justify-between items-center text-left text-2xl font-bold text-cyan-400 p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors"
+              className="w-full max-w-md flex justify-between items-center text-left text-2xl font-bold text-cyan-400 p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors"
               aria-expanded={isNovedadesOpen}
               aria-controls="novedades-panel"
             >
@@ -133,7 +133,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
             >
                 <div className="pt-6 space-y-6">
                     {/* Mano Caliente Settings */}
-                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <div className="bg-slate-700/50 p-4 rounded-lg">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white">Mano Caliente 🔥</h3>
                             <ToggleSwitch
@@ -141,20 +141,20 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
                                 onToggle={() => setSettings({ ...settings, isManoCalienteEnabled: !settings.isManoCalienteEnabled })}
                             />
                         </div>
-                        <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
+                        <p className="text-slate-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
                         <div className="flex items-center gap-4 relative">
-                            <span className="text-gray-300 font-mono">3</span>
+                            <span className="text-slate-300 font-mono">3</span>
                             <input
                                 type="range"
                                 id="manoCalienteThreshold"
                                 value={settings.manoCalienteThreshold}
                                 onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
                                 disabled={!settings.isManoCalienteEnabled}
-                                className="w-full flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                                className="w-full flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                                 min="3"
                                 max="10"
                             />
-                            <span className="text-gray-300 font-mono">10</span>
+                            <span className="text-slate-300 font-mono">10</span>
                             {!settings.isManoCalienteEnabled && (
                                 <div
                                     className="absolute inset-0 cursor-pointer"
@@ -166,7 +166,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
                     </div>
 
                     {/* Mano Fría Settings */}
-                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <div className="bg-slate-700/50 p-4 rounded-lg">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white">Mano Fría ❄️</h3>
                             <ToggleSwitch
@@ -174,20 +174,20 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
                                 onToggle={() => setSettings({ ...settings, isManoFriaEnabled: !settings.isManoFriaEnabled })}
                             />
                         </div>
-                        <p className="text-gray-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
+                        <p className="text-slate-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
                         <div className="flex items-center gap-4 relative">
-                            <span className="text-gray-300 font-mono">3</span>
+                            <span className="text-slate-300 font-mono">3</span>
                             <input
                                 type="range"
                                 id="manoFriaThreshold"
                                 value={settings.manoFriaThreshold}
                                 onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
                                 disabled={!settings.isManoFriaEnabled}
-                                className="w-full flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                                className="w-full flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                                 min="3"
                                 max="10"
                             />
-                            <span className="text-gray-300 font-mono">10</span>
+                            <span className="text-slate-300 font-mono">10</span>
                             {!settings.isManoFriaEnabled && (
                                 <div
                                     className="absolute inset-0 cursor-pointer"
@@ -201,7 +201,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
             </div>
         </div>
       </div>
-       <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
+       <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">
         Santiago Greco - Gresolutions © 2025
       </footer>
     </div>

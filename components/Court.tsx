@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { Shot, ShotPosition } from '../types';
 
@@ -87,7 +88,7 @@ const Court: React.FC<CourtProps> = ({ shots, onCourtClick, showShotMarkers = tr
   };
 
   return (
-    <div className="w-full bg-gray-800 p-2 sm:p-4 rounded-lg shadow-lg">
+    <div className="w-full bg-slate-800 p-2 sm:p-4 rounded-lg shadow-lg">
       <div
         className={`relative ${onCourtClick ? 'cursor-crosshair' : ''} aspect-[4/5] w-full max-w-sm mx-auto rounded-md overflow-hidden border-2 border-white shadow-[0_0_0_2px_black]`}
         onPointerDown={onCourtClick ? handlePointerDown : undefined}

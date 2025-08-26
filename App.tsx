@@ -453,7 +453,7 @@ function App() {
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
-      isActive ? 'bg-cyan-600 text-white shadow' : 'text-gray-300 hover:bg-gray-600/50'
+      isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
     }`;
 
   const showTutorial = isSetupComplete && tutorialStep < 3;
@@ -472,11 +472,11 @@ function App() {
   }
   
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans">
       <div className="w-full max-w-4xl flex-grow">
         <header className="relative flex items-center mb-6">
             <div className="flex-none w-12 md:w-0"> {/* Left side container */}
-                 <button className="p-2 -ml-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
+                 <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
                     <HamburgerIcon />
                  </button>
             </div>
@@ -487,9 +487,9 @@ function App() {
                         className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
                         disabled={!isSetupComplete}
                         title={isSetupComplete ? "Volver a la página de inicio" : ""}
-                    >Cesto Tracker 🏐</button>
+                    >Cesto Tracker 🏐{'\uFE0F'}</button>
                 </h1>
-                <p className="text-lg text-gray-400 mt-2">
+                <p className="text-lg text-slate-400 mt-2">
                     {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
                     {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
                     {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
@@ -500,7 +500,7 @@ function App() {
             <div className="flex-none w-12 flex justify-end"> {/* Right side container */}
                  <button
                     onClick={() => setIsSettingsModalOpen(true)}
-                    className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                    className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
                     aria-label="Abrir configuración"
                     title="Abrir configuración"
                 >
@@ -510,7 +510,7 @@ function App() {
         </header>
 
         {/* Tab Switcher - Desktop */}
-        <div className="hidden md:flex justify-center mb-8 border-b-2 border-gray-700">
+        <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
           {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis', 'howToUse'] as AppTab[]).map(tab => (
             <button
               key={tab}
@@ -518,7 +518,7 @@ function App() {
               className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
                 activeTab === tab
                   ? 'border-b-4 border-cyan-500 text-cyan-400'
-                  : 'text-gray-500 hover:text-cyan-400'
+                  : 'text-slate-500 hover:text-cyan-400'
               }`}
             >
               {tabTranslations[tab]}
@@ -539,7 +539,7 @@ function App() {
               )}
               
               {/* Player Control Panel */}
-              <div className={`w-full bg-gray-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
+              <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
                 <div className="flex flex-col items-center">
                   <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
                     {isEditingName ? (
@@ -553,7 +553,7 @@ function App() {
                                   if (e.key === 'Escape') handleCancelEditingName();
                               }}
                               autoFocus
-                              className="bg-gray-700 border border-gray-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                              className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
                               placeholder={`Nombre para #${currentPlayer}`}
                           />
                           <button onClick={handleSavePlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
@@ -567,7 +567,7 @@ function App() {
                       <button
                           onClick={handleStartEditingName}
                           disabled={!currentPlayer || currentPlayer === 'Todos'}
-                          className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-gray-700/50 transition-colors"
+                          className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
                           title="Editar nombre del jugador"
                           aria-label="Editar nombre del jugador"
                       >
@@ -577,7 +577,7 @@ function App() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 text-center mb-3">Haz clic en el nombre para personalizarlo.</p>
+                  <p className="text-xs text-slate-500 text-center mb-3">Haz clic en el nombre para personalizarlo.</p>
                   <PlayerSelector 
                     currentPlayer={currentPlayer} 
                     setCurrentPlayer={handlePlayerChange} 
@@ -600,7 +600,7 @@ function App() {
                     <button
                         onClick={handleUndo}
                         disabled={shots.length === 0}
-                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-yellow-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         aria-label="Deshacer último tiro"
                     >
                         <UndoIcon className="h-5 w-5" />
@@ -609,7 +609,7 @@ function App() {
                     <button
                         onClick={handleRedo}
                         disabled={redoStack.length === 0}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         aria-label="Rehacer último tiro"
                     >
                         <RedoIcon className="h-5 w-5" />
@@ -618,7 +618,7 @@ function App() {
                     <button
                         onClick={handleRequestClearSheet}
                         disabled={shots.length === 0}
-                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-red-500 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         aria-label="Limpiar planilla"
                         title="Limpiar planilla"
                     >
@@ -632,13 +632,13 @@ function App() {
               <Scoreboard totalPoints={totalPoints} />
 
               {/* Period Controls */}
-              <div className="w-full bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
+              <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
                   <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
                   <select
                       id="period-selector"
                       value={currentPeriod}
                       onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                      className="w-full max-w-xs bg-gray-700 border border-gray-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
+                      className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
                   >
                     {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
                       <option key={period} value={period}>
@@ -656,14 +656,14 @@ function App() {
           {activeTab === 'courtAnalysis' && (
              <div className="flex flex-col gap-8">
                 {/* View Switcher */}
-                <div className="w-full bg-gray-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
+                <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
                     <button onClick={() => setMapView('shotmap')} className={getFilterButtonClass(mapView === 'shotmap')}>Mapa de Tiros</button>
                     <button onClick={() => setMapView('heatmap')} className={getFilterButtonClass(mapView === 'heatmap')}>Mapa de Calor</button>
                     <button onClick={() => setMapView('zonemap')} className={getFilterButtonClass(mapView === 'zonemap')}>Gráfico de Zonas</button>
                 </div>
                 
                 {/* Player Selector */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
                   <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
                 </div>
@@ -680,11 +680,11 @@ function App() {
                 </div>
 
                 {/* Filters container */}
-                <div className="w-full bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
+                <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
                     {/* Result Filter */}
                     <div className="flex-1">
                         <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
-                        <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                        <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
                             <button onClick={() => setAnalysisResultFilter('all')} className={getFilterButtonClass(analysisResultFilter === 'all')}>Todos</button>
                             <button onClick={() => setAnalysisResultFilter('goles')} className={getFilterButtonClass(analysisResultFilter === 'goles')}>Goles</button>
                             <button onClick={() => setAnalysisResultFilter('misses')} className={getFilterButtonClass(analysisResultFilter === 'misses')}>Fallos</button>
@@ -693,7 +693,7 @@ function App() {
                     {/* Period Filter */}
                     <div className="flex-1">
                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
-                         <div className="flex justify-center bg-gray-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                         <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
                             <button onClick={() => setAnalysisPeriodFilter('all')} className={getFilterButtonClass(analysisPeriodFilter === 'all')}>Ambos</button>
                             <button onClick={() => setAnalysisPeriodFilter('First Half')} className={getFilterButtonClass(analysisPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
                             <button onClick={() => setAnalysisPeriodFilter('Second Half')} className={getFilterButtonClass(analysisPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
@@ -714,37 +714,50 @@ function App() {
           )}
 
           {activeTab === 'aiAnalysis' && (
-            <div className="relative bg-gray-800 p-8 rounded-lg shadow-lg">
+            <div className="relative bg-slate-800 p-8 rounded-lg shadow-lg">
                 <div className="blur-sm pointer-events-none select-none">
                     {/* Fake chat UI */}
                     <div className="space-y-4">
                         <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0"></div>
-                            <div className="bg-gray-700 p-3 rounded-lg w-3/4">
-                                <div className="h-4 bg-gray-600 rounded w-5/6"></div>
-                                <div className="h-4 bg-gray-600 rounded w-1/2 mt-2"></div>
+                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
+                            <div className="bg-slate-700 p-3 rounded-lg w-3/4">
+                                <div className="h-4 bg-slate-600 rounded w-5/6"></div>
+                                <div className="h-4 bg-slate-600 rounded w-1/2 mt-2"></div>
                             </div>
                         </div>
                         <div className="flex items-start gap-3 justify-end">
                             <div className="bg-cyan-700 p-3 rounded-lg w-3/4">
                                 <div className="h-4 bg-cyan-600 rounded w-full"></div>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0"></div>
+                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
                         </div>
                         <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0"></div>
-                            <div className="bg-gray-700 p-3 rounded-lg w-1/2">
-                                <div className="h-4 bg-gray-600 rounded w-full animate-pulse"></div>
+                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
+                            <div className="bg-slate-700 p-3 rounded-lg w-2/3">
+                                <div className="h-4 bg-slate-600 rounded w-full"></div>
+                                <div className="h-4 bg-slate-600 rounded w-4/5 mt-2"></div>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 justify-end">
+                            <div className="bg-cyan-700 p-3 rounded-lg w-1/2">
+                                <div className="h-4 bg-cyan-600 rounded w-5/6"></div>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
+                            <div className="bg-slate-700 p-3 rounded-lg w-1/2">
+                                <div className="h-4 bg-slate-600 rounded w-full animate-pulse"></div>
                             </div>
                         </div>
                     </div>
                     <div className="mt-6 flex items-center gap-3">
-                        <div className="flex-grow h-12 bg-gray-700 rounded-lg"></div>
-                        <div className="w-24 h-12 bg-gray-700 rounded-lg"></div>
+                        <div className="flex-grow h-12 bg-slate-700 rounded-lg"></div>
+                        <div className="w-24 h-12 bg-slate-700 rounded-lg"></div>
                     </div>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 rounded-lg">
-                    <span className="text-3xl font-bold text-cyan-400 bg-gray-900 px-6 py-3 rounded-lg shadow-xl">
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-800 bg-opacity-50 rounded-lg">
+                    <span className="text-3xl font-bold text-cyan-400 bg-slate-900 px-6 py-3 rounded-lg shadow-xl">
                         Próximamente
                     </span>
                 </div>
@@ -753,7 +766,7 @@ function App() {
         </main>
       </div>
       
-      <footer className="w-full text-center text-gray-500 text-xs mt-8 pb-4">
+      <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">
         Santiago Greco - Gresolutions © 2025
       </footer>
       

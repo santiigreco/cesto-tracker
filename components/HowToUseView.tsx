@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Court from './Court';
 import TapIcon from './TapIcon';
@@ -76,7 +77,7 @@ const HowToUseView: React.FC = () => {
     ];
 
     return (
-        <div className="bg-gray-800 p-4 sm:p-8 rounded-lg shadow-lg text-gray-300 space-y-8">
+        <div className="bg-slate-800 p-4 sm:p-8 rounded-lg shadow-lg text-slate-300 space-y-8">
             <h2 className="text-3xl font-bold text-cyan-400 text-center">Cómo Usar Cesto Tracker</h2>
 
             {/* Step 1 */}
@@ -128,7 +129,7 @@ const HowToUseView: React.FC = () => {
                         <p>
                             En la pestaña <span className="font-semibold text-cyan-400">'Registro de tiros'</span>, selecciona un jugador y sigue estos pasos:
                         </p>
-                        <div className="relative p-4 bg-gray-700/50 rounded-lg h-32 flex items-center">
+                        <div className="relative p-4 bg-slate-700/50 rounded-lg h-32 flex items-center">
                            <p>
                                 {demoText[demoStep]}
                            </p>
@@ -138,7 +139,7 @@ const HowToUseView: React.FC = () => {
             </div>
 
             {/* Step 3 */}
-            <div className="space-y-2 border-t border-gray-700 pt-6">
+            <div className="space-y-2 border-t border-slate-700 pt-6">
                 <h3 className="text-2xl font-semibold text-white">Paso 3: Analizar los Datos</h3>
                 <p>
                     Una vez que hayas registrado algunos tiros, explora las otras pestañas:

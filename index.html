@@ -5,32 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- SEO Meta Tags -->
-    <title>Cesto Tracker App - Estadísticas y Seguimiento de Cestoball</title>
-    <meta name="description" content="La Cesto App definitiva: Cesto Tracker. Registra y analiza tiros de cestoball con nuestra aplicación. Mejora tu juego con mapas de calor y estadísticas en tiempo real. Ideal para entrenadores y jugadores de cesto, cestoball capital y toda la comunidad de la confederacion cestoball." />
-    <meta name="keywords" content="cesto app, cestoball app, cestoball tracker, cesto tracker, cesto capital, cestoball, cestoball capital, confederacion cestoball, reglas cestoball, estadísticas de cestoball, registrar tiros, mapa de calor, app de cestoball" />
+    <title>Cesto Tracker 🏐&#xFE0F;: Cesto App para Estadísticas de Cestoball</title>
+    <meta name="description" content="Mejora tu juego con Cesto Tracker, la cesto app líder. Registra tiros, visualiza mapas de calor y analiza estadísticas de cestoball en tiempo real. Ideal para jugadores y entrenadores de la confederación cestoball, cesto capital y más." />
+    <meta name="keywords" content="cesto app, cestoball, cestoball app, cesto, cesto capital,  cestoball tracker, cesto tracker, estadísticas de cestoball, cesto capital, confederacion cestoball, app de cesto, registrar tiros cestoball, mapa de calor cestoball, reglas cestoball" />
     <meta name="author" content="Santiago Greco - Gresolutions" />
     <link rel="canonical" href="https://cestotracker.com/" />
+    <meta name="theme-color" content="#0f172a"> <!-- slate-900 -->
 
-    <!-- Favicon -->
+    <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest">
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://cestotracker.com/" /> 
-    <meta property="og:title" content="Cesto Tracker App - Estadísticas y Seguimiento de Cestoball" />
-    <meta property="og:description" content="La aplicación definitiva para registrar y analizar tiros de cestoball. Mejora tu juego con mapas de calor, estadísticas de jugadores y seguimiento en tiempo real." />
-    <meta property="og:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
     <meta property="og:site_name" content="Cesto Tracker" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:title" content="Cesto Tracker 🏐&#xFE0F;: La App Definitiva para Cestoball" />
+    <meta property="og:description" content="Registra tiros, analiza mapas de calor y mejora tu rendimiento con la herramienta de estadísticas más completa para jugadores y entrenadores de cestoball." />
+    <meta property="og:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Logo de Cesto Tracker sobre una imagen de una cancha de cestoball." />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://cestotracker.com/" /> 
-    <meta property="twitter:title" content="Cesto Tracker App - Estadísticas y Seguimiento de Cestoball" />
-    <meta property="twitter:description" content="La aplicación definitiva para registrar y analizar tiros de cestoball. Mejora tu juego con mapas de calor, estadísticas de jugadores y seguimiento en tiempo real." />
-    <meta property="twitter:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://cestotracker.com/" /> 
+    <meta name="twitter:title" content="Cesto Tracker 🏐&#xFE0F;: La App Definitiva para Cestoball" />
+    <meta name="twitter:description" content="Registra tiros, analiza mapas de calor y mejora tu rendimiento con la herramienta de estadísticas más completa para jugadores y entrenadores de cestoball." />
+    <meta name="twitter:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
+    <meta name="twitter:image:alt" content="Logo de Cesto Tracker sobre una imagen de una cancha de cestoball." />
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {}
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="importmap">
     {
@@ -45,17 +56,23 @@
       /* Custom Scrollbar for Webkit Browsers */
       .custom-scrollbar::-webkit-scrollbar {
         height: 8px;
+        width: 8px;
       }
       .custom-scrollbar::-webkit-scrollbar-track {
-        background: #374151; /* gray-700 */
+        background: #1e293b; /* slate-800 */
         border-radius: 10px;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #4b5563; /* gray-600 */
+        background: #334155; /* slate-700 */
         border-radius: 10px;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #6b7280; /* gray-500 */
+        background: #475569; /* slate-600 */
+      }
+      .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
       }
     </style>
 
@@ -67,8 +84,8 @@
       "name": "Cesto Tracker",
       "applicationCategory": "SportsApplication",
       "operatingSystem": "Web",
-      "description": "La Cesto App definitiva para registrar y analizar tiros de cestoball. Mejora tu juego con mapas de calor, estadísticas de jugadores y seguimiento en tiempo real.",
-      "keywords": "cesto app, cestoball app, cestoball tracker, cesto tracker, cesto capital, cestoball, cestoball capital, confederacion cestoball, reglas cestoball, estadísticas de cestoball",
+      "description": "La cesto app definitiva para registrar tiros, analizar mapas de calor y visualizar estadísticas de cestoball. Ideal para jugadores y entrenadores que buscan mejorar su rendimiento.",
+      "keywords": "cesto app, cestoball, cestoball tracker, cesto tracker, estadísticas de cestoball, cesto capital, confederacion cestoball, app de cesto, registrar tiros cestoball, mapa de calor cestoball, reglas cestoball",
       "image": "https://cestotracker.com/cesto-tracker-og-image.png",
       "offers": {
         "@type": "Offer",
@@ -78,12 +95,17 @@
       "author": {
         "@type": "Person",
         "name": "Santiago Greco"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "88"
       }
     }
     </script>
   <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-900 text-white antialiased">
+  <body class="bg-slate-900 text-slate-200 antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

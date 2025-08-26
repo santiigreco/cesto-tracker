@@ -57,15 +57,15 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
   const backdropClass = `absolute inset-0 bg-black transition-opacity duration-300 ease-out ${
     isOpen ? 'opacity-60' : 'opacity-0'
   }`;
-  const menuClass = 'relative z-10 w-64 h-full bg-gray-800 shadow-xl flex flex-col';
+  const menuClass = 'relative z-10 w-64 h-full bg-slate-800 shadow-xl flex flex-col';
 
   return (
     <div className={menuContainerClass} role="dialog" aria-modal="true" aria-labelledby="menu-title">
       <div className={backdropClass} onClick={onClose} aria-hidden="true"></div>
       <div className={menuClass}>
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+        <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <h2 id="menu-title" className="text-xl font-bold text-cyan-400">Menú</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-700 transition-colors" aria-label="Cerrar menú">
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar menú">
             <XIcon className="h-5 w-5" />
           </button>
         </div>
@@ -79,7 +79,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
                 className={`w-full flex items-center text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
                   activeTab === tab
                     ? 'bg-cyan-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
               >
                 <Icon className="h-6 w-6 mr-4" />
@@ -93,21 +93,21 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, activeTab, onS
             );
           })}
           
-          <div className="my-2 border-t border-gray-700 mx-2"></div>
+          <div className="my-2 border-t border-slate-700 mx-2"></div>
 
           <button
             onClick={() => onSelectTab('howToUse')}
             className={`w-full flex items-center text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
               activeTab === 'howToUse'
                 ? 'bg-cyan-600 text-white'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
           >
             <QuestionMarkCircleIcon className="h-6 w-6 mr-4" />
             <span>{tabTranslations['howToUse']}</span>
           </button>
         </nav>
-        <div className="p-4 border-t border-gray-700 space-y-2">
+        <div className="p-4 border-t border-slate-700 space-y-2">
           <button
             onClick={onShare}
             className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"

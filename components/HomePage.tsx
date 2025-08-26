@@ -5,11 +5,18 @@ import { Shot } from '../types';
 import Court from './Court';
 import HeatmapOverlay from './HeatmapOverlay';
 import ZoneChart from './ZoneChart';
-import TapIcon from './TapIcon';
 import MapIcon from './MapIcon';
 import ChartPieIcon from './ChartPieIcon';
 import TrophyIcon from './TrophyIcon';
 import HandClickIcon from './HandClickIcon';
+import PhoneMockup from './PhoneMockup'; // New
+
+const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.359 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.359-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.359-2.618-6.78-6.98-6.98C15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/>
+    </svg>
+);
+
 
 // Sample data for visual examples, crafted to show varied effectiveness and wide distribution
 const sampleShots: Shot[] = [
@@ -48,88 +55,130 @@ const sampleShots: Shot[] = [
 ];
 
 const FeatureCard: React.FC<{ title: string; description: string; children: React.ReactNode; icon: React.ReactNode; }> = ({ title, description, children, icon }) => (
-    <div className="bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center text-center h-full">
-        <div className="flex items-center gap-3 mb-3">
+    <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 p-6 rounded-2xl shadow-lg flex flex-col items-center text-center h-full transform transition-transform duration-300 hover:-translate-y-2">
+        <div className="flex items-center gap-3 mb-3 text-cyan-400">
             {icon}
-            <h3 className="text-2xl font-semibold text-cyan-400">{title}</h3>
+            <h3 className="text-2xl font-semibold text-slate-100">{title}</h3>
         </div>
-        <p className="text-gray-300 mb-4 flex-grow">{description}</p>
+        <p className="text-slate-400 mb-6 flex-grow max-w-xs">{description}</p>
         <div className="w-full flex-shrink-0">{children}</div>
     </div>
 );
 
 const StatsExample = () => (
-    <div className="bg-gray-700/50 p-4 rounded-lg text-left w-full max-w-xs mx-auto">
-        <div className="flex justify-between items-center border-b border-gray-600 pb-2 mb-2">
-            <span className="font-bold text-cyan-300 text-lg">Jugador #10</span>
-            <span className="text-xl font-bold text-white">15 Pts</span>
-        </div>
-        <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Tiros (G/T)</span>
-            <span className="font-mono">6/10</span>
-        </div>
-        <div className="flex justify-between items-center text-sm mt-1">
-            <span className="text-gray-400">% Goles</span>
-            <div className="flex items-center gap-2">
-                <div className="w-24 bg-gray-600 rounded-full h-2">
-                    <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+    <PhoneMockup>
+        <div className="p-3 text-left w-full h-full flex flex-col justify-center bg-slate-900 text-white">
+            <h2 className="text-xl font-bold text-cyan-400 text-center mb-4">Rendimiento</h2>
+            <div className="space-y-3">
+                {/* Player 1 */}
+                <div className="bg-slate-800 p-2.5 rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <span className="font-bold text-cyan-300 text-base">Jugador #10</span>
+                        <span className="text-lg font-bold">15 Pts</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs mt-1">
+                        <span className="text-slate-400">Goles: 6/10</span>
+                        <span className="font-mono w-10 text-right text-slate-300">60%</span>
+                    </div>
+                    <div className="w-full bg-slate-600 rounded-full h-1.5 mt-1">
+                        <div className="bg-cyan-500 h-1.5 rounded-full" style={{ width: `60%` }}></div>
+                    </div>
                 </div>
-                <span className="font-mono w-10 text-right">60.0%</span>
+                {/* Player 2 */}
+                <div className="bg-slate-800 p-2.5 rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <span className="font-bold text-emerald-300 text-base">Jugador #7</span>
+                        <span className="text-lg font-bold">12 Pts</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs mt-1">
+                        <span className="text-slate-400">Goles: 5/8</span>
+                        <span className="font-mono w-10 text-right text-slate-300">63%</span>
+                    </div>
+                    <div className="w-full bg-slate-600 rounded-full h-1.5 mt-1">
+                        <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `62.5%` }}></div>
+                    </div>
+                </div>
+                {/* Player 3 */}
+                 <div className="bg-slate-800 p-2.5 rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <span className="font-bold text-amber-300 text-base">Jugador #5</span>
+                        <span className="text-lg font-bold">9 Pts</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs mt-1">
+                        <span className="text-slate-400">Goles: 4/11</span>
+                        <span className="font-mono w-10 text-right text-slate-300">36%</span>
+                    </div>
+                    <div className="w-full bg-slate-600 rounded-full h-1.5 mt-1">
+                        <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `36.3%` }}></div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </PhoneMockup>
 );
+
 
 const LoggingExample = () => (
-    <div className="flex flex-col items-center justify-center h-full pt-8">
-        <TapIcon />
-        <p className="mt-4 font-semibold text-lg">Un toque para registrar.</p>
-        <p className="text-gray-400">Así de simple.</p>
-    </div>
+    <PhoneMockup>
+        <div className="flex flex-col items-center justify-center h-full bg-slate-900">
+            <div className="text-center">
+                <HandClickIcon className="h-16 w-16 text-cyan-400 mx-auto" />
+                <p className="mt-4 font-semibold text-lg text-white">Registro Intuitivo</p>
+                <p className="text-slate-400 text-sm px-2">Añade tiros con un simple toque. Rápido y fácil.</p>
+            </div>
+        </div>
+    </PhoneMockup>
 );
-
 
 const HomePage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
-            <div className="w-full max-w-4xl mx-auto text-center">
-                <header className="mb-8">
-                    <h1 className="text-5xl sm:text-6xl font-bold text-cyan-400 tracking-tight">
-                        Cesto Tracker 🏐
-                    </h1>
-                    <p className="text-xl text-gray-400 mt-4 max-w-2xl mx-auto">
+        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden">
+             <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-700/[0.05]"></div>
+             <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-slate-900 to-transparent"></div>
+             <div className="absolute inset-0 -z-10 h-full w-full bg-slate-900 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+            
+            <div className="relative w-full max-w-5xl mx-auto text-center flex-grow flex flex-col justify-center">
+                <header className="my-16">
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight">
+                <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 text-transparent bg-clip-text">
+                    Cesto Tracker
+                </span>{' '}
+                🏐
+                </h1>
+                    <p className="text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
                         La herramienta definitiva para registrar, analizar y mejorar el rendimiento en Cestoball.
                     </p>
                 </header>
 
-                <div className="mb-12">
+                <div className="mb-16">
                     <button
                         onClick={onStart}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-500 text-xl"
+                        className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-xl"
                     >
-                        Comenzar
+                        Comenzar Ahora
                     </button>
                 </div>
                 
-                <main className="mb-12">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <main className="mb-16">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mb-12">Visualiza el Juego Como Nunca Antes</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
                        <FeatureCard 
-                           title="Identifica Zonas Clave" 
-                           description="Visualiza al instante las áreas de tiro más calientes con los Mapas de Calor."
-                           icon={<MapIcon className="h-7 w-7 text-cyan-400" />}
+                           title="Mapas de Calor" 
+                           description="Identifica al instante las zonas de tiro más efectivas y las áreas a mejorar."
+                           icon={<MapIcon className="h-7 w-7" />}
                         >
-                           <div className="w-full max-w-[220px] mx-auto">
+                           <div className="relative mx-auto rounded-2xl h-[400px] w-[220px] shadow-xl overflow-hidden border-2 border-slate-700 bg-slate-900">
                                 <Court shots={[]}>
                                     <HeatmapOverlay shots={sampleShots} />
                                 </Court>
-                            </div>
+                           </div>
                        </FeatureCard>
                        <FeatureCard 
-                           title="Analiza la Efectividad" 
-                           description="Mide el rendimiento por zonas para tomar decisiones basadas en datos."
-                           icon={<ChartPieIcon className="h-7 w-7 text-cyan-400" />}
+                           title="Análisis por Zonas" 
+                           description="Mide el rendimiento por zonas para tomar decisiones tácticas basadas en datos reales."
+                           icon={<ChartPieIcon className="h-7 w-7" />}
                         >
-                            <div className="w-full max-w-[220px] mx-auto">
+                            <div className="relative mx-auto rounded-2xl h-[400px] w-[220px] shadow-xl overflow-hidden border-2 border-slate-700 bg-slate-900">
                                <Court shots={[]}> 
                                     <ZoneChart shots={sampleShots} />
                                 </Court>
@@ -137,26 +186,27 @@ const HomePage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                        </FeatureCard>
                        <FeatureCard 
                            title="Estadísticas Detalladas" 
-                           description="Sigue el rendimiento de cada jugador: puntos, porcentajes de gol y más."
+                           description="Sigue el rendimiento de cada jugador: puntos, porcentajes de gol y rachas."
                            icon={<TrophyIcon rank={1} />}
                         >
-                            <div className="pt-8">
-                                <StatsExample />
-                            </div>
+                           <StatsExample /> 
                        </FeatureCard>
                        <FeatureCard 
                            title="Registro Intuitivo" 
-                           description="Añade tiros con un simple toque en la cancha. Rápido, fácil e intuitivo."
-                           icon={<HandClickIcon className="h-7 w-7 text-cyan-400" />}
+                           description="Añade tiros con un simple toque. Dedica más tiempo a entrenar y menos a anotar."
+                           icon={<HandClickIcon className="h-7 w-7" />}
                         >
                             <LoggingExample />
                        </FeatureCard>
                     </div>
                 </main>
             </div>
-             <div className="w-full text-center text-gray-500 text-xs mt-auto pb-4">
-                Santiago Greco - Gresolutions © 2025
-            </div>
+             <footer className="relative w-full max-w-5xl mx-auto border-t border-slate-700/50 pt-8 pb-4 text-center text-slate-500 text-sm">
+                <div className="flex justify-center gap-6 mb-4">
+                     <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors" aria-label="Instagram"><InstagramIcon /></a>
+                </div>
+                <p>Santiago Greco - Gresolutions © 2025</p>
+            </footer>
         </div>
     );
 };
