@@ -1,16 +1,16 @@
-
-
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Shot } from '../types';
 import Court from './Court';
 import HeatmapOverlay from './HeatmapOverlay';
 import ZoneChart from './ZoneChart';
-import MapIcon from './MapIcon';
-import ChartPieIcon from './ChartPieIcon';
-import TrophyIcon from './TrophyIcon';
-import HandClickIcon from './HandClickIcon';
-import PhoneMockup from './PhoneMockup'; // New
+import PhoneMockup from './PhoneMockup';
+import FeatureMapIcon from './FeatureMapIcon';
+import FeatureChartIcon from './FeatureChartIcon';
+import FeatureTrophyIcon from './FeatureTrophyIcon';
+import FeatureTapIcon from './FeatureTapIcon';
+import ChevronDownIcon from './ChevronDownIcon';
+import WhatsappIcon from './WhatsappIcon';
+import { faqData } from './faqData';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -123,7 +123,7 @@ const LoggingExample = () => (
     <PhoneMockup>
         <div className="flex flex-col items-center justify-center h-full bg-slate-900">
             <div className="text-center">
-                <HandClickIcon className="h-16 w-16 text-cyan-400 mx-auto" />
+                 <FeatureTapIcon className="h-16 w-16 text-cyan-400 mx-auto" />
                 <p className="mt-4 font-semibold text-lg text-white">Registro Intuitivo</p>
                 <p className="text-slate-400 text-sm px-2">Añade tiros con un simple toque. Rápido y fácil.</p>
             </div>
@@ -132,8 +132,10 @@ const LoggingExample = () => (
 );
 
 const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => {
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
+
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden">
+        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden bg-pattern-hoops">
              <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-700/[0.05]"></div>
              <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-slate-900 to-transparent"></div>
              <div className="absolute inset-0 -z-10 h-full w-full bg-slate-900 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
@@ -166,9 +168,9 @@ const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => 
                        <FeatureCard 
                            title="Mapas de Calor" 
                            description="Identifica al instante las zonas de tiro más efectivas y las áreas a mejorar."
-                           icon={<MapIcon className="h-7 w-7" />}
+                           icon={<FeatureMapIcon className="h-7 w-7" />}
                         >
-                           <div className="relative mx-auto rounded-2xl h-[400px] w-[220px] shadow-xl overflow-hidden border-2 border-slate-700 bg-slate-900">
+                           <div className="relative mx-auto rounded-2xl h-[320px] w-[280px] shadow-xl overflow-hidden border-2 border-slate-700 bg-slate-900 flex items-center justify-center">
                                 <Court shots={[]}>
                                     <HeatmapOverlay shots={sampleShots} />
                                 </Court>
@@ -177,9 +179,9 @@ const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => 
                        <FeatureCard 
                            title="Análisis por Zonas" 
                            description="Mide el rendimiento por zonas para tomar decisiones tácticas basadas en datos reales."
-                           icon={<ChartPieIcon className="h-7 w-7" />}
+                           icon={<FeatureChartIcon className="h-7 w-7" />}
                         >
-                            <div className="relative mx-auto rounded-2xl h-[400px] w-[220px] shadow-xl overflow-hidden border-2 border-slate-700 bg-slate-900">
+                            <div className="relative mx-auto rounded-2xl h-[320px] w-[280px] shadow-xl overflow-hidden border-2 border-slate-700 bg-slate-900 flex items-center justify-center">
                                <Court shots={[]}> 
                                     <ZoneChart shots={sampleShots} />
                                 </Court>
@@ -188,19 +190,54 @@ const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => 
                        <FeatureCard 
                            title="Estadísticas Detalladas" 
                            description="Sigue el rendimiento de cada jugador: puntos, porcentajes de gol y rachas."
-                           icon={<TrophyIcon rank={1} />}
+                           icon={<FeatureTrophyIcon className="h-7 w-7" />}
                         >
                            <StatsExample /> 
                        </FeatureCard>
                        <FeatureCard 
                            title="Registro Intuitivo" 
                            description="Añade tiros con un simple toque. Dedica más tiempo a entrenar y menos a anotar."
-                           icon={<HandClickIcon className="h-7 w-7" />}
+                           icon={<FeatureTapIcon className="h-7 w-7" />}
                         >
                             <LoggingExample />
                        </FeatureCard>
                     </div>
                 </main>
+
+                 <section className="mb-16 text-left max-w-3xl mx-auto w-full">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mb-8 text-center">Preguntas Frecuentes</h2>
+                    <div className="space-y-4">
+                        {faqData.map((faq, index) => (
+                            <div key={index} className="bg-slate-800/60 border border-slate-700 rounded-lg overflow-hidden">
+                                <button
+                                    onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                                    className="w-full flex justify-between items-center text-left p-5 font-semibold text-lg hover:bg-slate-700/50 transition-colors"
+                                    aria-expanded={openFaq === index}
+                                >
+                                    <span>{faq.question}</span>
+                                    <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
+                                </button>
+                                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openFaq === index ? 'max-h-60' : 'max-h-0'}`}>
+                                    <div className="p-5 pt-0 text-slate-300">
+                                        <p>{faq.answer}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                     <div className="mt-10 text-center">
+                        <p className="text-slate-400 mb-4">¿No encontraste lo que buscabas?</p>
+                        <a
+                           href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20consulta%20sobre%20Cesto%20Tracker..."
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="inline-flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors transform hover:scale-105"
+                        >
+                            <WhatsappIcon className="h-5 w-5" />
+                            <span>Enviar Feedback</span>
+                        </a>
+                     </div>
+                </section>
             </div>
              <footer className="relative w-full max-w-5xl mx-auto border-t border-slate-700/50 pt-8 pb-4 text-center text-slate-500 text-sm">
                 <div className="flex justify-center gap-6 mb-4">

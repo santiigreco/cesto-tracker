@@ -60,7 +60,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
 
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
       <div className="w-full max-w-2xl bg-slate-800 p-8 rounded-xl shadow-2xl text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-4 whitespace-nowrap">
           Cesto Tracker 🏐{'\uFE0F'}

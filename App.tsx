@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
 import Court from './components/Court';
@@ -20,12 +17,12 @@ import CheckIcon from './components/CheckIcon';
 import XIcon from './components/XIcon';
 import HamburgerIcon from './components/HamburgerIcon';
 import MobileMenu from './components/MobileMenu';
-import HowToUseView from './components/HowToUseView';
 import TutorialOverlay from './components/TutorialOverlay';
 import HomePage from './components/HomePage';
 import ZoneChart from './components/ZoneChart';
 import HeatmapOverlay from './components/HeatmapOverlay';
 import Scoreboard from './components/Scoreboard';
+import FaqView from './components/FaqView';
 
 
 // TypeScript declaration for html2canvas global variable
@@ -444,8 +441,8 @@ function App() {
     logger: 'Registro de tiros', 
     courtAnalysis: 'Análisis de Cancha', 
     statistics: 'Estadísticas', 
-    howToUse: 'Cómo usar',
-    aiAnalysis: 'Análisis con IA'
+    aiAnalysis: 'Análisis con IA',
+    faq: 'Preguntas Frecuentes',
   };
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
   const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep } = gameState;
@@ -471,7 +468,7 @@ function App() {
   }
   
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
       <div className="w-full max-w-4xl flex-grow">
         <header className="relative flex items-center mb-6">
             <div className="flex-none w-12 md:w-0"> {/* Left side container */}
@@ -492,7 +489,7 @@ function App() {
                     {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
                     {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
                     {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
-                    {activeTab === 'howToUse' && 'Aprende a usar la aplicación paso a paso.'}
+                    {activeTab === 'faq' && 'Encontrá respuestas a las preguntas más comunes.'}
                     {activeTab === 'aiAnalysis' && 'Próximamente: Análisis avanzado con IA.'}
                 </p>
             </div>
@@ -510,7 +507,7 @@ function App() {
 
         {/* Tab Switcher - Desktop */}
         <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
-          {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis', 'howToUse'] as AppTab[]).map(tab => (
+          {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis', 'faq'] as AppTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -708,8 +705,8 @@ function App() {
             </div>
           )}
 
-          {activeTab === 'howToUse' && (
-            <HowToUseView />
+          {activeTab === 'faq' && (
+            <FaqView />
           )}
 
           {activeTab === 'aiAnalysis' && (

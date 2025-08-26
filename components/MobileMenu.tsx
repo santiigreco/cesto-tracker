@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useEffect } from 'react';
 import { AppTab } from '../types';
 import ShareIcon from './ShareIcon';
@@ -29,7 +25,7 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
     courtAnalysis: ChartPieIcon,
     statistics: ChartBarIcon,
     aiAnalysis: SparklesIcon,
-    howToUse: QuestionMarkCircleIcon,
+    faq: QuestionMarkCircleIcon,
   };
 
   useEffect(() => {
@@ -97,15 +93,15 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
           <div className="my-2 border-t border-slate-700 mx-2"></div>
 
           <button
-            onClick={() => onSelectTab('howToUse')}
+            onClick={() => onSelectTab('faq')}
             className={`w-full flex items-center text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
-              activeTab === 'howToUse'
+              activeTab === 'faq'
                 ? 'bg-cyan-600 text-white'
                 : 'text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
           >
             <QuestionMarkCircleIcon className="h-6 w-6 mr-4" />
-            <span>{tabTranslations['howToUse']}</span>
+            <span>{tabTranslations['faq']}</span>
           </button>
         </nav>
         <div className="p-4 border-t border-slate-700 space-y-2">
