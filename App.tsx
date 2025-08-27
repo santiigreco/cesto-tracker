@@ -441,7 +441,6 @@ function App() {
     logger: 'Registro de tiros', 
     courtAnalysis: 'Análisis de Cancha', 
     statistics: 'Estadísticas', 
-    aiAnalysis: 'Análisis con IA',
     faq: 'Preguntas Frecuentes',
   };
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
@@ -490,7 +489,6 @@ function App() {
                     {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
                     {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
                     {activeTab === 'faq' && 'Encontrá respuestas a las preguntas más comunes.'}
-                    {activeTab === 'aiAnalysis' && 'Próximamente: Análisis avanzado con IA.'}
                 </p>
             </div>
             <div className="flex-none w-12 flex justify-end"> {/* Right side container */}
@@ -507,7 +505,7 @@ function App() {
 
         {/* Tab Switcher - Desktop */}
         <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
-          {(['logger', 'courtAnalysis', 'statistics', 'aiAnalysis', 'faq'] as AppTab[]).map(tab => (
+          {(['logger', 'courtAnalysis', 'statistics', 'faq'] as AppTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -518,11 +516,6 @@ function App() {
               }`}
             >
               {tabTranslations[tab]}
-               {tab === 'aiAnalysis' && (
-                <span className="ml-2 bg-cyan-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                  Nuevo
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -573,7 +566,7 @@ function App() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 text-center mb-3">Haz clic en el nombre para personalizarlo.</p>
+                  <p className="text-xs text-slate-500 text-center mb-3">Tocá en el nombre para personalizarlo.</p>
                   <PlayerSelector 
                     currentPlayer={currentPlayer} 
                     setCurrentPlayer={handlePlayerChange} 
@@ -709,56 +702,6 @@ function App() {
             <FaqView />
           )}
 
-          {activeTab === 'aiAnalysis' && (
-            <div className="relative bg-slate-800 p-8 rounded-lg shadow-lg">
-                <div className="blur-sm pointer-events-none select-none">
-                    {/* Fake chat UI */}
-                    <div className="space-y-4">
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
-                            <div className="bg-slate-700 p-3 rounded-lg w-3/4">
-                                <div className="h-4 bg-slate-600 rounded w-5/6"></div>
-                                <div className="h-4 bg-slate-600 rounded w-1/2 mt-2"></div>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 justify-end">
-                            <div className="bg-cyan-700 p-3 rounded-lg w-3/4">
-                                <div className="h-4 bg-cyan-600 rounded w-full"></div>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
-                            <div className="bg-slate-700 p-3 rounded-lg w-2/3">
-                                <div className="h-4 bg-slate-600 rounded w-full"></div>
-                                <div className="h-4 bg-slate-600 rounded w-4/5 mt-2"></div>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 justify-end">
-                            <div className="bg-cyan-700 p-3 rounded-lg w-1/2">
-                                <div className="h-4 bg-cyan-600 rounded w-5/6"></div>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
-                            <div className="bg-slate-700 p-3 rounded-lg w-1/2">
-                                <div className="h-4 bg-slate-600 rounded w-full animate-pulse"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mt-6 flex items-center gap-3">
-                        <div className="flex-grow h-12 bg-slate-700 rounded-lg"></div>
-                        <div className="w-24 h-12 bg-slate-700 rounded-lg"></div>
-                    </div>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-800 bg-opacity-50 rounded-lg">
-                    <span className="text-3xl font-bold text-cyan-400 bg-slate-900 px-6 py-3 rounded-lg shadow-xl">
-                        Próximamente
-                    </span>
-                </div>
-            </div>
-          )}
         </main>
       </div>
       

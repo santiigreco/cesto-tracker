@@ -1,5 +1,5 @@
 export type GamePeriod = 'First Half' | 'Second Half';
-export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'aiAnalysis' | 'faq';
+export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'faq';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
 export type MapPeriodFilter = GamePeriod | 'all';
 

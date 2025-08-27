@@ -19,12 +19,11 @@ interface MobileMenuProps {
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations }) => {
-  const mainTabs: AppTab[] = ['logger', 'courtAnalysis', 'statistics', 'aiAnalysis'];
+  const mainTabs: AppTab[] = ['logger', 'courtAnalysis', 'statistics'];
   const tabIcons: Record<AppTab, React.FC<{ className?: string }>> = {
     logger: ClipboardIcon,
     courtAnalysis: ChartPieIcon,
     statistics: ChartBarIcon,
-    aiAnalysis: SparklesIcon,
     faq: QuestionMarkCircleIcon,
   };
 
@@ -81,11 +80,6 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
               >
                 <Icon className="h-6 w-6 mr-4" />
                 <span className="flex-grow">{tabTranslations[tab]}</span>
-                {tab === 'aiAnalysis' && (
-                  <span className="bg-white text-cyan-600 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                    Nuevo
-                  </span>
-                )}
               </button>
             );
           })}

@@ -19,9 +19,11 @@ const FaqView: React.FC = () => {
                             <span>{faq.question}</span>
                             <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
                         </button>
-                        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openFaq === index ? 'max-h-60' : 'max-h-0'}`}>
-                            <div className="p-5 pt-0 text-slate-300">
-                                <p>{faq.answer}</p>
+                        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openFaq === index ? 'max-h-96' : 'max-h-0'}`}>
+                             <div 
+                                className="p-5 pt-0 text-slate-300 leading-relaxed" 
+                                dangerouslySetInnerHTML={{ __html: faq.answer }}
+                            >
                             </div>
                         </div>
                     </div>
