@@ -21,7 +21,7 @@ interface PlayerSetupProps {
 
 const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelectedPlayers = [], initialSettings = defaultSettings }) => {
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(
-      new Set(initialSelectedPlayers.length > 0 ? initialSelectedPlayers : allPlayers)
+      new Set(initialSelectedPlayers)
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(initialSettings);
@@ -33,21 +33,19 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
       if (newSet.has(playerNumber)) {
         newSet.delete(playerNumber);
       } else {
-        newSet.add(playerNumber);
+        if (newSet.size < 6) {
+          newSet.add(playerNumber);
+        }
       }
       return newSet;
     });
   };
 
-  const handleSelectAll = () => {
-    setSelectedPlayers(new Set(allPlayers));
-  };
-
-  const handleClearAll = () => {
-    setSelectedPlayers(new Set());
-  };
-
   const handleStart = () => {
+    if (selectedPlayers.size !== 6) {
+        alert("Debes seleccionar exactamente 6 jugadores.");
+        return;
+    }
     const sortedPlayers = Array.from(selectedPlayers).sort((a, b) => Number(a) - Number(b));
     onSetupComplete(sortedPlayers, settings);
   };
@@ -64,14 +62,16 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
       <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-2xl text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2">
-          Configuración del Partido
+          Selecciona Tu Equipo Inicial
         </h1>
-        <p className="text-lg text-slate-400 mb-8">Elegí los jugadores y preparate para empezar.</p>
+        <p className="text-lg text-slate-400 mb-8">
+            Selecciona exactamente 6 jugadores para empezar. Podrás hacer cambios durante el partido.
+        </p>
         
         <div className="bg-slate-900/50 p-4 sm:p-6 rounded-xl border border-slate-700 mb-8">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-slate-200">Selección de Jugadores</h2>
-                <span className="text-sm font-medium text-slate-400">{selectedPlayers.size} de 15 seleccionados</span>
+                <h2 className="text-xl font-semibold text-slate-200">Jugadores Iniciales</h2>
+                <span className="text-sm font-medium text-slate-400">{selectedPlayers.size} / 6 seleccionados</span>
             </div>
             
             <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
@@ -81,26 +81,13 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
                   number={num}
                   isSelected={selectedPlayers.has(num)}
                   onClick={togglePlayer}
+                  disabled={!selectedPlayers.has(num) && selectedPlayers.size >= 6}
                 />
               ))}
             </div>
             
-            <div className="flex justify-center gap-4 mt-6 border-t border-slate-700 pt-4">
-              <button
-                onClick={handleSelectAll}
-                className="bg-cyan-600 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
-              >
-                Seleccionar Todos
-              </button>
-              <button
-                onClick={handleClearAll}
-                className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
-              >
-                Limpiar Selección
-              </button>
-            </div>
-             <p className={`text-xs text-red-400 mt-3 transition-opacity duration-300 ${selectedPlayers.size < 6 ? 'opacity-100' : 'opacity-0'}`}>
-              * Se necesitan al menos 6 jugadores.
+             <p className={`text-xs text-red-400 mt-3 transition-opacity duration-300 ${selectedPlayers.size !== 6 ? 'opacity-100' : 'opacity-0'}`}>
+              * Se necesitan exactamente 6 jugadores.
             </p>
         </div>
         
@@ -158,7 +145,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
 
             <button
               onClick={handleStart}
-              disabled={selectedPlayers.size < 6}
+              disabled={selectedPlayers.size !== 6}
               className="w-full max-w-sm bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-lg disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
             >
               {initialSelectedPlayers.length > 0 ? 'Continuar Partido' : 'Comenzar Partido'}

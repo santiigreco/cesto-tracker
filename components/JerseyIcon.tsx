@@ -1,6 +1,3 @@
-
-
-
 import React from 'react';
 
 /**
@@ -11,11 +8,12 @@ const JerseyIcon: React.FC<{
   name?: string;
   isSelected: boolean;
   onClick: (number: string) => void;
+  disabled?: boolean;
   isBlinking?: boolean;
-}> = React.memo(({ number, name, isSelected, onClick, isBlinking = false }) => {
-  const jerseyColor = isSelected ? 'fill-cyan-500' : 'fill-slate-700';
-  const textColor = isSelected ? 'fill-white' : 'fill-slate-200';
-  const strokeColor = isSelected ? 'stroke-cyan-300' : 'stroke-slate-600';
+}> = React.memo(({ number, name, isSelected, onClick, disabled = false, isBlinking = false }) => {
+  const jerseyColor = isSelected ? 'fill-cyan-500' : (disabled ? 'fill-slate-800' : 'fill-slate-700');
+  const textColor = isSelected ? 'fill-white' : (disabled ? 'fill-slate-500' : 'fill-slate-200');
+  const strokeColor = isSelected ? 'stroke-cyan-300' : (disabled ? 'stroke-slate-700' : 'stroke-slate-600');
 
   return (
     <>
@@ -45,7 +43,8 @@ const JerseyIcon: React.FC<{
       </style>
       <button
         onClick={() => onClick(number)}
-        className={`relative transition-transform duration-200 ease-in-out transform hover:-translate-y-1 focus:outline-none rounded-lg ${isBlinking ? 'animate-pulse-jersey' : ''}`}
+        disabled={disabled}
+        className={`relative transition-transform duration-200 ease-in-out transform focus:outline-none rounded-lg ${isBlinking ? 'animate-pulse-jersey' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-1'}`}
         aria-pressed={isSelected}
         aria-label={`Seleccionar ${name || `Jugador ${number}`}`}
         title={name || `Jugador ${number}`}

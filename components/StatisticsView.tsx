@@ -1,11 +1,9 @@
-
-
-
 import React, { useRef, useState, useMemo } from 'react';
 import { PlayerStats, Shot } from '../types';
 import TrophyIcon from './TrophyIcon';
 import DownloadIcon from './DownloadIcon';
 import ShareIcon from './ShareIcon';
+import TemporalChart from './TemporalChart';
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
@@ -251,6 +249,12 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
             {topScorers.length === 0 && <p className="text-slate-400 text-center col-span-3">Aún no se han anotado puntos.</p>}
           </div>
         </div>
+      </div>
+      
+      {/* Temporal Chart Section */}
+      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Gráfico Temporal</h3>
+        <TemporalChart shots={shots} playerNames={playerNames} stats={stats} />
       </div>
       
       {/* Performance Table Section */}

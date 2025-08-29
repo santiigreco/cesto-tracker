@@ -6,7 +6,6 @@ import WhatsappIcon from './WhatsappIcon';
 import ClipboardIcon from './ClipboardIcon';
 import ChartPieIcon from './ChartPieIcon';
 import ChartBarIcon from './ChartBarIcon';
-import SparklesIcon from './SparklesIcon';
 import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
 
 interface MobileMenuProps {
