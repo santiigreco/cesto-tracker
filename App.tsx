@@ -23,18 +23,22 @@ import ZoneChart from './components/ZoneChart';
 import HeatmapOverlay from './components/HeatmapOverlay';
 import Scoreboard from './components/Scoreboard';
 import FaqView from './components/FaqView';
+import SubstitutionModal from './components/SubstitutionModal';
+import SwitchIcon from './components/SwitchIcon';
 
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
 
 const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
+const ALL_PLAYER_NUMBERS = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 const initialGameState: GameState = {
     shots: [],
     isSetupComplete: false,
     hasSeenHomepage: false,
     availablePlayers: [],
+    activePlayers: [],
     playerNames: {},
     currentPlayer: '',
     currentPeriod: 'First Half',
@@ -71,6 +75,7 @@ function App() {
   const [isReselectConfirmOpen, setIsReselectConfirmOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempPlayerName, setTempPlayerName] = useState('');
@@ -89,8 +94,15 @@ function App() {
     try {
       const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
       if (savedStateJSON) {
-        const savedState = JSON.parse(savedStateJSON);
+        let savedState = JSON.parse(savedStateJSON);
         
+        // Migration for old saves before substitution feature
+        if (savedState.availablePlayers && !savedState.activePlayers) {
+            savedState.activePlayers = savedState.availablePlayers; // Assume all available players were active
+            // If more than 6, this could be an issue, but it's a reasonable migration path.
+            // A better migration could be to force re-setup. But for now, this is ok.
+        }
+
         // Migration from old hasSeenTutorial to new tutorialStep
         if (savedState.hasSeenTutorial === true && savedState.tutorialStep === undefined) {
             savedState.tutorialStep = 3; // 3 means completed
@@ -131,32 +143,47 @@ function App() {
     setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
   }, []);
   
-  const handleSetupComplete = useCallback((selectedPlayers: string[], newSettings: Settings) => {
-    if (selectedPlayers.length < 6) {
-        alert('Debes seleccionar al menos 6 jugadores.');
+  const handleSetupComplete = useCallback((starters: string[], newSettings: Settings) => {
+    if (starters.length !== 6) {
+        alert('Debes seleccionar exactamente 6 jugadores iniciales.');
         return;
     }
-    const sortedPlayers = selectedPlayers.sort((a,b) => Number(a) - Number(b));
+    const sortedStarters = starters.sort((a,b) => Number(a) - Number(b));
     
     setGameState(prev => {
-        // For the very first time (tutorial step 1), start with no player selected to guide the user.
-        // Otherwise, maintain selection or default to the first player.
         const isFirstTimeSetup = !prev.isSetupComplete;
-        const newCurrentPlayer = isFirstTimeSetup 
-            ? '' // No player selected initially for the tutorial
-            : (sortedPlayers.includes(prev.currentPlayer) ? prev.currentPlayer : sortedPlayers[0]);
+        
+        // If re-selecting, keep names and streaks
+        const playerNames = isFirstTimeSetup ? {} : prev.playerNames;
+        const playerStreaks = isFirstTimeSetup ? {} : prev.playerStreaks;
 
         return {
             ...prev,
-            availablePlayers: sortedPlayers,
+            availablePlayers: ALL_PLAYER_NUMBERS, // The full roster is all possible players
+            activePlayers: sortedStarters, // The 6 starters
+            playerNames,
+            playerStreaks,
             settings: newSettings,
             isSetupComplete: true,
-            currentPlayer: newCurrentPlayer,
+            currentPlayer: '', // No player selected initially
         };
     });
     
     // Reset filters if the selected player was removed
-    setAnalysisPlayer(prevPlayer => sortedPlayers.includes(prevPlayer) || prevPlayer === 'Todos' ? prevPlayer : 'Todos');
+    setAnalysisPlayer('Todos');
+  }, []);
+
+  const handleSubstitution = useCallback((playerOut: string, playerIn: string) => {
+    setGameState(prev => {
+        const newActivePlayers = prev.activePlayers.map(p => p === playerOut ? playerIn : p).sort((a, b) => Number(a) - Number(b));
+        return {
+            ...prev,
+            activePlayers: newActivePlayers,
+            // If the substituted player was the current one, reset selection
+            currentPlayer: prev.currentPlayer === playerOut ? '' : prev.currentPlayer,
+        };
+    });
+    setIsSubstitutionModalOpen(false);
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
@@ -444,7 +471,7 @@ function App() {
     faq: 'Preguntas Frecuentes',
   };
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
-  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep } = gameState;
+  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep } = gameState;
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
@@ -461,7 +488,7 @@ function App() {
   if (!isSetupComplete) {
     return <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
-              initialSelectedPlayers={availablePlayers}
+              initialSelectedPlayers={activePlayers}
               initialSettings={settings}
             />;
   }
@@ -469,14 +496,14 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
       <div className="w-full max-w-4xl flex-grow">
-        <header className="relative flex items-center mb-6">
+        <header className="relative flex items-center mb-4">
             <div className="flex-none w-12 md:w-0"> {/* Left side container */}
                  <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
                     <HamburgerIcon />
                  </button>
             </div>
             <div className="flex-grow text-center"> {/* Center container */}
-                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
+                <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
                     <button
                         onClick={handleRequestReturnHome}
                         className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
@@ -484,7 +511,7 @@ function App() {
                         title={isSetupComplete ? "Volver a la página de inicio" : ""}
                     >Cesto Tracker 🏐{'\uFE0F'}</button>
                 </h1>
-                <p className="text-lg text-slate-400 mt-2">
+                <p className="text-base sm:text-lg text-slate-400 mt-1">
                     {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
                     {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
                     {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
@@ -571,9 +598,18 @@ function App() {
                     currentPlayer={currentPlayer} 
                     setCurrentPlayer={handlePlayerChange} 
                     playerNames={playerNames} 
-                    availablePlayers={availablePlayers}
+                    availablePlayers={activePlayers}
                     isTutorialActive={showTutorial}
                   />
+                   <div className="mt-4 border-t border-slate-700 w-full pt-4 flex justify-center">
+                        <button
+                            onClick={() => setIsSubstitutionModalOpen(true)}
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
+                        >
+                            <SwitchIcon className="h-5 w-5" />
+                            <span>Cambio de Jugador</span>
+                        </button>
+                    </div>
                 </div>
               </div>
 
@@ -731,6 +767,17 @@ function App() {
         />
       )}
 
+      {isSubstitutionModalOpen && (
+        <SubstitutionModal
+            isOpen={isSubstitutionModalOpen}
+            onClose={() => setIsSubstitutionModalOpen(false)}
+            onSubstitute={handleSubstitution}
+            activePlayers={activePlayers}
+            availablePlayers={availablePlayers}
+            playerNames={playerNames}
+        />
+      )}
+
       {pendingShotPosition && (
         <OutcomeModal onOutcomeSelect={handleOutcomeSelection} onClose={handleCancelShot} />
       )}
@@ -774,7 +821,7 @@ function App() {
       {isReselectConfirmOpen && (
         <ConfirmationModal
           title="Volver a Selección de Jugadores"
-          message="¿Estás seguro? Volverás a la pantalla de selección para añadir o quitar jugadores. Los tiros ya registrados no se perderán."
+          message="¿Estás seguro? Volverás a la pantalla de selección para cambiar los 6 jugadores iniciales."
           confirmText="Sí, volver"
           cancelText="Cancelar"
           onConfirm={handleConfirmReselectPlayers}

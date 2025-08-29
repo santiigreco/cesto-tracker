@@ -43,7 +43,8 @@ export interface GameState {
     shots: Shot[];
     isSetupComplete: boolean;
     hasSeenHomepage: boolean;
-    availablePlayers: string[];
+    availablePlayers: string[]; // Full roster
+    activePlayers: string[]; // 6 players on court
     playerNames: Record<string, string>;
     currentPlayer: string;
     currentPeriod: GamePeriod;
