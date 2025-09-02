@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak } from './types';
+import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod } from './types';
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
@@ -25,13 +25,30 @@ import Scoreboard from './components/Scoreboard';
 import FaqView from './components/FaqView';
 import SubstitutionModal from './components/SubstitutionModal';
 import SwitchIcon from './components/SwitchIcon';
-
+import ClipboardIcon from './components/ClipboardIcon';
+import ChartBarIcon from './components/ChartBarIcon';
+import ShareIcon from './components/ShareIcon';
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
 
 const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
-const ALL_PLAYER_NUMBERS = Array.from({ length: 15 }, (_, i) => String(i + 1));
+
+const initialTallyStatsPeriod: TallyStatsPeriod = {
+  goles: 0,
+  fallos: 0,
+  recuperos: 0,
+  perdidas: 0,
+  reboteOfensivo: 0,
+  reboteDefensivo: 0,
+  asistencias: 0,
+  golesContra: 0,
+};
+
+const initialPlayerTally: TallyStats = {
+    'First Half': { ...initialTallyStatsPeriod },
+    'Second Half': { ...initialTallyStatsPeriod },
+};
 
 const initialGameState: GameState = {
     shots: [],
@@ -50,6 +67,8 @@ const initialGameState: GameState = {
     },
     playerStreaks: {},
     tutorialStep: 1, // 1: Select Player, 2: Tap Court, 3: Done
+    gameMode: null,
+    tallyStats: {},
 };
 
 
@@ -57,6 +76,300 @@ interface NotificationInfo {
     type: 'caliente' | 'fria';
     playerNumber: string;
 }
+
+// --- NEW IN-FILE COMPONENTS ---
+const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+    </svg>
+);
+
+const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
+    </svg>
+);
+
+const GameModeSelector: React.FC<{ onSelect: (mode: GameMode) => void }> = ({ onSelect }) => {
+    return (
+        <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
+            <div className="w-full max-w-2xl text-center">
+                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2">
+                    Modo de Juego
+                </h1>
+                <p className="text-lg text-slate-400 mb-8">
+                    Elige cómo quieres registrar los datos de este partido.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button
+                        onClick={() => onSelect('shot-chart')}
+                        className="group bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl shadow-lg hover:border-cyan-500 hover:-translate-y-1 transition-all duration-300"
+                    >
+                        <ClipboardIcon className="h-12 w-12 mx-auto text-cyan-400 mb-4" />
+                        <h2 className="text-2xl font-bold text-white mb-2">Registro de Tiros en Cancha</h2>
+                        <p className="text-slate-400">Analiza mapas de calor, gráficos de zonas y estadísticas detalladas de tiros.</p>
+                    </button>
+                    <button
+                        onClick={() => onSelect('stats-tally')}
+                        className="group bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl shadow-lg hover:border-emerald-500 hover:-translate-y-1 transition-all duration-300"
+                    >
+                        <ChartBarIcon className="h-12 w-12 mx-auto text-emerald-400 mb-4" />
+                        <h2 className="text-2xl font-bold text-white mb-2">Anotador de Estadísticas</h2>
+                        <p className="text-slate-400">Lleva un conteo rápido de recuperos, pérdidas, asistencias, rebotes y más.</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; onDecrement: () => void; }> = React.memo(({ label, value, onIncrement, onDecrement }) => (
+    <div className="flex flex-col items-center p-2 bg-slate-700/50 rounded-md gap-2">
+        <span className="text-xs sm:text-sm text-slate-300 text-center font-semibold">{label}</span>
+        <div className="flex items-center gap-2">
+            <button
+                onClick={onDecrement}
+                disabled={value <= 0}
+                className="w-7 h-7 flex items-center justify-center bg-red-600 hover:bg-red-700 rounded-full text-white font-bold disabled:bg-slate-600 disabled:opacity-50 transition-colors"
+                aria-label={`Decrementar ${label}`}
+            >
+                <MinusIcon className="w-4 h-4" />
+            </button>
+            <span className="w-8 text-center text-xl font-bold font-mono text-white">{value}</span>
+            <button
+                onClick={onIncrement}
+                className="w-7 h-7 flex items-center justify-center bg-green-600 hover:bg-green-700 rounded-full text-white font-bold transition-colors"
+                aria-label={`Incrementar ${label}`}
+            >
+                <PlusIcon className="w-4 h-4" />
+            </button>
+        </div>
+    </div>
+));
+
+const statLabels: Record<keyof TallyStatsPeriod, string> = {
+    goles: 'Goles',
+    fallos: 'Fallos',
+    recuperos: 'Recuperos',
+    perdidas: 'Pérdidas',
+    reboteOfensivo: 'Reb. Ofensivo',
+    reboteDefensivo: 'Reb. Defensivo',
+    asistencias: 'Asistencias',
+    golesContra: 'Goles en Contra',
+};
+
+
+const PlayerTallyCard: React.FC<{
+    playerNumber: string;
+    playerName: string;
+    isEditing: boolean;
+    tempPlayerName: string;
+    setTempPlayerName: (name: string) => void;
+    onStartEdit: (player: string) => void;
+    onSaveEdit: () => void;
+    onCancelEdit: () => void;
+    playerTally: TallyStatsPeriod;
+    onUpdate: (playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => void;
+}> = React.memo(({ playerNumber, playerName, isEditing, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, playerTally, onUpdate }) => {
+    return (
+        <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
+            <div className="mb-4" style={{ minHeight: '40px' }}>
+                {isEditing ? (
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={tempPlayerName}
+                            onChange={(e) => setTempPlayerName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') onSaveEdit();
+                                if (e.key === 'Escape') onCancelEdit();
+                            }}
+                            autoFocus
+                            className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2 w-full"
+                            placeholder={`Nombre para #${playerNumber}`}
+                        />
+                        <button onClick={onSaveEdit} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
+                            <CheckIcon className="h-5 w-5" />
+                        </button>
+                        <button onClick={onCancelEdit} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
+                            <XIcon className="h-5 w-5" />
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => onStartEdit(playerNumber)}
+                        className="group text-2xl font-bold text-cyan-400 p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors w-full text-left"
+                        title="Editar nombre del jugador"
+                        aria-label="Editar nombre del jugador"
+                    >
+                        <span className="group-hover:underline decoration-dotted underline-offset-4">
+                            {playerName || `Jugador #${playerNumber}`}
+                        </span>
+                    </button>
+                )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                {Object.keys(statLabels).map(statKey => (
+                    <CompactTallyStat
+                        key={statKey}
+                        label={statLabels[statKey as keyof TallyStatsPeriod]}
+                        value={playerTally[statKey as keyof TallyStatsPeriod]}
+                        onIncrement={() => onUpdate(playerNumber, statKey as keyof TallyStatsPeriod, 1)}
+                        onDecrement={() => onUpdate(playerNumber, statKey as keyof TallyStatsPeriod, -1)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+});
+
+const StatsTallyView: React.FC<{
+    players: string[];
+    playerNames: Record<string, string>;
+    tallyStats: Record<string, TallyStats>;
+    currentPeriod: GamePeriod;
+    onUpdate: (playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => void;
+    editingPlayer: string | null;
+    tempPlayerName: string;
+    setTempPlayerName: (name: string) => void;
+    onStartEdit: (player: string) => void;
+    onSaveEdit: () => void;
+    onCancelEdit: () => void;
+}> = ({ players, playerNames, tallyStats, currentPeriod, onUpdate, editingPlayer, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit }) => {
+    return (
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+            {players.map(player => (
+                <PlayerTallyCard
+                    key={player}
+                    playerNumber={player}
+                    playerName={playerNames[player]}
+                    isEditing={editingPlayer === player}
+                    tempPlayerName={tempPlayerName}
+                    setTempPlayerName={setTempPlayerName}
+                    onStartEdit={onStartEdit}
+                    onSaveEdit={onSaveEdit}
+                    onCancelEdit={onCancelEdit}
+                    playerTally={(tallyStats[player] || initialPlayerTally)[currentPeriod]}
+                    onUpdate={onUpdate}
+                />
+            ))}
+        </div>
+    );
+};
+
+
+const ShareReport: React.FC<{ gameState: GameState, playerStats: PlayerStats[] }> = ({ gameState, playerStats }) => {
+    const { shots, playerNames, gameMode, tallyStats } = gameState;
+    const showMaps = gameMode === 'shot-chart' && shots.length > 0;
+
+    return (
+        <div className="p-6 bg-slate-900 text-slate-200 font-sans">
+            <h1 className="text-3xl font-bold text-cyan-400 text-center mb-2">Reporte de Partido - Cesto Tracker</h1>
+            <p className="text-center text-slate-400 mb-6">Generado el {new Date().toLocaleDateString()}</p>
+            
+            <div className="space-y-8">
+                <StatisticsView 
+                    stats={playerStats} 
+                    playerNames={playerNames} 
+                    shots={shots} 
+                    isSharing={true}
+                    gameMode={gameMode}
+                    tallyStats={tallyStats} 
+                />
+
+                {showMaps && (
+                    <>
+                        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Mapa de Tiros</h2>
+                            <Court shots={shots} showShotMarkers={true} />
+                        </div>
+                        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Mapa de Calor</h2>
+                            <Court shots={[]}>
+                                <HeatmapOverlay shots={shots} />
+                            </Court>
+                        </div>
+                        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Análisis de Zonas</h2>
+                            <Court shots={[]}>
+                                <ZoneChart shots={shots} />
+                            </Court>
+                        </div>
+                    </>
+                )}
+            </div>
+             <footer className="w-full text-center text-slate-500 text-xs mt-8 pt-4 border-t border-slate-700">
+                Generado con Cesto Tracker 🏐{'\uFE0F'}
+            </footer>
+        </div>
+    );
+};
+
+
+const ShareModal: React.FC<{ isOpen: boolean; onClose: () => void; gameState: GameState; playerStats: PlayerStats[] }> = ({ isOpen, onClose, gameState, playerStats }) => {
+    const reportRef = useRef<HTMLDivElement>(null);
+    const [isCapturing, setIsCapturing] = useState(false);
+
+    const handleShare = async () => {
+        if (!reportRef.current || isCapturing) return;
+        setIsCapturing(true);
+        try {
+            const canvas = await html2canvas(reportRef.current, {
+                backgroundColor: '#0f172a',
+                useCORS: true,
+                scale: 2,
+            });
+            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) throw new Error('No se pudo crear la imagen.');
+            
+            const file = new File([blob], 'reporte-cestotracker.png', { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Reporte de Partido de Cesto Tracker',
+                    text: 'Aquí están las estadísticas completas del partido de Cestoball.',
+                });
+            } else {
+                alert('La función de compartir archivos no está disponible en este navegador.');
+            }
+        } catch (error) {
+            console.error('Error al compartir:', error);
+            alert('Ocurrió un error al intentar compartir el reporte.');
+        } finally {
+            setIsCapturing(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center p-4 border-b border-slate-700 flex-shrink-0">
+                    <h2 className="text-2xl font-bold text-cyan-400">Compartir Reporte Completo</h2>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar">
+                        <XIcon />
+                    </button>
+                </div>
+                <div className="flex-grow overflow-y-auto custom-scrollbar">
+                    <div ref={reportRef}>
+                        <ShareReport gameState={gameState} playerStats={playerStats} />
+                    </div>
+                </div>
+                <div className="p-4 border-t border-slate-700 flex-shrink-0">
+                    <button
+                        onClick={handleShare}
+                        disabled={isCapturing}
+                        className="w-full flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 disabled:bg-slate-600 disabled:opacity-50"
+                    >
+                        <ShareIcon />
+                        {isCapturing ? 'Generando imagen...' : 'Compartir como Imagen'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 /**
  * The main application component.
@@ -76,8 +389,9 @@ function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [tempPlayerName, setTempPlayerName] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -96,28 +410,36 @@ function App() {
       if (savedStateJSON) {
         let savedState = JSON.parse(savedStateJSON);
         
-        // Migration for old saves before substitution feature
-        if (savedState.availablePlayers && !savedState.activePlayers) {
-            savedState.activePlayers = savedState.availablePlayers; // Assume all available players were active
-            // If more than 6, this could be an issue, but it's a reasonable migration path.
-            // A better migration could be to force re-setup. But for now, this is ok.
+        // Ensure new state fields have defaults
+        if (!savedState.gameMode) savedState.gameMode = null;
+        if (!savedState.tallyStats) savedState.tallyStats = {};
+        
+        // Migration for older tallyStats structure
+        if (savedState.tallyStats) {
+            Object.keys(savedState.tallyStats).forEach(playerNum => {
+                const playerTally = savedState.tallyStats[playerNum];
+                if (playerTally && !playerTally['First Half']) { // Check if it's the old structure
+                    savedState.tallyStats[playerNum] = {
+                        'First Half': playerTally,
+                        'Second Half': initialTallyStatsPeriod,
+                    };
+                }
+            });
         }
 
-        // Migration from old hasSeenTutorial to new tutorialStep
+        if (savedState.availablePlayers && !savedState.activePlayers) {
+             savedState.activePlayers = savedState.availablePlayers.slice(0, 6);
+        }
         if (savedState.hasSeenTutorial === true && savedState.tutorialStep === undefined) {
-            savedState.tutorialStep = 3; // 3 means completed
+            savedState.tutorialStep = 3;
         } else if (savedState.hasSeenTutorial === false && savedState.tutorialStep === undefined) {
             savedState.tutorialStep = 1;
         }
         delete savedState.hasSeenTutorial;
-
-        // Any saved state implies they have used the app. Don't show homepage.
-        // New users will not have savedStateJSON and will get initial state.
         if (savedState.hasSeenHomepage === undefined) {
             savedState.hasSeenHomepage = true;
         }
 
-        // Ensure settings from old saves get new defaults if they are missing
         const combinedSettings = { ...initialGameState.settings, ...savedState.settings };
         setGameState({ ...initialGameState, ...savedState, settings: combinedSettings });
       }
@@ -143,35 +465,99 @@ function App() {
     setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
   }, []);
   
-  const handleSetupComplete = useCallback((starters: string[], newSettings: Settings) => {
-    if (starters.length !== 6) {
-        alert('Debes seleccionar exactamente 6 jugadores iniciales.');
-        return;
-    }
-    const sortedStarters = starters.sort((a,b) => Number(a) - Number(b));
+  const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings) => {
+    const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
     
     setGameState(prev => {
         const isFirstTimeSetup = !prev.isSetupComplete;
         
-        // If re-selecting, keep names and streaks
         const playerNames = isFirstTimeSetup ? {} : prev.playerNames;
         const playerStreaks = isFirstTimeSetup ? {} : prev.playerStreaks;
+        const tallyStats = isFirstTimeSetup ? {} : prev.tallyStats;
+
+        // Initialize tally stats for all players in the roster
+        sortedRoster.forEach(p => {
+            if (!tallyStats[p]) {
+                tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
+            }
+        });
 
         return {
             ...prev,
-            availablePlayers: ALL_PLAYER_NUMBERS, // The full roster is all possible players
-            activePlayers: sortedStarters, // The 6 starters
+            availablePlayers: sortedRoster,
+            activePlayers: sortedRoster.slice(0, 6), // First 6 are starters for shot-chart mode
             playerNames,
             playerStreaks,
             settings: newSettings,
             isSetupComplete: true,
-            currentPlayer: '', // No player selected initially
+            currentPlayer: '',
+            gameMode: null, // Go to mode selection
+            tallyStats: tallyStats,
         };
     });
     
-    // Reset filters if the selected player was removed
     setAnalysisPlayer('Todos');
   }, []);
+  
+  const handleSetGameMode = useCallback((mode: GameMode) => {
+     if (mode === 'shot-chart' && gameState.availablePlayers.length < 6) {
+        alert('El modo "Registro de Tiros" requiere un equipo de al menos 6 jugadores. Por favor, vuelve a la configuración para añadir más.');
+        setGameState(prev => ({...prev, isSetupComplete: false, gameMode: null }));
+        return;
+    }
+    setGameState(prev => ({...prev, gameMode: mode, activeTab: 'logger' }));
+  }, [gameState.availablePlayers]);
+
+  const handleUpdateTallyStat = useCallback((playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => {
+    setGameState(prev => {
+        const { currentPeriod } = prev;
+        const playerTallyStats = prev.tallyStats[playerNumber] || JSON.parse(JSON.stringify(initialPlayerTally));
+        const currentPeriodStats = playerTallyStats[currentPeriod];
+
+        const newPeriodStats = { ...currentPeriodStats, [stat]: Math.max(0, currentPeriodStats[stat] + change) };
+        const newPlayerTallyStats = { ...playerTallyStats, [currentPeriod]: newPeriodStats };
+
+        const newTallyState = {
+            ...prev,
+            tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats }
+        };
+
+        // Streak logic only on increments (+1)
+        if (change === 1 && (stat === 'goles' || stat === 'fallos')) {
+            const isGol = stat === 'goles';
+            const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
+            let newStreak = { ...currentStreak };
+            let triggeredNotification: NotificationInfo | null = null;
+    
+            if (isGol) {
+                newStreak.consecutiveGoles += 1;
+                newStreak.consecutiveMisses = 0;
+                newStreak.notifiedFria = false;
+                if (prev.settings.isManoCalienteEnabled && newStreak.consecutiveGoles >= prev.settings.manoCalienteThreshold && !newStreak.notifiedCaliente) {
+                    triggeredNotification = { type: 'caliente', playerNumber };
+                    newStreak.notifiedCaliente = true;
+                }
+            } else { // is Fallo/Miss
+                newStreak.consecutiveMisses += 1;
+                newStreak.consecutiveGoles = 0;
+                newStreak.notifiedCaliente = false;
+                if (prev.settings.isManoFriaEnabled && newStreak.consecutiveMisses >= prev.settings.manoFriaThreshold && !newStreak.notifiedFria) {
+                    triggeredNotification = { type: 'fria', playerNumber };
+                    newStreak.notifiedFria = true;
+                }
+            }
+            
+            if (triggeredNotification) {
+                setTimeout(() => setNotificationPopup(triggeredNotification), 200);
+            }
+
+            newTallyState.playerStreaks = { ...prev.playerStreaks, [playerNumber]: newStreak };
+        }
+
+        return newTallyState;
+    });
+  }, []);
+
 
   const handleSubstitution = useCallback((playerOut: string, playerIn: string) => {
     setGameState(prev => {
@@ -179,7 +565,6 @@ function App() {
         return {
             ...prev,
             activePlayers: newActivePlayers,
-            // If the substituted player was the current one, reset selection
             currentPlayer: prev.currentPlayer === playerOut ? '' : prev.currentPlayer,
         };
     });
@@ -187,7 +572,6 @@ function App() {
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
-    // If tutorial is on step 2, tapping the court just completes the tutorial.
     if (gameState.tutorialStep === 2) {
         setGameState(prev => ({ ...prev, tutorialStep: 3 }));
         return;
@@ -202,7 +586,7 @@ function App() {
 
   const handleOutcomeSelection = useCallback((isGol: boolean) => {
     if (pendingShotPosition) {
-      const HALF_COURT_LINE_Y = 1; // From Court.tsx, represents the behind-the-arc line
+      const HALF_COURT_LINE_Y = 1; 
       let golValue = 0;
       if (isGol) {
         golValue = pendingShotPosition.y < HALF_COURT_LINE_Y ? 3 : 2;
@@ -218,7 +602,6 @@ function App() {
       };
       
       setGameState(prev => {
-        // --- Create the new state object ---
         const { playerNumber } = newShot;
         const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
         let newStreak = { ...currentStreak };
@@ -227,22 +610,21 @@ function App() {
         if (isGol) {
           newStreak.consecutiveGoles += 1;
           newStreak.consecutiveMisses = 0;
-          newStreak.notifiedFria = false; // Reset opposite streak flag
+          newStreak.notifiedFria = false; 
           if (prev.settings.isManoCalienteEnabled && newStreak.consecutiveGoles >= prev.settings.manoCalienteThreshold && !newStreak.notifiedCaliente) {
             triggeredNotification = { type: 'caliente', playerNumber };
-            newStreak.notifiedCaliente = true; // Mark as notified for this streak
+            newStreak.notifiedCaliente = true;
           }
         } else { // is Miss
           newStreak.consecutiveMisses += 1;
           newStreak.consecutiveGoles = 0;
-          newStreak.notifiedCaliente = false; // Reset opposite streak flag
+          newStreak.notifiedCaliente = false;
           if (prev.settings.isManoFriaEnabled && newStreak.consecutiveMisses >= prev.settings.manoFriaThreshold && !newStreak.notifiedFria) {
             triggeredNotification = { type: 'fria', playerNumber };
-            newStreak.notifiedFria = true; // Mark as notified for this streak
+            newStreak.notifiedFria = true;
           }
         }
         
-        // Show notification after a brief delay
         if (triggeredNotification) {
             setTimeout(() => setNotificationPopup(triggeredNotification), 200);
         }
@@ -253,7 +635,6 @@ function App() {
             playerStreaks: { ...prev.playerStreaks, [playerNumber]: newStreak }
         };
 
-        // If this is the very first shot being logged, the tutorial is now complete.
         if (prev.tutorialStep === 2) {
             newState.tutorialStep = 3;
         }
@@ -261,31 +642,31 @@ function App() {
         return newState;
       });
       
-      setRedoStack([]); // Clear redo stack on new action
+      setRedoStack([]);
       setPendingShotPosition(null);
     }
   }, [pendingShotPosition, gameState.currentPlayer, gameState.currentPeriod, gameState.settings, gameState.playerStreaks]);
   
-  const handleStartEditingName = useCallback(() => {
-    if (!gameState.currentPlayer || gameState.currentPlayer === 'Todos') return;
-    setTempPlayerName(gameState.playerNames[gameState.currentPlayer] || '');
-    setIsEditingName(true);
-  }, [gameState.currentPlayer, gameState.playerNames]);
+  const handleStartEditingName = useCallback((playerNumber: string) => {
+      if (!playerNumber || playerNumber === 'Todos') return;
+      setTempPlayerName(gameState.playerNames[playerNumber] || '');
+      setEditingPlayer(playerNumber);
+  }, [gameState.playerNames]);
 
   const handleCancelEditingName = useCallback(() => {
-    setIsEditingName(false);
-    setTempPlayerName('');
+      setEditingPlayer(null);
+      setTempPlayerName('');
   }, []);
 
   const handleSavePlayerName = useCallback(() => {
-    if (!gameState.currentPlayer || gameState.currentPlayer === 'Todos') return;
-    setGameState(prev => ({
-      ...prev,
-      playerNames: { ...prev.playerNames, [gameState.currentPlayer]: tempPlayerName.trim() }
-    }));
-    setIsEditingName(false);
-    setTempPlayerName('');
-  }, [gameState.currentPlayer, tempPlayerName]);
+      if (!editingPlayer) return;
+      setGameState(prev => ({
+          ...prev,
+          playerNames: { ...prev.playerNames, [editingPlayer]: tempPlayerName.trim() }
+      }));
+      setEditingPlayer(null);
+      setTempPlayerName('');
+  }, [editingPlayer, tempPlayerName]);
   
   const handleUndo = useCallback(() => {
     if (gameState.shots.length === 0) return;
@@ -296,7 +677,6 @@ function App() {
         ...prev,
         shots: prev.shots.slice(0, -1)
     }));
-    // Note: This simple undo does not revert the streak counters for simplicity.
   }, [gameState.shots]);
 
   const handleRedo = useCallback(() => {
@@ -308,7 +688,6 @@ function App() {
         shots: [...prev.shots, shotToRedo]
     }));
     setRedoStack(prev => prev.slice(0, -1));
-    // Note: This simple redo does not re-apply streak logic for simplicity.
   }, [redoStack]);
   
   const handleRequestClearSheet = useCallback(() => {
@@ -335,8 +714,8 @@ function App() {
   const handleConfirmNewGame = useCallback(() => {
       setGameState(prev => ({
           ...initialGameState,
-          hasSeenHomepage: true, // Keep homepage seen
-          tutorialStep: prev.tutorialStep === 3 ? 3 : 1, // Keep tutorial completed if it was
+          hasSeenHomepage: true,
+          tutorialStep: prev.tutorialStep === 3 ? 3 : 1,
       }));
       setRedoStack([]);
       setIsNewGameConfirmOpen(false);
@@ -352,23 +731,28 @@ function App() {
   const handleConfirmReselectPlayers = useCallback(() => {
     setGameState(prev => ({
         ...prev,
-        isSetupComplete: false
+        isSetupComplete: false,
+        gameMode: null,
     }));
-    setRedoStack([]); // Clear redo stack to avoid confusion
+    setRedoStack([]);
     setIsReselectConfirmOpen(false);
   }, []);
   
   const handleCancelReselectPlayers = useCallback(() => setIsReselectConfirmOpen(false), []);
+  
+  const handleChangeMode = useCallback(() => {
+    setGameState(prev => ({...prev, gameMode: null}));
+    setIsSettingsModalOpen(false);
+  }, []);
+
 
   const handleRequestReturnHome = useCallback(() => {
-    // Always confirm if a game is in progress
     if (gameState.isSetupComplete) {
       setIsReturnHomeConfirmOpen(true);
     }
   }, [gameState.isSetupComplete]);
 
   const handleConfirmReturnHome = useCallback(() => {
-      // Reset state completely to show homepage and start fresh
       setGameState({ ...initialGameState, hasSeenHomepage: false, tutorialStep: 1 });
       setRedoStack([]);
       setIsReturnHomeConfirmOpen(false);
@@ -384,7 +768,6 @@ function App() {
       return {
         ...prev,
         settings: newSettings,
-        // Reset streaks if thresholds change to apply new rules cleanly
         playerStreaks: (calienteThresholdChanged || friaThresholdChanged) ? {} : prev.playerStreaks,
       };
     });
@@ -423,6 +806,11 @@ function App() {
     return gameState.shots.filter(shot => shot.period === gameState.currentPeriod);
   }, [gameState.shots, gameState.currentPeriod]);
 
+  const playersWithShots = useMemo(() => 
+    Array.from(new Set(gameState.shots.map(shot => shot.playerNumber))).sort((a, b) => Number(a) - Number(b)), 
+    [gameState.shots]
+  );
+  
   const filteredAnalysisShots = useMemo(() => {
     return gameState.shots.filter(shot => {
       const playerMatch = analysisPlayer === 'Todos' || shot.playerNumber === analysisPlayer;
@@ -441,44 +829,87 @@ function App() {
   }, [gameState.shots, analysisPlayer, analysisResultFilter, analysisPeriodFilter]);
 
   const playerStats = useMemo<PlayerStats[]>(() => {
-    const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
-
-    gameState.shots.forEach(shot => {
-      const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
-      pStats.totalShots += 1;
-      if (shot.isGol) {
-        pStats.totalGoles += 1;
-        pStats.totalPoints += shot.golValue;
-      }
-      statsMap.set(shot.playerNumber, pStats);
-    });
-
-    return Array.from(statsMap.entries()).map(([playerNumber, data]) => ({
-      playerNumber,
-      ...data,
-      golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
-    }));
-  }, [gameState.shots]);
+    if (gameState.gameMode === 'shot-chart') {
+        const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
+        gameState.shots.forEach(shot => {
+            const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
+            pStats.totalShots += 1;
+            if (shot.isGol) {
+                pStats.totalGoles += 1;
+                pStats.totalPoints += shot.golValue;
+            }
+            statsMap.set(shot.playerNumber, pStats);
+        });
+        return Array.from(statsMap.entries()).map(([playerNumber, data]) => ({
+            playerNumber,
+            ...data,
+            golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
+        }));
+    }
+    return [];
+  }, [gameState.shots, gameState.gameMode]);
   
   const totalPoints = useMemo(() => {
-    return playerStats.reduce((acc, player) => acc + player.totalPoints, 0);
-  }, [playerStats]);
+    if (gameState.gameMode === 'shot-chart') {
+      return playerStats.reduce((acc, player) => acc + player.totalPoints, 0);
+    }
+    if (gameState.gameMode === 'stats-tally') {
+        return Object.values(gameState.tallyStats).reduce((total, playerTally) => {
+            const playerPoints = (playerTally['First Half'].goles + playerTally['Second Half'].goles) * 2; // Assume 2 points per goal
+            return total + playerPoints;
+        }, 0);
+    }
+    return 0;
+  }, [playerStats, gameState.tallyStats, gameState.gameMode]);
 
   const tabTranslations: {[key in AppTab]: string} = { 
-    logger: 'Registro de tiros', 
+    logger: gameState.gameMode === 'stats-tally' ? 'Anotador' : 'Registro de tiros',
     courtAnalysis: 'Análisis de Cancha', 
     statistics: 'Estadísticas', 
     faq: 'Preguntas Frecuentes',
   };
+
+  const tabsForCurrentMode: AppTab[] = useMemo(() => {
+    if (gameState.gameMode === 'shot-chart') {
+        return ['logger', 'courtAnalysis', 'statistics', 'faq'];
+    }
+    if (gameState.gameMode === 'stats-tally') {
+        return ['logger', 'statistics', 'faq'];
+    }
+    return [];
+  }, [gameState.gameMode]);
+
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
-  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep } = gameState;
+  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, tallyStats } = gameState;
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
       isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
     }`;
 
-  const showTutorial = isSetupComplete && tutorialStep < 3;
+  const showTutorial = isSetupComplete && tutorialStep < 3 && gameMode === 'shot-chart';
+  
+  const getPageSubtitle = () => {
+    if (gameMode === 'shot-chart') {
+      switch(activeTab) {
+        case 'logger': return 'Tocá en la cancha para registrar un tiro.';
+        case 'courtAnalysis': return 'Visualiza la ubicación y densidad de los tiros.';
+        case 'statistics': return 'Revisa el rendimiento de los jugadores.';
+        case 'faq': return 'Encontrá respuestas a las preguntas más comunes.';
+        default: return '';
+      }
+    }
+    if (gameMode === 'stats-tally') {
+        switch(activeTab) {
+            case 'logger': return 'Anota las estadísticas de cada jugador.';
+            case 'statistics': return 'Revisa el rendimiento de los jugadores.';
+            case 'faq': return 'Encontrá respuestas a las preguntas más comunes.';
+            default: return '';
+        }
+    }
+    return '';
+  };
+
 
   // --- RENDER ---
   if (!hasSeenHomepage) {
@@ -488,21 +919,25 @@ function App() {
   if (!isSetupComplete) {
     return <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
-              initialSelectedPlayers={activePlayers}
+              initialSelectedPlayers={availablePlayers}
               initialSettings={settings}
             />;
   }
   
+  if (!gameMode) {
+      return <GameModeSelector onSelect={handleSetGameMode} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
       <div className="w-full max-w-4xl flex-grow">
         <header className="relative flex items-center mb-4">
-            <div className="flex-none w-12 md:w-0"> {/* Left side container */}
+            <div className="flex-none w-12 md:w-0">
                  <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
                     <HamburgerIcon />
                  </button>
             </div>
-            <div className="flex-grow text-center"> {/* Center container */}
+            <div className="flex-grow text-center">
                 <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
                     <button
                         onClick={handleRequestReturnHome}
@@ -512,13 +947,10 @@ function App() {
                     >Cesto Tracker 🏐{'\uFE0F'}</button>
                 </h1>
                 <p className="text-base sm:text-lg text-slate-400 mt-1">
-                    {activeTab === 'logger' && 'Tocá en la cancha para registrar un tiro.'}
-                    {activeTab === 'courtAnalysis' && 'Visualiza la ubicación y densidad de los tiros.'}
-                    {activeTab === 'statistics' && 'Revisa el rendimiento de los jugadores.'}
-                    {activeTab === 'faq' && 'Encontrá respuestas a las preguntas más comunes.'}
+                   {getPageSubtitle()}
                 </p>
             </div>
-            <div className="flex-none w-12 flex justify-end"> {/* Right side container */}
+            <div className="flex-none w-12 flex justify-end">
                  <button
                     onClick={() => setIsSettingsModalOpen(true)}
                     className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
@@ -532,33 +964,82 @@ function App() {
 
         {/* Tab Switcher - Desktop */}
         <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
-          {(['logger', 'courtAnalysis', 'statistics', 'faq'] as AppTab[]).map(tab => (
+            {tabsForCurrentMode.map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
                 activeTab === tab
-                  ? 'border-b-4 border-cyan-500 text-cyan-400'
-                  : 'text-slate-500 hover:text-cyan-400'
-              }`}
+                    ? 'border-b-4 border-cyan-500 text-cyan-400'
+                    : 'text-slate-500 hover:text-cyan-400'
+                }`}
             >
-              {tabTranslations[tab]}
+                {tabTranslations[tab]}
             </button>
-          ))}
+            ))}
         </div>
 
         <main className="flex flex-col gap-6">
-          {activeTab === 'logger' && (
+          {gameMode === 'stats-tally' && activeTab === 'logger' && (
+            <div className="flex flex-col gap-6">
+                <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
+                  <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
+                  <select
+                      id="period-selector"
+                      value={currentPeriod}
+                      onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                      className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
+                  >
+                    {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
+                      <option key={period} value={period}>
+                        {periodTranslations[period]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <StatsTallyView
+                    players={availablePlayers}
+                    playerNames={playerNames}
+                    tallyStats={tallyStats}
+                    currentPeriod={currentPeriod}
+                    onUpdate={handleUpdateTallyStat}
+                    editingPlayer={editingPlayer}
+                    tempPlayerName={tempPlayerName}
+                    setTempPlayerName={setTempPlayerName}
+                    onStartEdit={handleStartEditingName}
+                    onSaveEdit={handleSavePlayerName}
+                    onCancelEdit={handleCancelEditingName}
+                />
+            </div>
+          )}
+
+          {gameMode === 'stats-tally' && activeTab === 'statistics' && (
+             <div className="flex flex-col gap-8">
+              <StatisticsView
+                stats={[]}
+                playerNames={playerNames}
+                shots={[]}
+                onShareClick={() => setIsShareModalOpen(true)}
+                gameMode={gameMode}
+                tallyStats={tallyStats}
+              />
+            </div>
+          )}
+
+          {gameMode === 'stats-tally' && activeTab === 'faq' && (
+            <FaqView />
+          )}
+
+          {gameMode === 'shot-chart' && activeTab === 'logger' && (
             <>
               {showTutorial && (
                 <TutorialOverlay step={tutorialStep} />
               )}
               
-              {/* Player Control Panel */}
               <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
                 <div className="flex flex-col items-center">
                   <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
-                    {isEditingName ? (
+                     {editingPlayer === currentPlayer && currentPlayer && currentPlayer !== 'Todos' ? (
                       <div className="flex items-center gap-2">
                           <input
                               type="text"
@@ -581,7 +1062,7 @@ function App() {
                       </div>
                     ) : (
                       <button
-                          onClick={handleStartEditingName}
+                          onClick={() => handleStartEditingName(currentPlayer)}
                           disabled={!currentPlayer || currentPlayer === 'Todos'}
                           className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
                           title="Editar nombre del jugador"
@@ -613,7 +1094,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Court & Action Buttons */}
               <div className={`w-full flex flex-col gap-4 ${showTutorial && tutorialStep === 2 ? 'relative z-50' : ''}`}>
                 <Court
                   shots={filteredLoggerTabShots}
@@ -653,10 +1133,8 @@ function App() {
                 </div>
               </div>
               
-              {/* Scoreboard */}
               <Scoreboard totalPoints={totalPoints} />
 
-              {/* Period Controls */}
               <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
                   <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
                   <select
@@ -673,27 +1151,23 @@ function App() {
                   </select>
               </div>
 
-              {/* Chronological Shot Log */}
               <ShotLog shots={shots} playerNames={playerNames} />
             </>
           )}
           
-          {activeTab === 'courtAnalysis' && (
+          {gameMode === 'shot-chart' && activeTab === 'courtAnalysis' && (
              <div className="flex flex-col gap-8">
-                {/* View Switcher */}
                 <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
                     <button onClick={() => setMapView('shotmap')} className={getFilterButtonClass(mapView === 'shotmap')}>Mapa de Tiros</button>
                     <button onClick={() => setMapView('heatmap')} className={getFilterButtonClass(mapView === 'heatmap')}>Mapa de Calor</button>
                     <button onClick={() => setMapView('zonemap')} className={getFilterButtonClass(mapView === 'zonemap')}>Gráfico de Zonas</button>
                 </div>
                 
-                {/* Player Selector */}
                 <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
                    <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
-                  <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={availablePlayers} />
+                  <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={playersWithShots} />
                 </div>
 
-                {/* Court */}
                 <div className="w-full">
                   <Court
                     shots={mapView === 'shotmap' ? filteredAnalysisShots : []}
@@ -704,9 +1178,7 @@ function App() {
                   </Court>
                 </div>
 
-                {/* Filters container */}
                 <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
-                    {/* Result Filter */}
                     <div className="flex-1">
                         <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
                         <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
@@ -715,7 +1187,6 @@ function App() {
                             <button onClick={() => setAnalysisResultFilter('misses')} className={getFilterButtonClass(analysisResultFilter === 'misses')}>Fallos</button>
                         </div>
                     </div>
-                    {/* Period Filter */}
                     <div className="flex-1">
                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
                          <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
@@ -728,13 +1199,19 @@ function App() {
              </div>
           )}
 
-          {activeTab === 'statistics' && (
+          {gameMode === 'shot-chart' && activeTab === 'statistics' && (
             <div className="flex flex-col gap-8">
-              <StatisticsView stats={playerStats} playerNames={playerNames} shots={shots} />
+              <StatisticsView 
+                stats={playerStats} 
+                playerNames={playerNames} 
+                shots={shots} 
+                onShareClick={() => setIsShareModalOpen(true)}
+                gameMode={gameMode}
+              />
             </div>
           )}
 
-          {activeTab === 'faq' && (
+          {gameMode === 'shot-chart' && activeTab === 'faq' && (
             <FaqView />
           )}
 
@@ -755,6 +1232,7 @@ function App() {
         }}
         onShare={handleShare}
         tabTranslations={tabTranslations}
+        tabs={tabsForCurrentMode}
       />
       
       {isSettingsModalOpen && (
@@ -764,8 +1242,16 @@ function App() {
             onClose={() => setIsSettingsModalOpen(false)}
             onRequestNewGame={handleRequestNewGame}
             onRequestReselectPlayers={handleRequestReselectPlayers}
+            onRequestChangeMode={handleChangeMode}
         />
       )}
+      
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        gameState={gameState}
+        playerStats={playerStats}
+      />
 
       {isSubstitutionModalOpen && (
         <SubstitutionModal
@@ -821,7 +1307,7 @@ function App() {
       {isReselectConfirmOpen && (
         <ConfirmationModal
           title="Volver a Selección de Jugadores"
-          message="¿Estás seguro? Volverás a la pantalla de selección para cambiar los 6 jugadores iniciales."
+          message="¿Estás seguro? Volverás a la pantalla de selección para cambiar los jugadores del equipo."
           confirmText="Sí, volver"
           cancelText="Cancelar"
           onConfirm={handleConfirmReselectPlayers}

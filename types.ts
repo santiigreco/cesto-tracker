@@ -2,6 +2,7 @@ export type GamePeriod = 'First Half' | 'Second Half';
 export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'faq';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
 export type MapPeriodFilter = GamePeriod | 'all';
+export type GameMode = 'shot-chart' | 'stats-tally' | null;
 
 export interface ShotPosition {
   x: number; // in meters, from top edge (length-wise)
@@ -39,6 +40,24 @@ export interface PlayerStreak {
     notifiedFria: boolean;
 }
 
+// Represents stats for a single period
+export interface TallyStatsPeriod {
+  goles: number;
+  fallos: number;
+  recuperos: number;
+  perdidas: number;
+  reboteOfensivo: number;
+  reboteDefensivo: number;
+  asistencias: number;
+  golesContra: number;
+}
+
+// Holds stats for both periods
+export type TallyStats = {
+    [key in GamePeriod]: TallyStatsPeriod;
+};
+
+
 export interface GameState {
     shots: Shot[];
     isSetupComplete: boolean;
@@ -51,4 +70,6 @@ export interface GameState {
     settings: Settings;
     playerStreaks: Record<string, PlayerStreak>;
     tutorialStep: number; // 1: Select Player, 2: Tap Court, 3: Done
+    gameMode: GameMode;
+    tallyStats: Record<string, TallyStats>; // Maps playerNumber to their TallyStats
 }

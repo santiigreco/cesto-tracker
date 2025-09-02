@@ -1,12 +1,179 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { PlayerStats, Shot } from '../types';
+import { PlayerStats, Shot, GameMode, TallyStats, GamePeriod, TallyStatsPeriod } from '../types';
 import TrophyIcon from './TrophyIcon';
 import DownloadIcon from './DownloadIcon';
 import ShareIcon from './ShareIcon';
 import TemporalChart from './TemporalChart';
 
-// TypeScript declaration for html2canvas global variable
-declare const html2canvas: any;
+interface StatisticsViewProps {
+  stats: PlayerStats[];
+  playerNames: Record<string, string>;
+  shots: Shot[];
+  onShareClick?: () => void;
+  isSharing?: boolean;
+  gameMode?: GameMode;
+  tallyStats?: Record<string, TallyStats>;
+}
+
+// Sub-component for the Tally Statistics view
+const TallyStatisticsView: React.FC<{
+  tallyStats: Record<string, TallyStats>;
+  playerNames: Record<string, string>;
+  isSharing: boolean;
+}> = ({ tallyStats, playerNames, isSharing }) => {
+  const [tallyPeriodFilter, setTallyPeriodFilter] = useState<'all' | GamePeriod>('all');
+
+  const getFilterButtonClass = (isActive: boolean) =>
+    `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
+      isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
+    }`;
+
+  const aggregatedStats = useMemo(() => {
+    return Object.entries(tallyStats).map(([playerNumber, playerTally]) => {
+      let stats: TallyStatsPeriod;
+      if (tallyPeriodFilter === 'all') {
+        stats = Object.values(playerTally).reduce((acc, periodStats) => {
+          (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
+            acc[key] += periodStats[key];
+          });
+          return acc;
+        }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0 });
+      } else {
+        stats = playerTally[tallyPeriodFilter];
+      }
+      const totalShots = stats.goles + stats.fallos;
+      const totalRebounds = stats.reboteOfensivo + stats.reboteDefensivo;
+      const golPercentage = totalShots > 0 ? (stats.goles / totalShots) * 100 : 0;
+      return { playerNumber, ...stats, totalRebounds, golPercentage };
+    });
+  }, [tallyStats, tallyPeriodFilter]);
+  
+  const teamTotals = useMemo(() => {
+     return aggregatedStats.reduce((acc, playerStats) => {
+          (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
+            acc[key] += playerStats[key];
+          });
+          return acc;
+        }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0 });
+  }, [aggregatedStats]);
+
+  const topPerformers = useMemo(() => {
+    const sortedByGoles = [...aggregatedStats].sort((a, b) => b.goles - a.goles).slice(0, 3);
+    const sortedByRebounds = [...aggregatedStats].sort((a, b) => b.totalRebounds - a.totalRebounds).slice(0, 3);
+    const sortedByAsistencias = [...aggregatedStats].sort((a, b) => b.asistencias - a.asistencias).slice(0, 3);
+    return { goles: sortedByGoles, rebotes: sortedByRebounds, asistencias: sortedByAsistencias };
+  }, [aggregatedStats]);
+  
+  const hasData = aggregatedStats.length > 0;
+
+  if (!hasData && !isSharing) {
+    return (
+      <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
+        <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
+        <p className="text-slate-400">Registra algunos datos para ver las estadísticas de los jugadores aquí.</p>
+      </div>
+    );
+  }
+
+  const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
+
+  return (
+    <div className="flex flex-col gap-8">
+      {!isSharing && (
+        <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
+          <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>Ambos</button>
+          <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+          <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+        </div>
+      )}
+      
+       {/* Team Statistics Section */}
+      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-center">
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-green-400">{teamTotals.goles}</p><p className="text-xs sm:text-sm text-slate-400">Goles</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-red-400">{teamTotals.fallos}</p><p className="text-xs sm:text-sm text-slate-400">Fallos</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.recuperos}</p><p className="text-xs sm:text-sm text-slate-400">Recuperos</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.perdidas}</p><p className="text-xs sm:text-sm text-slate-400">Pérdidas</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}</p><p className="text-xs sm:text-sm text-slate-400">Rebotes</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.asistencias}</p><p className="text-xs sm:text-sm text-slate-400">Asistencias</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg col-span-2 sm:col-span-1 md:col-span-2"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.golesContra}</p><p className="text-xs sm:text-sm text-slate-400">Goles en Contra</p></div>
+        </div>
+      </div>
+
+       {/* Top Scorers Section */}
+      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <TopPerformerCategory title="Goles" performers={topPerformers.goles} statKey="goles" playerNames={playerNames} />
+            <TopPerformerCategory title="Rebotes" performers={topPerformers.rebotes} statKey="totalRebounds" playerNames={playerNames} />
+            <TopPerformerCategory title="Asistencias" performers={topPerformers.asistencias} statKey="asistencias" playerNames={playerNames} />
+        </div>
+      </div>
+      
+      {/* Performance Table Section */}
+      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <h3 className="text-3xl font-bold text-cyan-400 mb-4">Rendimiento por Jugador</h3>
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full min-w-[700px] text-left table-auto">
+            <thead>
+              <tr className="border-b-2 border-slate-600">
+                <th className="p-2 text-sm tracking-wider font-semibold">Jugador</th>
+                <th title="Goles" className="p-2 text-sm tracking-wider text-center font-semibold">G</th>
+                <th title="Fallos" className="p-2 text-sm tracking-wider text-center font-semibold">F</th>
+                <th title="% Goles" className="p-2 text-sm tracking-wider text-center font-semibold">%G</th>
+                <th title="Recuperos" className="p-2 text-sm tracking-wider text-center font-semibold">Rec</th>
+                <th title="Pérdidas" className="p-2 text-sm tracking-wider text-center font-semibold">Pér</th>
+                <th title="Rebotes Ofensivos" className="p-2 text-sm tracking-wider text-center font-semibold">RO</th>
+                <th title="Rebotes Defensivos" className="p-2 text-sm tracking-wider text-center font-semibold">RD</th>
+                <th title="Asistencias" className="p-2 text-sm tracking-wider text-center font-semibold">Ast</th>
+                <th title="Goles en Contra" className="p-2 text-sm tracking-wider text-center font-semibold">GC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aggregatedStats.sort((a,b) => Number(a.playerNumber) - Number(b.playerNumber)).map(player => (
+                <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
+                  <td className="p-2 font-mono text-cyan-300 font-bold">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.goles}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.fallos}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.golPercentage.toFixed(0)}%</td>
+                  <td className="p-2 font-mono text-white text-center">{player.recuperos}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.perdidas}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.reboteOfensivo}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.reboteDefensivo}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.asistencias}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.golesContra}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TopPerformerCategory: React.FC<{
+    title: string;
+    performers: (TallyStatsPeriod & { playerNumber: string, totalRebounds: number })[];
+    statKey: 'goles' | 'totalRebounds' | 'asistencias';
+    playerNames: Record<string, string>;
+}> = ({ title, performers, statKey, playerNames }) => (
+    <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
+        <h4 className="text-xl font-bold text-center text-cyan-400 mb-3">{title}</h4>
+        <div className="space-y-2">
+            {performers.slice(0, 3).map((player, index) => (
+                <div key={player.playerNumber} className="flex items-center gap-3 bg-slate-800/50 p-2 rounded-md">
+                    <TrophyIcon rank={index + 1} />
+                    <span className="flex-grow font-semibold text-white truncate">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</span>
+                    <span className="font-bold text-lg text-cyan-300">{player[statKey]}</span>
+                </div>
+            ))}
+            {performers.length === 0 && <p className="text-slate-500 text-center text-sm py-2">Sin datos</p>}
+        </div>
+    </div>
+);
+
 
 const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: number; }> = ({ percentage, size = 120, strokeWidth = 15 }) => {
   const radius = (size - strokeWidth) / 2;
@@ -16,28 +183,8 @@ const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: nu
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="rgba(255, 255, 255, 0.1)" // a light gray for the track
-          strokeWidth={strokeWidth}
-          fill="transparent"
-        />
-        {/* Foreground circle (progress) */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor" // Will inherit text-cyan-400
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-500 ease-in-out"
-        />
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(255, 255, 255, 0.1)" strokeWidth={strokeWidth} fill="transparent" />
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-500 ease-in-out" />
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-white">{percentage.toFixed(1)}%</span>
@@ -47,36 +194,48 @@ const DonutChart: React.FC<{ percentage: number; size?: number; strokeWidth?: nu
   );
 };
 
-// Helper component for a progress bar
 const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
   <div className="w-full bg-slate-600 rounded-full h-2.5">
-    <div
-      className="bg-cyan-500 h-2.5 rounded-full"
-      style={{ width: `${percentage}%` }}
-    ></div>
+    <div className="bg-cyan-500 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
   </div>
 );
 
 
-interface StatisticsViewProps {
-  stats: PlayerStats[];
-  playerNames: Record<string, string>;
-  shots: Shot[];
-}
-
-const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playerNames, shots }) => {
-  const captureRef = useRef<HTMLDivElement>(null);
-  const [isSharing, setIsSharing] = useState(false);
-  const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
+const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playerNames, shots, onShareClick, isSharing = false, gameMode, tallyStats }) => {
   
-  // Team-wide stats calculation
+  if (gameMode === 'stats-tally' && tallyStats) {
+    return (
+      <>
+       {!isSharing && (
+        <div className="flex justify-between items-center -mb-4">
+          <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
+          {onShareClick && typeof navigator.share === 'function' && Object.keys(tallyStats).length > 0 && (
+            <button
+              onClick={onShareClick}
+              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
+              aria-label="Compartir estadísticas"
+            >
+              <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+              <span className="hidden sm:inline">Compartir Reporte</span>
+            </button>
+          )}
+        </div>
+      )}
+      <div className="pt-4">
+        <TallyStatisticsView tallyStats={tallyStats} playerNames={playerNames} isSharing={isSharing} />
+      </div>
+      </>
+    );
+  }
+
+  // --- Default Shot Chart View ---
+  const topScorers = [...stats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
   const totalShots = stats.reduce((acc, player) => acc + player.totalShots, 0);
   const totalGoles = stats.reduce((acc, player) => acc + player.totalGoles, 0);
   const totalPoints = stats.reduce((acc, player) => acc + player.totalPoints, 0);
   const totalMisses = totalShots - totalGoles;
   const teamGolPercentage = totalShots > 0 ? (totalGoles / totalShots) * 100 : 0;
   
-  // --- Logic from old ShotLog component ---
   const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerStats; direction: 'ascending' | 'descending' } | null>({ key: 'playerNumber', direction: 'ascending' });
   
   const sortedStats = useMemo(() => {
@@ -99,6 +258,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
   }, [stats, sortConfig]);
 
   const requestSort = (key: keyof PlayerStats) => {
+    if (isSharing) return;
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
@@ -107,6 +267,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
   };
   
   const getSortIndicator = (key: keyof PlayerStats) => {
+    if (isSharing) return null;
     if (!sortConfig || sortConfig.key !== key) return <span className="text-slate-500 opacity-50">↕</span>;
     return <span className={`text-cyan-400`}>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
   };
@@ -134,77 +295,38 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  // --- End of logic from old ShotLog ---
 
-  const handleShare = async () => {
-    if (!navigator.share) {
-      alert('La función de compartir no está disponible en este navegador.');
-      return;
-    }
-    if (captureRef.current) {
-      setIsSharing(true);
-      try {
-        const canvas = await html2canvas(captureRef.current, {
-          backgroundColor: '#0f172a', // Tailwind's bg-slate-900
-          useCORS: true,
-          scale: 2,
-        });
-        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-        
-        if (!blob) {
-            throw new Error('Could not create image blob.');
-        }
+  const hasData = stats.length > 0;
+  const canShowAdvancedCharts = !isSharing && shots.length > 0;
 
-        const file = new File([blob], 'cestoball-estadisticas.png', { type: 'image/png' });
-        
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'Estadísticas de Cesto Tracker',
-            text: 'Revisa las estadísticas de mi partido de Cestoball.',
-          });
-        } else {
-            alert('No se pueden compartir archivos en este navegador.');
-        }
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') { // Don't show error if user cancels share
-            console.error('Error sharing:', error);
-            alert('Ocurrió un error al intentar compartir.');
-        }
-      } finally {
-        setIsSharing(false);
-      }
-    }
-  };
-
-  if (stats.length === 0) {
+  if (!hasData && !isSharing) {
     return (
       <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
         <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
-        <p className="text-slate-400">Registra algunos tiros para ver las estadísticas de los jugadores aquí.</p>
+        <p className="text-slate-400">Registra algunos datos para ver las estadísticas de los jugadores aquí.</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex justify-between items-center -mb-4">
-        <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
-        {typeof navigator.share === 'function' && (
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            aria-label="Compartir estadísticas"
-          >
-            <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-            <span className="hidden sm:inline">{isSharing ? 'Compartiendo...' : 'Compartir'}</span>
-          </button>
-        )}
-      </div>
+      {!isSharing && (
+        <div className="flex justify-between items-center -mb-4">
+          <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
+          {onShareClick && typeof navigator.share === 'function' && hasData && (
+            <button
+              onClick={onShareClick}
+              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
+              aria-label="Compartir estadísticas"
+            >
+              <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+              <span className="hidden sm:inline">Compartir Reporte</span>
+            </button>
+          )}
+        </div>
+      )}
       
-      <div ref={captureRef} className="pt-4 flex flex-col gap-8 bg-slate-900">
-        {/* Team Statistics Section */}
+      <div className="pt-4 flex flex-col gap-8">
         <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
           <div className="flex flex-col md:flex-row items-center justify-around gap-8">
@@ -212,36 +334,20 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
               <DonutChart percentage={teamGolPercentage} />
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-center">
-              <div className="p-4 bg-slate-700/50 rounded-lg">
-                <p className="text-3xl font-bold text-white">{totalPoints}</p>
-                <p className="text-sm text-slate-400">Puntos Totales</p>
-              </div>
-              <div className="p-4 bg-slate-700/50 rounded-lg">
-                <p className="text-3xl font-bold text-white">{totalShots}</p>
-                <p className="text-sm text-slate-400">Tiros Totales</p>
-              </div>
-              <div className="p-4 bg-slate-700/50 rounded-lg">
-                <p className="text-3xl font-bold text-green-400">{totalGoles}</p>
-                <p className="text-sm text-slate-400">Goles</p>
-              </div>
-              <div className="p-4 bg-slate-700/50 rounded-lg">
-                <p className="text-3xl font-bold text-red-400">{totalMisses}</p>
-                <p className="text-sm text-slate-400">Fallos</p>
-              </div>
+              <div className="p-4 bg-slate-700/50 rounded-lg"><p className="text-3xl font-bold text-white">{totalPoints}</p><p className="text-sm text-slate-400">Puntos Totales</p></div>
+              <div className="p-4 bg-slate-700/50 rounded-lg"><p className="text-3xl font-bold text-white">{totalShots}</p><p className="text-sm text-slate-400">Tiros Totales</p></div>
+              <div className="p-4 bg-slate-700/50 rounded-lg"><p className="text-3xl font-bold text-green-400">{totalGoles}</p><p className="text-sm text-slate-400">Goles</p></div>
+              <div className="p-4 bg-slate-700/50 rounded-lg"><p className="text-3xl font-bold text-red-400">{totalMisses}</p><p className="text-sm text-slate-400">Fallos</p></div>
             </div>
           </div>
         </div>
 
-        {/* Top Scorers Section */}
         <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {topScorers.map((player, index) => (
               <div key={player.playerNumber} className="bg-slate-700/50 p-6 rounded-xl flex flex-col items-center gap-2 border border-slate-600">
-                <div className="flex items-center gap-3">
-                  <TrophyIcon rank={index + 1} />
-                  <p className="text-2xl font-bold text-white">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</p>
-                </div>
+                <div className="flex items-center gap-3"><TrophyIcon rank={index + 1} /><p className="text-2xl font-bold text-white">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</p></div>
                 <p className="text-5xl font-extrabold text-cyan-400">{player.totalPoints}</p>
                 <p className="text-slate-400">Puntos Totales</p>
               </div>
@@ -251,24 +357,19 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
         </div>
       </div>
       
-      {/* Temporal Chart Section */}
-      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-        <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Gráfico Temporal</h3>
-        <TemporalChart shots={shots} playerNames={playerNames} stats={stats} />
-      </div>
+      {canShowAdvancedCharts && (
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+            <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Gráfico Temporal</h3>
+            <TemporalChart shots={shots} playerNames={playerNames} stats={stats} />
+        </div>
+      )}
       
-      {/* Performance Table Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-3xl font-bold text-cyan-400">Rendimiento por Jugador</h3>
-          {shots.length > 0 && (
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-blue-500"
-              aria-label="Exportar todos los tiros como CSV"
-            >
-              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-              <span className="hidden sm:inline">Exportar Logs</span>
+          {canShowAdvancedCharts && (
+            <button onClick={handleExportCSV} className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-blue-500" aria-label="Exportar todos los tiros como CSV">
+              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/><span className="hidden sm:inline">Exportar Logs</span>
             </button>
           )}
         </div>
@@ -276,10 +377,10 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playe
           <table className="w-full text-left table-auto">
             <thead>
               <tr className="border-b-2 border-slate-600">
-                <th className="p-3 text-sm tracking-wider"><button onClick={() => requestSort('playerNumber')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Jugador {getSortIndicator('playerNumber')}</button></th>
-                <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalPoints')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Puntos {getSortIndicator('totalPoints')}</button></th>
-                <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalShots')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">Tiros (G/T) {getSortIndicator('totalShots')}</button></th>
-                <th className="p-3 text-sm tracking-wider w-[30%]"><button onClick={() => requestSort('golPercentage')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors">% Goles {getSortIndicator('golPercentage')}</button></th>
+                <th className="p-3 text-sm tracking-wider"><button onClick={() => requestSort('playerNumber')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit" disabled={isSharing}>Jugador {getSortIndicator('playerNumber')}</button></th>
+                <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalPoints')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit" disabled={isSharing}>Puntos {getSortIndicator('totalPoints')}</button></th>
+                <th className="p-3 text-sm tracking-wider text-center"><button onClick={() => requestSort('totalShots')} className="w-full justify-center font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit" disabled={isSharing}>Tiros (G/T) {getSortIndicator('totalShots')}</button></th>
+                <th className="p-3 text-sm tracking-wider w-[30%]"><button onClick={() => requestSort('golPercentage')} className="w-full text-left font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit" disabled={isSharing}>% Goles {getSortIndicator('golPercentage')}</button></th>
               </tr>
             </thead>
             <tbody>

@@ -1,6 +1,3 @@
-
-
-
 import React from 'react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
@@ -11,9 +8,10 @@ interface SettingsModalProps {
   onClose: () => void;
   onRequestNewGame: () => void;
   onRequestReselectPlayers: () => void;
+  onRequestChangeMode: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode }) => {
     
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
@@ -107,10 +105,16 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                 <div className="border-t border-slate-700 mt-8 pt-6">
                     <h3 className="text-xl font-bold text-white mb-2">Gestión de la Sesión</h3>
                     <p className="text-slate-400 mb-4">
-                        Estas acciones reiniciarán el partido actual. Úsalas para corregir la selección inicial de jugadores o para empezar un partido completamente nuevo.
+                        Estas acciones afectarán el partido actual.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button
+                            onClick={onRequestChangeMode}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        >
+                           Cambiar Modo de Juego
+                        </button>
+                         <button
                             onClick={onRequestReselectPlayers}
                             className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
                         >
@@ -118,7 +122,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                         </button>
                          <button
                             onClick={onRequestNewGame}
-                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                            className="w-full sm:col-span-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
                         >
                             Comenzar Nuevo Partido
                         </button>

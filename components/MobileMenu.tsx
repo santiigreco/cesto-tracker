@@ -15,10 +15,10 @@ interface MobileMenuProps {
   onSelectTab: (tab: AppTab) => void;
   onShare: () => void;
   tabTranslations: { [key in AppTab]: string };
+  tabs: AppTab[];
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations }) => {
-  const mainTabs: AppTab[] = ['logger', 'courtAnalysis', 'statistics'];
+const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations, tabs }) => {
   const tabIcons: Record<AppTab, React.FC<{ className?: string }>> = {
     logger: ClipboardIcon,
     courtAnalysis: ChartPieIcon,
@@ -65,8 +65,9 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
           </button>
         </div>
         <nav className="flex-grow p-2 overflow-y-auto">
-          {mainTabs.map((tab) => {
+          {tabs.map((tab) => {
             const Icon = tabIcons[tab];
+            if (!Icon) return null;
             return (
               <button
                 key={tab}
@@ -82,20 +83,6 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
               </button>
             );
           })}
-          
-          <div className="my-2 border-t border-slate-700 mx-2"></div>
-
-          <button
-            onClick={() => onSelectTab('faq')}
-            className={`w-full flex items-center text-left text-lg font-semibold px-4 py-3 my-1 rounded-md transition-colors ${
-              activeTab === 'faq'
-                ? 'bg-cyan-600 text-white'
-                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-            }`}
-          >
-            <QuestionMarkCircleIcon className="h-6 w-6 mr-4" />
-            <span>{tabTranslations['faq']}</span>
-          </button>
         </nav>
         <div className="p-4 border-t border-slate-700 space-y-2">
           <button
