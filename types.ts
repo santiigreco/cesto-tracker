@@ -27,6 +27,7 @@ export interface PlayerStats {
 }
 
 export interface Settings {
+  gameName?: string;
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
   isManoFriaEnabled: boolean;
@@ -59,6 +60,7 @@ export type TallyStats = {
 
 
 export interface GameState {
+    gameId: string | null; // Supabase game ID
     shots: Shot[];
     isSetupComplete: boolean;
     hasSeenHomepage: boolean;

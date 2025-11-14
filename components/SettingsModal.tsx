@@ -1,6 +1,14 @@
 import React from 'react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
+import XIcon from './XIcon';
+
+// --- ICONS (local to this component) ---
+const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m-4-4l4-4 4 4" />
+    </svg>
+);
 
 interface SettingsModalProps {
   settings: Settings;
@@ -9,9 +17,10 @@ interface SettingsModalProps {
   onRequestNewGame: () => void;
   onRequestReselectPlayers: () => void;
   onRequestChangeMode: () => void;
+  onRequestSaveGame: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame }) => {
     
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
@@ -27,7 +36,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
             role="dialog"
             aria-modal="true"
         >
-            <div className="bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100">
+            <div className="bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="settings-modal-title" className="text-3xl font-bold text-cyan-400">Configuración</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
@@ -100,6 +109,23 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                         </div>
                     </div>
                 </div>
+                
+                 {/* Cloud Sync Section */}
+                <div className="border-t border-slate-700 mt-8 pt-6">
+                    <h3 className="text-xl font-bold text-white mb-2">Sincronización</h3>
+                    <p className="text-slate-400 mb-4">
+                        Guarda los datos de este partido en la nube para tener un respaldo.
+                    </p>
+                    <div className="flex flex-col items-center">
+                         <button
+                            onClick={onRequestSaveGame}
+                            className="w-full max-w-xs flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform bg-cyan-600 hover:bg-cyan-700 hover:scale-105"
+                        >
+                            <CloudUploadIcon className="h-5 w-5" />
+                            <span>Guardar Partido en la Nube</span>
+                        </button>
+                    </div>
+                </div>
 
                 {/* Session Management Section */}
                 <div className="border-t border-slate-700 mt-8 pt-6">
@@ -135,7 +161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                         onClick={onClose}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300"
                     >
-                        Guardar y Salir
+                        Cerrar
                     </button>
                 </div>
             </div>

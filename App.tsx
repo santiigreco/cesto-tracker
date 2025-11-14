@@ -1,4 +1,7 @@
+
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod } from './types';
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
@@ -28,9 +31,18 @@ import SwitchIcon from './components/SwitchIcon';
 import ClipboardIcon from './components/ClipboardIcon';
 import ChartBarIcon from './components/ChartBarIcon';
 import ShareIcon from './components/ShareIcon';
+import LoadGameModal from './components/LoadGameModal';
+import Loader from './components/Loader';
+import SaveGameModal from './components/SaveGameModal';
+
 
 // TypeScript declaration for html2canvas global variable
 declare const html2canvas: any;
+
+// --- SUPABASE CLIENT SETUP ---
+const supabaseUrl = 'https://druqnbzzibkrxffftogl.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydXFuYnp6aWJrcnhmZmZ0b2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODAyOTcsImV4cCI6MjA3ODY1NjI5N30.AeFCR_oN71lu0qmS5isdrj4Wu40wSqcr5uM_gjjLzqw';
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
@@ -51,6 +63,7 @@ const initialPlayerTally: TallyStats = {
 };
 
 const initialGameState: GameState = {
+    gameId: null,
     shots: [],
     isSetupComplete: false,
     hasSeenHomepage: false,
@@ -60,6 +73,7 @@ const initialGameState: GameState = {
     currentPlayer: '',
     currentPeriod: 'First Half',
     settings: {
+        gameName: '',
         isManoCalienteEnabled: true,
         manoCalienteThreshold: 5,
         isManoFriaEnabled: true,
@@ -75,6 +89,12 @@ const initialGameState: GameState = {
 interface NotificationInfo {
     type: 'caliente' | 'fria';
     playerNumber: string;
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
+export interface SyncState {
+    status: SyncStatus;
+    message: string;
 }
 
 // --- NEW IN-FILE COMPONENTS ---
@@ -259,13 +279,13 @@ const StatsTallyView: React.FC<{
 
 
 const ShareReport: React.FC<{ gameState: GameState, playerStats: PlayerStats[] }> = ({ gameState, playerStats }) => {
-    const { shots, playerNames, gameMode, tallyStats } = gameState;
+    const { shots, playerNames, gameMode, tallyStats, settings } = gameState;
     const showMaps = gameMode === 'shot-chart' && shots.length > 0;
 
     return (
         <div className="p-6 bg-slate-900 text-slate-200 font-sans">
-            <h1 className="text-3xl font-bold text-cyan-400 text-center mb-2">Reporte de Partido - Cesto Tracker</h1>
-            <p className="text-center text-slate-400 mb-6">Generado el {new Date().toLocaleDateString()}</p>
+            <h1 className="text-3xl font-bold text-cyan-400 text-center mb-2">{settings.gameName || 'Reporte de Partido'}</h1>
+            <p className="text-center text-slate-400 mb-6">Generado con Cesto Tracker el {new Date().toLocaleDateString()}</p>
             
             <div className="space-y-8">
                 <StatisticsView 
@@ -388,12 +408,16 @@ function App() {
   const [isReselectConfirmOpen, setIsReselectConfirmOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('logger');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSaveGameModalOpen, setIsSaveGameModalOpen] = useState(false);
   const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isLoadGameModalOpen, setIsLoadGameModalOpen] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(false);
   const [notificationPopup, setNotificationPopup] = useState<NotificationInfo | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [tempPlayerName, setTempPlayerName] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' });
 
   // Analysis Tab State
   const [mapView, setMapView] = useState<'shotmap' | 'heatmap' | 'zonemap'>('heatmap');
@@ -411,6 +435,7 @@ function App() {
         let savedState = JSON.parse(savedStateJSON);
         
         // Ensure new state fields have defaults
+        if (!savedState.gameId) savedState.gameId = null;
         if (!savedState.gameMode) savedState.gameMode = null;
         if (!savedState.tallyStats) savedState.tallyStats = {};
         
@@ -469,13 +494,14 @@ function App() {
     const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
     
     setGameState(prev => {
-        const isFirstTimeSetup = !prev.isSetupComplete;
+        // A "correction" means we are editing an existing player list, not starting a fresh game.
+        const isCorrection = prev.isSetupComplete;
         
-        const playerNames = isFirstTimeSetup ? {} : prev.playerNames;
-        const playerStreaks = isFirstTimeSetup ? {} : prev.playerStreaks;
-        const tallyStats = isFirstTimeSetup ? {} : prev.tallyStats;
+        const playerNames = isCorrection ? prev.playerNames : {};
+        const playerStreaks = isCorrection ? prev.playerStreaks : {};
+        const tallyStats = isCorrection ? prev.tallyStats : {};
 
-        // Initialize tally stats for all players in the roster
+        // Initialize tally stats for any new players added to the roster
         sortedRoster.forEach(p => {
             if (!tallyStats[p]) {
                 tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
@@ -491,7 +517,8 @@ function App() {
             settings: newSettings,
             isSetupComplete: true,
             currentPlayer: '',
-            gameMode: null, // Go to mode selection
+            // If correcting players, keep the existing game mode. Otherwise, go to mode selection.
+            gameMode: isCorrection ? prev.gameMode : null,
             tallyStats: tallyStats,
         };
     });
@@ -716,6 +743,7 @@ function App() {
           ...initialGameState,
           hasSeenHomepage: true,
           tutorialStep: prev.tutorialStep === 3 ? 3 : 1,
+          gameId: null, // Ensure new game doesn't reuse old ID
       }));
       setRedoStack([]);
       setIsNewGameConfirmOpen(false);
@@ -732,7 +760,7 @@ function App() {
     setGameState(prev => ({
         ...prev,
         isSetupComplete: false,
-        gameMode: null,
+        gameMode: prev.gameMode // Preserve mode when correcting
     }));
     setRedoStack([]);
     setIsReselectConfirmOpen(false);
@@ -773,6 +801,154 @@ function App() {
     });
   }, []);
   
+    const handleRequestSaveGame = useCallback(() => {
+        setIsSettingsModalOpen(false);
+        setIsSaveGameModalOpen(true);
+        setSyncState({ status: 'idle', message: '' });
+    }, []);
+
+    const handleSyncToSupabase = async (gameName: string) => {
+        setSyncState({ status: 'syncing', message: 'Sincronizando con la nube...' });
+        try {
+            // 1. Prepare and Upsert Game data
+            const gamePayload = {
+                id: gameState.gameId || undefined, // Let Supabase generate UUID on first sync
+                game_mode: gameState.gameMode,
+                settings: { ...gameState.settings, gameName: gameName.trim() },
+                player_names: gameState.playerNames,
+                available_players: gameState.availablePlayers,
+            };
+
+            const { data: gameData, error: gameError } = await supabase
+                .from('games')
+                .upsert(gamePayload)
+                .select()
+                .single();
+
+            if (gameError) throw gameError;
+            if (!gameData) throw new Error("No se pudo obtener el ID del partido guardado.");
+    
+            const newGameId = gameData.id;
+    
+            // 2. Sync Shots if in shot-chart mode
+            if (gameState.gameMode === 'shot-chart') {
+                const { error: deleteError } = await supabase.from('shots').delete().eq('game_id', newGameId);
+                if (deleteError) throw deleteError;
+    
+                if (gameState.shots.length > 0) {
+                    const shotsPayload = gameState.shots.map(shot => ({
+                        game_id: newGameId,
+                        player_number: shot.playerNumber,
+                        position: shot.position,
+                        is_gol: shot.isGol,
+                        gol_value: shot.golValue,
+                        period: shot.period,
+                    }));
+                    const { error: shotsError } = await supabase.from('shots').insert(shotsPayload);
+                    if (shotsError) throw shotsError;
+                }
+            }
+    
+            // 3. Sync Tally Stats if in stats-tally mode
+            if (gameState.gameMode === 'stats-tally' && Object.keys(gameState.tallyStats).length > 0) {
+                const statsPayload: any[] = [];
+                for (const playerNumber in gameState.tallyStats) {
+                    const playerTally = gameState.tallyStats[playerNumber];
+                    statsPayload.push({ game_id: newGameId, player_number: playerNumber, period: 'First Half', ...playerTally['First Half'] });
+                    statsPayload.push({ game_id: newGameId, player_number: playerNumber, period: 'Second Half', ...playerTally['Second Half'] });
+                }
+                const { error: statsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
+                if (statsError) throw statsError;
+            }
+    
+            setGameState(prev => ({ ...prev, gameId: newGameId, settings: { ...prev.settings, gameName: gameName.trim() } }));
+            setSyncState({ status: 'success', message: '¡Partido guardado en la nube!' });
+    
+        } catch (error: any) {
+            console.error('Error syncing with Supabase:', error);
+            setSyncState({ status: 'error', message: `Error: ${error.message}` });
+        }
+    };
+
+    const handleLoadGame = async (gameId: string) => {
+        setIsLoadGameModalOpen(false);
+        setIsAppLoading(true);
+        try {
+            // Fetch all data in parallel
+            const [gameRes, shotsRes, tallyRes] = await Promise.all([
+                supabase.from('games').select('*').eq('id', gameId).single(),
+                supabase.from('shots').select('*').eq('game_id', gameId),
+                supabase.from('tally_stats').select('*').eq('game_id', gameId),
+            ]);
+
+            if (gameRes.error) throw gameRes.error;
+            if (shotsRes.error) throw shotsRes.error;
+            if (tallyRes.error) throw tallyRes.error;
+            
+            const gameData = gameRes.data;
+            
+            // Reconstruct Shots
+            const loadedShots: Shot[] = (shotsRes.data || []).map((s: any) => ({
+                id: s.id, // Use Supabase UUID as the shot ID
+                playerNumber: s.player_number,
+                position: s.position,
+                isGol: s.is_gol,
+                golValue: s.gol_value,
+                period: s.period,
+            }));
+            
+            // Reconstruct Tally Stats
+            const loadedTallyStats: Record<string, TallyStats> = {};
+            (tallyRes.data || []).forEach((stat: any) => {
+                const player = stat.player_number;
+                if (!loadedTallyStats[player]) {
+                    loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
+                }
+                loadedTallyStats[player][stat.period as GamePeriod] = {
+                    goles: stat.goles,
+                    fallos: stat.fallos,
+                    recuperos: stat.recuperos,
+                    perdidas: stat.perdidas,
+                    reboteOfensivo: stat.rebote_ofensivo,
+                    reboteDefensivo: stat.rebote_defensivo,
+                    asistencias: stat.asistencias,
+                    golesContra: stat.goles_contra,
+                };
+            });
+            
+            // Reconstruct Player Streaks from loaded data
+            const loadedPlayerStreaks: Record<string, PlayerStreak> = {};
+            // This is a complex calculation. For now, we reset streaks on load.
+            // A more advanced implementation would re-calculate streaks by iterating through shots/stats.
+            
+            // Build the final game state
+            const loadedGameState: GameState = {
+                ...initialGameState,
+                gameId: gameData.id,
+                gameMode: gameData.game_mode,
+                isSetupComplete: true,
+                hasSeenHomepage: true,
+                settings: gameData.settings,
+                availablePlayers: gameData.available_players,
+                playerNames: gameData.player_names,
+                activePlayers: gameData.available_players.slice(0, 6),
+                shots: loadedShots,
+                tallyStats: loadedTallyStats,
+                playerStreaks: loadedPlayerStreaks,
+                tutorialStep: 3, // Assume user loading a game is past the tutorial
+            };
+            
+            setGameState(loadedGameState);
+
+        } catch (error: any) {
+            console.error('Error loading game:', error);
+            alert(`No se pudo cargar el partido: ${error.message}`);
+        } finally {
+            setIsAppLoading(false);
+        }
+    };
+
+
   const handleShare = async () => {
     const shareData = {
       title: 'Cesto Tracker App',
@@ -854,10 +1030,13 @@ function App() {
       return playerStats.reduce((acc, player) => acc + player.totalPoints, 0);
     }
     if (gameState.gameMode === 'stats-tally') {
-        return Object.values(gameState.tallyStats).reduce((total, playerTally) => {
-            const playerPoints = (playerTally['First Half'].goles + playerTally['Second Half'].goles) * 2; // Assume 2 points per goal
-            return total + playerPoints;
-        }, 0);
+      // FIX: Explicitly type the accumulator in reduce to prevent 'unknown' type errors.
+      return Object.values(gameState.tallyStats).reduce((total: number, playerTally) => {
+          const firstHalfGoles = playerTally?.['First Half']?.goles ?? 0;
+          const secondHalfGoles = playerTally?.['Second Half']?.goles ?? 0;
+          const playerPoints = (firstHalfGoles + secondHalfGoles) * 2;
+          return total + playerPoints;
+      }, 0);
     }
     return 0;
   }, [playerStats, gameState.tallyStats, gameState.gameMode]);
@@ -912,316 +1091,328 @@ function App() {
 
 
   // --- RENDER ---
-  if (!hasSeenHomepage) {
-    return <HomePage onStart={handleStartApp} />;
-  }
+  let pageContent;
 
-  if (!isSetupComplete) {
-    return <PlayerSetup 
+  if (isAppLoading) {
+    pageContent = (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+            <Loader />
+            <p className="text-slate-400 mt-4">Cargando partido...</p>
+        </div>
+    );
+  } else if (!hasSeenHomepage) {
+    pageContent = <HomePage onStart={handleStartApp} onLoadGameClick={() => setIsLoadGameModalOpen(true)} />;
+  } else if (!isSetupComplete) {
+    pageContent = <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
               initialSelectedPlayers={availablePlayers}
               initialSettings={settings}
             />;
-  }
-  
-  if (!gameMode) {
-      return <GameModeSelector onSelect={handleSetGameMode} />;
+  } else if (!gameMode) {
+      pageContent = <GameModeSelector onSelect={handleSetGameMode} />;
+  } else {
+    pageContent = (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
+        <div className="w-full max-w-4xl flex-grow">
+          <header className="relative flex items-center mb-4">
+              <div className="flex-none w-12 md:w-0">
+                  <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
+                      <HamburgerIcon />
+                  </button>
+              </div>
+              <div className="flex-grow text-center">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
+                      <button
+                          onClick={handleRequestReturnHome}
+                          className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
+                          disabled={!isSetupComplete}
+                          title={isSetupComplete ? "Volver a la página de inicio" : ""}
+                      >Cesto Tracker 🏐{'\uFE0F'}</button>
+                  </h1>
+                  <p className="text-base sm:text-lg text-slate-400 mt-1">
+                    {getPageSubtitle()}
+                  </p>
+              </div>
+              <div className="flex-none w-12 flex justify-end">
+                  <button
+                      onClick={() => setIsSettingsModalOpen(true)}
+                      className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                      aria-label="Abrir configuración"
+                      title="Abrir configuración"
+                  >
+                      <GearIcon className="h-7 w-7" />
+                  </button>
+              </div>
+          </header>
+
+          {/* Tab Switcher - Desktop */}
+          <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
+              {tabsForCurrentMode.map(tab => (
+              <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
+                  activeTab === tab
+                      ? 'border-b-4 border-cyan-500 text-cyan-400'
+                      : 'text-slate-500 hover:text-cyan-400'
+                  }`}
+              >
+                  {tabTranslations[tab]}
+              </button>
+              ))}
+          </div>
+
+          <main className="flex flex-col gap-6">
+            {gameMode === 'stats-tally' && activeTab === 'logger' && (
+              <div className="flex flex-col gap-6">
+                  <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
+                    <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
+                    <select
+                        id="period-selector"
+                        value={currentPeriod}
+                        onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                        className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
+                    >
+                      {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
+                        <option key={period} value={period}>
+                          {periodTranslations[period]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <StatsTallyView
+                      players={availablePlayers}
+                      playerNames={playerNames}
+                      tallyStats={tallyStats}
+                      currentPeriod={currentPeriod}
+                      onUpdate={handleUpdateTallyStat}
+                      editingPlayer={editingPlayer}
+                      tempPlayerName={tempPlayerName}
+                      setTempPlayerName={setTempPlayerName}
+                      onStartEdit={handleStartEditingName}
+                      onSaveEdit={handleSavePlayerName}
+                      onCancelEdit={handleCancelEditingName}
+                  />
+              </div>
+            )}
+
+            {gameMode === 'stats-tally' && activeTab === 'statistics' && (
+              <div className="flex flex-col gap-8">
+                <StatisticsView
+                  stats={[]}
+                  playerNames={playerNames}
+                  shots={[]}
+                  onShareClick={() => setIsShareModalOpen(true)}
+                  gameMode={gameMode}
+                  tallyStats={tallyStats}
+                />
+              </div>
+            )}
+
+            {gameMode === 'stats-tally' && activeTab === 'faq' && (
+              <FaqView />
+            )}
+
+            {gameMode === 'shot-chart' && activeTab === 'logger' && (
+              <>
+                {showTutorial && (
+                  <TutorialOverlay step={tutorialStep} />
+                )}
+                
+                <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
+                  <div className="flex flex-col items-center">
+                    <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
+                      {editingPlayer === currentPlayer && currentPlayer && currentPlayer !== 'Todos' ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={tempPlayerName}
+                                onChange={(e) => setTempPlayerName(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSavePlayerName();
+                                    if (e.key === 'Escape') handleCancelEditingName();
+                                }}
+                                autoFocus
+                                className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                                placeholder={`Nombre para #${currentPlayer}`}
+                            />
+                            <button onClick={handleSavePlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
+                              <CheckIcon className="h-5 w-5" />
+                            </button>
+                            <button onClick={handleCancelEditingName} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
+                              <XIcon className="h-5 w-5" />
+                            </button>
+                        </div>
+                      ) : (
+                        <button
+                            onClick={() => handleStartEditingName(currentPlayer)}
+                            disabled={!currentPlayer || currentPlayer === 'Todos'}
+                            className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                            title="Editar nombre del jugador"
+                            aria-label="Editar nombre del jugador"
+                        >
+                            <span className="group-hover:underline decoration-dotted underline-offset-4">
+                              {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
+                            </span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 text-center mb-3">Tocá en el nombre para personalizarlo.</p>
+                    <PlayerSelector 
+                      currentPlayer={currentPlayer} 
+                      setCurrentPlayer={handlePlayerChange} 
+                      playerNames={playerNames} 
+                      availablePlayers={activePlayers}
+                      isTutorialActive={showTutorial}
+                    />
+                    <div className="mt-4 border-t border-slate-700 w-full pt-4 flex justify-center">
+                          <button
+                              onClick={() => setIsSubstitutionModalOpen(true)}
+                              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
+                          >
+                              <SwitchIcon className="h-5 w-5" />
+                              <span>Cambio de Jugador</span>
+                          </button>
+                      </div>
+                  </div>
+                </div>
+
+                <div className={`w-full flex flex-col gap-4 ${showTutorial && tutorialStep === 2 ? 'relative z-50' : ''}`}>
+                  <Court
+                    shots={filteredLoggerTabShots}
+                    onCourtClick={handleCourtClick}
+                    showShotMarkers={true}
+                    currentPlayer={currentPlayer}
+                  />
+                  <div className="flex justify-center gap-4 mt-2">
+                      <button
+                          onClick={handleUndo}
+                          disabled={shots.length === 0}
+                          className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                          aria-label="Deshacer último tiro"
+                      >
+                          <UndoIcon className="h-5 w-5" />
+                          <span className="hidden sm:inline">Deshacer</span>
+                      </button>
+                      <button
+                          onClick={handleRedo}
+                          disabled={redoStack.length === 0}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                          aria-label="Rehacer último tiro"
+                      >
+                          <RedoIcon className="h-5 w-5" />
+                          <span className="hidden sm:inline">Rehacer</span>
+                      </button>
+                      <button
+                          onClick={handleRequestClearSheet}
+                          disabled={shots.length === 0}
+                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                          aria-label="Limpiar planilla"
+                          title="Limpiar planilla"
+                      >
+                          <TrashIcon className="h-5 w-5" />
+                          <span className="hidden sm:inline">Limpiar Planilla</span>
+                      </button>
+                  </div>
+                </div>
+                
+                <Scoreboard totalPoints={totalPoints} />
+
+                <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
+                    <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
+                    <select
+                        id="period-selector"
+                        value={currentPeriod}
+                        onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                        className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
+                    >
+                      {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
+                        <option key={period} value={period}>
+                          {periodTranslations[period]}
+                        </option>
+                      ))}
+                    </select>
+                </div>
+
+                <ShotLog shots={shots} playerNames={playerNames} />
+              </>
+            )}
+            
+            {gameMode === 'shot-chart' && activeTab === 'courtAnalysis' && (
+              <div className="flex flex-col gap-8">
+                  <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
+                      <button onClick={() => setMapView('shotmap')} className={getFilterButtonClass(mapView === 'shotmap')}>Mapa de Tiros</button>
+                      <button onClick={() => setMapView('heatmap')} className={getFilterButtonClass(mapView === 'heatmap')}>Mapa de Calor</button>
+                      <button onClick={() => setMapView('zonemap')} className={getFilterButtonClass(mapView === 'zonemap')}>Gráfico de Zonas</button>
+                  </div>
+                  
+                  <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
+                    <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
+                    <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={playersWithShots} />
+                  </div>
+
+                  <div className="w-full">
+                    <Court
+                      shots={mapView === 'shotmap' ? filteredAnalysisShots : []}
+                      showShotMarkers={mapView === 'shotmap'}
+                    >
+                      {mapView === 'heatmap' && <HeatmapOverlay shots={filteredAnalysisShots} />}
+                      {mapView === 'zonemap' && <ZoneChart shots={filteredAnalysisShots} />}
+                    </Court>
+                  </div>
+
+                  <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
+                      <div className="flex-1">
+                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
+                          <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                              <button onClick={() => setAnalysisResultFilter('all')} className={getFilterButtonClass(analysisResultFilter === 'all')}>Todos</button>
+                              <button onClick={() => setAnalysisResultFilter('goles')} className={getFilterButtonClass(analysisResultFilter === 'goles')}>Goles</button>
+                              <button onClick={() => setAnalysisResultFilter('misses')} className={getFilterButtonClass(analysisResultFilter === 'misses')}>Fallos</button>
+                          </div>
+                      </div>
+                      <div className="flex-1">
+                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
+                          <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
+                              <button onClick={() => setAnalysisPeriodFilter('all')} className={getFilterButtonClass(analysisPeriodFilter === 'all')}>Ambos</button>
+                              <button onClick={() => setAnalysisPeriodFilter('First Half')} className={getFilterButtonClass(analysisPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+                              <button onClick={() => setAnalysisPeriodFilter('Second Half')} className={getFilterButtonClass(analysisPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            )}
+
+            {gameMode === 'shot-chart' && activeTab === 'statistics' && (
+              <div className="flex flex-col gap-8">
+                <StatisticsView 
+                  stats={playerStats} 
+                  playerNames={playerNames} 
+                  shots={shots} 
+                  onShareClick={() => setIsShareModalOpen(true)}
+                  gameMode={gameMode}
+                />
+              </div>
+            )}
+
+            {gameMode === 'shot-chart' && activeTab === 'faq' && (
+              <FaqView />
+            )}
+
+          </main>
+        </div>
+        
+        <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">
+          Santiago Greco - Gresolutions © 2025
+        </footer>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
-      <div className="w-full max-w-4xl flex-grow">
-        <header className="relative flex items-center mb-4">
-            <div className="flex-none w-12 md:w-0">
-                 <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
-                    <HamburgerIcon />
-                 </button>
-            </div>
-            <div className="flex-grow text-center">
-                <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
-                    <button
-                        onClick={handleRequestReturnHome}
-                        className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
-                        disabled={!isSetupComplete}
-                        title={isSetupComplete ? "Volver a la página de inicio" : ""}
-                    >Cesto Tracker 🏐{'\uFE0F'}</button>
-                </h1>
-                <p className="text-base sm:text-lg text-slate-400 mt-1">
-                   {getPageSubtitle()}
-                </p>
-            </div>
-            <div className="flex-none w-12 flex justify-end">
-                 <button
-                    onClick={() => setIsSettingsModalOpen(true)}
-                    className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                    aria-label="Abrir configuración"
-                    title="Abrir configuración"
-                >
-                    <GearIcon className="h-7 w-7" />
-                </button>
-            </div>
-        </header>
+    <>
+      {pageContent}
 
-        {/* Tab Switcher - Desktop */}
-        <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
-            {tabsForCurrentMode.map(tab => (
-            <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${
-                activeTab === tab
-                    ? 'border-b-4 border-cyan-500 text-cyan-400'
-                    : 'text-slate-500 hover:text-cyan-400'
-                }`}
-            >
-                {tabTranslations[tab]}
-            </button>
-            ))}
-        </div>
-
-        <main className="flex flex-col gap-6">
-          {gameMode === 'stats-tally' && activeTab === 'logger' && (
-            <div className="flex flex-col gap-6">
-                <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
-                  <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
-                  <select
-                      id="period-selector"
-                      value={currentPeriod}
-                      onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                      className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
-                  >
-                    {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
-                      <option key={period} value={period}>
-                        {periodTranslations[period]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <StatsTallyView
-                    players={availablePlayers}
-                    playerNames={playerNames}
-                    tallyStats={tallyStats}
-                    currentPeriod={currentPeriod}
-                    onUpdate={handleUpdateTallyStat}
-                    editingPlayer={editingPlayer}
-                    tempPlayerName={tempPlayerName}
-                    setTempPlayerName={setTempPlayerName}
-                    onStartEdit={handleStartEditingName}
-                    onSaveEdit={handleSavePlayerName}
-                    onCancelEdit={handleCancelEditingName}
-                />
-            </div>
-          )}
-
-          {gameMode === 'stats-tally' && activeTab === 'statistics' && (
-             <div className="flex flex-col gap-8">
-              <StatisticsView
-                stats={[]}
-                playerNames={playerNames}
-                shots={[]}
-                onShareClick={() => setIsShareModalOpen(true)}
-                gameMode={gameMode}
-                tallyStats={tallyStats}
-              />
-            </div>
-          )}
-
-          {gameMode === 'stats-tally' && activeTab === 'faq' && (
-            <FaqView />
-          )}
-
-          {gameMode === 'shot-chart' && activeTab === 'logger' && (
-            <>
-              {showTutorial && (
-                <TutorialOverlay step={tutorialStep} />
-              )}
-              
-              <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
-                <div className="flex flex-col items-center">
-                  <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
-                     {editingPlayer === currentPlayer && currentPlayer && currentPlayer !== 'Todos' ? (
-                      <div className="flex items-center gap-2">
-                          <input
-                              type="text"
-                              value={tempPlayerName}
-                              onChange={(e) => setTempPlayerName(e.target.value)}
-                              onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSavePlayerName();
-                                  if (e.key === 'Escape') handleCancelEditingName();
-                              }}
-                              autoFocus
-                              className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
-                              placeholder={`Nombre para #${currentPlayer}`}
-                          />
-                          <button onClick={handleSavePlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
-                             <CheckIcon className="h-5 w-5" />
-                          </button>
-                          <button onClick={handleCancelEditingName} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
-                             <XIcon className="h-5 w-5" />
-                          </button>
-                      </div>
-                    ) : (
-                      <button
-                          onClick={() => handleStartEditingName(currentPlayer)}
-                          disabled={!currentPlayer || currentPlayer === 'Todos'}
-                          className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
-                          title="Editar nombre del jugador"
-                          aria-label="Editar nombre del jugador"
-                      >
-                          <span className="group-hover:underline decoration-dotted underline-offset-4">
-                             {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
-                          </span>
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 text-center mb-3">Tocá en el nombre para personalizarlo.</p>
-                  <PlayerSelector 
-                    currentPlayer={currentPlayer} 
-                    setCurrentPlayer={handlePlayerChange} 
-                    playerNames={playerNames} 
-                    availablePlayers={activePlayers}
-                    isTutorialActive={showTutorial}
-                  />
-                   <div className="mt-4 border-t border-slate-700 w-full pt-4 flex justify-center">
-                        <button
-                            onClick={() => setIsSubstitutionModalOpen(true)}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
-                        >
-                            <SwitchIcon className="h-5 w-5" />
-                            <span>Cambio de Jugador</span>
-                        </button>
-                    </div>
-                </div>
-              </div>
-
-              <div className={`w-full flex flex-col gap-4 ${showTutorial && tutorialStep === 2 ? 'relative z-50' : ''}`}>
-                <Court
-                  shots={filteredLoggerTabShots}
-                  onCourtClick={handleCourtClick}
-                  showShotMarkers={true}
-                  currentPlayer={currentPlayer}
-                />
-                <div className="flex justify-center gap-4 mt-2">
-                    <button
-                        onClick={handleUndo}
-                        disabled={shots.length === 0}
-                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                        aria-label="Deshacer último tiro"
-                    >
-                        <UndoIcon className="h-5 w-5" />
-                        <span className="hidden sm:inline">Deshacer</span>
-                    </button>
-                    <button
-                        onClick={handleRedo}
-                        disabled={redoStack.length === 0}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                        aria-label="Rehacer último tiro"
-                    >
-                        <RedoIcon className="h-5 w-5" />
-                        <span className="hidden sm:inline">Rehacer</span>
-                    </button>
-                    <button
-                        onClick={handleRequestClearSheet}
-                        disabled={shots.length === 0}
-                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                        aria-label="Limpiar planilla"
-                        title="Limpiar planilla"
-                    >
-                        <TrashIcon className="h-5 w-5" />
-                        <span className="hidden sm:inline">Limpiar Planilla</span>
-                    </button>
-                </div>
-              </div>
-              
-              <Scoreboard totalPoints={totalPoints} />
-
-              <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
-                  <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
-                  <select
-                      id="period-selector"
-                      value={currentPeriod}
-                      onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                      className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
-                  >
-                    {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
-                      <option key={period} value={period}>
-                        {periodTranslations[period]}
-                      </option>
-                    ))}
-                  </select>
-              </div>
-
-              <ShotLog shots={shots} playerNames={playerNames} />
-            </>
-          )}
-          
-          {gameMode === 'shot-chart' && activeTab === 'courtAnalysis' && (
-             <div className="flex flex-col gap-8">
-                <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
-                    <button onClick={() => setMapView('shotmap')} className={getFilterButtonClass(mapView === 'shotmap')}>Mapa de Tiros</button>
-                    <button onClick={() => setMapView('heatmap')} className={getFilterButtonClass(mapView === 'heatmap')}>Mapa de Calor</button>
-                    <button onClick={() => setMapView('zonemap')} className={getFilterButtonClass(mapView === 'zonemap')}>Gráfico de Zonas</button>
-                </div>
-                
-                <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                   <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
-                  <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={playersWithShots} />
-                </div>
-
-                <div className="w-full">
-                  <Court
-                    shots={mapView === 'shotmap' ? filteredAnalysisShots : []}
-                    showShotMarkers={mapView === 'shotmap'}
-                  >
-                    {mapView === 'heatmap' && <HeatmapOverlay shots={filteredAnalysisShots} />}
-                    {mapView === 'zonemap' && <ZoneChart shots={filteredAnalysisShots} />}
-                  </Court>
-                </div>
-
-                <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
-                        <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                            <button onClick={() => setAnalysisResultFilter('all')} className={getFilterButtonClass(analysisResultFilter === 'all')}>Todos</button>
-                            <button onClick={() => setAnalysisResultFilter('goles')} className={getFilterButtonClass(analysisResultFilter === 'goles')}>Goles</button>
-                            <button onClick={() => setAnalysisResultFilter('misses')} className={getFilterButtonClass(analysisResultFilter === 'misses')}>Fallos</button>
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                         <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
-                         <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                            <button onClick={() => setAnalysisPeriodFilter('all')} className={getFilterButtonClass(analysisPeriodFilter === 'all')}>Ambos</button>
-                            <button onClick={() => setAnalysisPeriodFilter('First Half')} className={getFilterButtonClass(analysisPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
-                            <button onClick={() => setAnalysisPeriodFilter('Second Half')} className={getFilterButtonClass(analysisPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
-                         </div>
-                    </div>
-                </div>
-             </div>
-          )}
-
-          {gameMode === 'shot-chart' && activeTab === 'statistics' && (
-            <div className="flex flex-col gap-8">
-              <StatisticsView 
-                stats={playerStats} 
-                playerNames={playerNames} 
-                shots={shots} 
-                onShareClick={() => setIsShareModalOpen(true)}
-                gameMode={gameMode}
-              />
-            </div>
-          )}
-
-          {gameMode === 'shot-chart' && activeTab === 'faq' && (
-            <FaqView />
-          )}
-
-        </main>
-      </div>
-      
-      <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">
-        Santiago Greco - Gresolutions © 2025
-      </footer>
-      
+      {/* --- MODALS --- */}
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -1234,6 +1425,23 @@ function App() {
         tabTranslations={tabTranslations}
         tabs={tabsForCurrentMode}
       />
+
+      {isLoadGameModalOpen && (
+        <LoadGameModal 
+            onClose={() => setIsLoadGameModalOpen(false)} 
+            onLoadGame={handleLoadGame} 
+        />
+      )}
+
+      {isSaveGameModalOpen && (
+        <SaveGameModal
+            isOpen={isSaveGameModalOpen}
+            onClose={() => setIsSaveGameModalOpen(false)}
+            onSave={handleSyncToSupabase}
+            syncState={syncState}
+            initialGameName={gameState.settings.gameName}
+        />
+      )}
       
       {isSettingsModalOpen && (
         <SettingsModal 
@@ -1243,6 +1451,7 @@ function App() {
             onRequestNewGame={handleRequestNewGame}
             onRequestReselectPlayers={handleRequestReselectPlayers}
             onRequestChangeMode={handleChangeMode}
+            onRequestSaveGame={handleRequestSaveGame}
         />
       )}
       
@@ -1325,8 +1534,7 @@ function App() {
             onClose={() => setNotificationPopup(null)}
         />
       )}
-
-    </div>
+    </>
   );
 }
 

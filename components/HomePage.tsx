@@ -18,6 +18,14 @@ const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+const CloudDownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17l-4-4m0 0l4-4m-4 4h12" />
+    </svg>
+);
+
+
 
 // More realistic sample data, prioritizing doubles over triples.
 const sampleShots: Shot[] = [
@@ -135,7 +143,7 @@ const LoggingExample = () => (
     </PhoneMockup>
 );
 
-const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => {
+const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> = React.memo(({ onStart, onLoadGameClick }) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     return (
@@ -157,12 +165,19 @@ const HomePage: React.FC<{ onStart: () => void }> = React.memo(({ onStart }) => 
                     </p>
                 </header>
 
-                <div className="mb-16">
+                <div className="mb-16 flex flex-col items-center gap-4">
                     <button
                         onClick={onStart}
-                        className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-xl"
+                        className="w-full max-w-xs bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-xl"
                     >
                         Comenzar Ahora
+                    </button>
+                     <button
+                        onClick={onLoadGameClick}
+                        className="w-full max-w-xs flex items-center justify-center gap-3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-3 px-6 rounded-full transition-colors duration-300 transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-slate-500"
+                    >
+                        <CloudDownloadIcon className="h-5 w-5" />
+                        Cargar Partido Guardado
                     </button>
                 </div>
                 
