@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
-import { Settings } from '../types';
+import { Settings, GameMode } from '../types';
 import ToggleSwitch from './ToggleSwitch';
 import ChevronDownIcon from './ChevronDownIcon';
+import ClipboardIcon from './ClipboardIcon';
+import ChartBarIcon from './ChartBarIcon';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
@@ -14,17 +16,19 @@ const defaultSettings: Settings = {
 };
 
 interface PlayerSetupProps {
-  onSetupComplete: (selectedPlayers: string[], settings: Settings) => void;
+  onSetupComplete: (selectedPlayers: string[], settings: Settings, gameMode: GameMode) => void;
   initialSelectedPlayers?: string[];
   initialSettings?: Settings;
+  initialGameMode?: GameMode | null;
 }
 
-const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelectedPlayers = [], initialSettings = defaultSettings }) => {
+const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelectedPlayers = [], initialSettings = defaultSettings, initialGameMode = null }) => {
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(
       new Set(initialSelectedPlayers)
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(initialSettings);
+  const [selectedMode, setSelectedMode] = useState<GameMode>(initialGameMode);
 
 
   const togglePlayer = (playerNumber: string) => {
@@ -44,8 +48,16 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
         alert("Debes seleccionar al menos un jugador.");
         return;
     }
+    if (!selectedMode) {
+        alert("Debes seleccionar un modo de juego.");
+        return;
+    }
+    if (selectedMode === 'shot-chart' && selectedPlayers.size < 6) {
+        alert('El modo "Registro de Tiros" requiere un equipo de al menos 6 jugadores.');
+        return;
+    }
     const sortedPlayers = Array.from(selectedPlayers).sort((a, b) => Number(a) - Number(b));
-    onSetupComplete(sortedPlayers, settings);
+    onSetupComplete(sortedPlayers, settings, selectedMode);
   };
   
   const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
@@ -60,15 +72,15 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
       <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-2xl text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2">
-          Selecciona los Jugadores
+          Configuración del Partido
         </h1>
         <p className="text-lg text-slate-400 mb-8">
-            Elige a todos los jugadores que participarán en el partido. Para 'Registro de Tiros' se necesitan al menos 6.
+            Define tu equipo y elige cómo registrarás los datos.
         </p>
         
         <div className="bg-slate-900/50 p-4 sm:p-6 rounded-xl border border-slate-700 mb-8">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-slate-200">Equipo</h2>
+                <h2 className="text-xl font-semibold text-slate-200">1. Selecciona tu Equipo</h2>
                 <span className="text-sm font-medium text-slate-400">{selectedPlayers.size} / 15 seleccionados</span>
             </div>
             
@@ -85,6 +97,31 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
             
              <p className={`text-xs text-red-400 mt-3 transition-opacity duration-300 ${selectedPlayers.size < 1 ? 'opacity-100' : 'opacity-0'}`}>
               * Se necesita al menos 1 jugador.
+            </p>
+        </div>
+        
+        <div className="mb-8">
+            <h2 className="text-xl font-semibold text-slate-200 text-center mb-4">2. Elige el Modo de Juego</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                    onClick={() => setSelectedMode('shot-chart')}
+                    className={`group bg-slate-800/80 backdrop-blur-sm border p-6 rounded-2xl shadow-lg hover:-translate-y-1 transition-all duration-300 ${selectedMode === 'shot-chart' ? 'border-cyan-500 ring-2 ring-cyan-500/50' : 'border-slate-700 hover:border-cyan-500'}`}
+                >
+                    <ClipboardIcon className="h-10 w-10 mx-auto text-cyan-400 mb-3" />
+                    <h3 className="text-lg font-bold text-white mb-1">Registro de Tiros</h3>
+                    <p className="text-sm text-slate-400">Analiza mapas de calor, zonas y estadísticas de tiros.</p>
+                </button>
+                <button
+                    onClick={() => setSelectedMode('stats-tally')}
+                    className={`group bg-slate-800/80 backdrop-blur-sm border p-6 rounded-2xl shadow-lg hover:-translate-y-1 transition-all duration-300 ${selectedMode === 'stats-tally' ? 'border-emerald-500 ring-2 ring-emerald-500/50' : 'border-slate-700 hover:border-emerald-500'}`}
+                >
+                    <ChartBarIcon className="h-10 w-10 mx-auto text-emerald-400 mb-3" />
+                    <h3 className="text-lg font-bold text-white mb-1">Anotador Rápido</h3>
+                    <p className="text-sm text-slate-400">Lleva un conteo de recuperos, pérdidas, asistencias, etc.</p>
+                </button>
+            </div>
+             <p className={`text-xs text-red-400 mt-3 transition-opacity duration-300 ${!selectedMode ? 'opacity-100' : 'opacity-0'}`}>
+              * Se necesita seleccionar un modo de juego.
             </p>
         </div>
         
@@ -142,10 +179,10 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
 
             <button
               onClick={handleStart}
-              disabled={selectedPlayers.size < 1}
+              disabled={selectedPlayers.size < 1 || !selectedMode}
               className="w-full max-w-sm bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-lg disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
             >
-              {initialSelectedPlayers.length > 0 ? 'Confirmar Equipo' : 'Confirmar Equipo'}
+              {initialSelectedPlayers.length > 0 ? 'Confirmar y Continuar' : 'Iniciar Partido'}
             </button>
         </div>
       </div>

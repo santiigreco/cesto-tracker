@@ -177,7 +177,7 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
                         className="w-full max-w-xs flex items-center justify-center gap-3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-3 px-6 rounded-full transition-colors duration-300 transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-slate-500"
                     >
                         <CloudDownloadIcon className="h-5 w-5" />
-                        Cargar Partido Guardado
+                        Ver Partidos Anteriores
                     </button>
                 </div>
                 

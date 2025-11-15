@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod } from './types';
@@ -109,39 +110,6 @@ const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
     </svg>
 );
-
-const GameModeSelector: React.FC<{ onSelect: (mode: GameMode) => void }> = ({ onSelect }) => {
-    return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
-            <div className="w-full max-w-2xl text-center">
-                <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2">
-                    Modo de Juego
-                </h1>
-                <p className="text-lg text-slate-400 mb-8">
-                    Elige cómo quieres registrar los datos de este partido.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <button
-                        onClick={() => onSelect('shot-chart')}
-                        className="group bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl shadow-lg hover:border-cyan-500 hover:-translate-y-1 transition-all duration-300"
-                    >
-                        <ClipboardIcon className="h-12 w-12 mx-auto text-cyan-400 mb-4" />
-                        <h2 className="text-2xl font-bold text-white mb-2">Registro de Tiros en Cancha</h2>
-                        <p className="text-slate-400">Analiza mapas de calor, gráficos de zonas y estadísticas detalladas de tiros.</p>
-                    </button>
-                    <button
-                        onClick={() => onSelect('stats-tally')}
-                        className="group bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl shadow-lg hover:border-emerald-500 hover:-translate-y-1 transition-all duration-300"
-                    >
-                        <ChartBarIcon className="h-12 w-12 mx-auto text-emerald-400 mb-4" />
-                        <h2 className="text-2xl font-bold text-white mb-2">Anotador de Estadísticas</h2>
-                        <p className="text-slate-400">Lleva un conteo rápido de recuperos, pérdidas, asistencias, rebotes y más.</p>
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; onDecrement: () => void; }> = React.memo(({ label, value, onIncrement, onDecrement }) => (
     <div className="flex flex-col items-center p-2 bg-slate-700/50 rounded-md gap-2">
@@ -490,7 +458,7 @@ function App() {
     setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
   }, []);
   
-  const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings) => {
+  const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings, gameMode: GameMode) => {
     const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
     
     setGameState(prev => {
@@ -517,23 +485,15 @@ function App() {
             settings: newSettings,
             isSetupComplete: true,
             currentPlayer: '',
-            // If correcting players, keep the existing game mode. Otherwise, go to mode selection.
-            gameMode: isCorrection ? prev.gameMode : null,
+            gameMode: gameMode,
             tallyStats: tallyStats,
+            activeTab: 'logger',
         };
     });
     
     setAnalysisPlayer('Todos');
   }, []);
   
-  const handleSetGameMode = useCallback((mode: GameMode) => {
-     if (mode === 'shot-chart' && gameState.availablePlayers.length < 6) {
-        alert('El modo "Registro de Tiros" requiere un equipo de al menos 6 jugadores. Por favor, vuelve a la configuración para añadir más.');
-        setGameState(prev => ({...prev, isSetupComplete: false, gameMode: null }));
-        return;
-    }
-    setGameState(prev => ({...prev, gameMode: mode, activeTab: 'logger' }));
-  }, [gameState.availablePlayers]);
 
   const handleUpdateTallyStat = useCallback((playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => {
     setGameState(prev => {
@@ -769,7 +729,7 @@ function App() {
   const handleCancelReselectPlayers = useCallback(() => setIsReselectConfirmOpen(false), []);
   
   const handleChangeMode = useCallback(() => {
-    setGameState(prev => ({...prev, gameMode: null}));
+    setGameState(prev => ({...prev, isSetupComplete: false, gameMode: null}));
     setIsSettingsModalOpen(false);
   }, []);
 
@@ -1102,14 +1062,13 @@ function App() {
     );
   } else if (!hasSeenHomepage) {
     pageContent = <HomePage onStart={handleStartApp} onLoadGameClick={() => setIsLoadGameModalOpen(true)} />;
-  } else if (!isSetupComplete) {
+  } else if (!isSetupComplete || !gameMode) {
     pageContent = <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
               initialSelectedPlayers={availablePlayers}
               initialSettings={settings}
+              initialGameMode={gameMode}
             />;
-  } else if (!gameMode) {
-      pageContent = <GameModeSelector onSelect={handleSetGameMode} />;
   } else {
     pageContent = (
       <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
