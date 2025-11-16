@@ -1,9 +1,6 @@
-
-
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod } from './types';
+import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod, StatAction, GameEvent } from './types';
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
@@ -35,6 +32,8 @@ import ShareIcon from './components/ShareIcon';
 import LoadGameModal from './components/LoadGameModal';
 import Loader from './components/Loader';
 import SaveGameModal from './components/SaveGameModal';
+import PlayerSelectionModal from './components/PlayerSelectionModal';
+import ChevronDownIcon from './components/ChevronDownIcon';
 
 
 // TypeScript declaration for html2canvas global variable
@@ -56,6 +55,7 @@ const initialTallyStatsPeriod: TallyStatsPeriod = {
   reboteDefensivo: 0,
   asistencias: 0,
   golesContra: 0,
+  faltasPersonales: 0,
 };
 
 const initialPlayerTally: TallyStats = {
@@ -84,6 +84,13 @@ const initialGameState: GameState = {
     tutorialStep: 1, // 1: Select Player, 2: Tap Court, 3: Done
     gameMode: null,
     tallyStats: {},
+    opponentScore: 0,
+    teamFouls: {
+        'First Half': 0,
+        'Second Half': 0,
+    },
+    gameLog: [],
+    tallyRedoLog: [],
 };
 
 
@@ -105,24 +112,10 @@ const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
-    </svg>
-);
-
-const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; onDecrement: () => void; }> = React.memo(({ label, value, onIncrement, onDecrement }) => (
+const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; }> = React.memo(({ label, value, onIncrement }) => (
     <div className="flex flex-col items-center p-2 bg-slate-700/50 rounded-md gap-2">
         <span className="text-xs sm:text-sm text-slate-300 text-center font-semibold">{label}</span>
-        <div className="flex items-center gap-2">
-            <button
-                onClick={onDecrement}
-                disabled={value <= 0}
-                className="w-7 h-7 flex items-center justify-center bg-red-600 hover:bg-red-700 rounded-full text-white font-bold disabled:bg-slate-600 disabled:opacity-50 transition-colors"
-                aria-label={`Decrementar ${label}`}
-            >
-                <MinusIcon className="w-4 h-4" />
-            </button>
+        <div className="flex items-center gap-3">
             <span className="w-8 text-center text-xl font-bold font-mono text-white">{value}</span>
             <button
                 onClick={onIncrement}
@@ -140,10 +133,11 @@ const statLabels: Record<keyof TallyStatsPeriod, string> = {
     fallos: 'Fallos',
     recuperos: 'Recuperos',
     perdidas: 'Pérdidas',
-    reboteOfensivo: 'Reb. Ofensivo',
-    reboteDefensivo: 'Reb. Defensivo',
-    asistencias: 'Asistencias',
-    golesContra: 'Goles en Contra',
+    reboteOfensivo: 'Reb. Of.',
+    reboteDefensivo: 'Reb. Def.',
+    asistencias: 'Asist.',
+    golesContra: 'G. Contra',
+    faltasPersonales: 'Faltas',
 };
 
 
@@ -157,10 +151,16 @@ const PlayerTallyCard: React.FC<{
     onSaveEdit: () => void;
     onCancelEdit: () => void;
     playerTally: TallyStatsPeriod;
-    onUpdate: (playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => void;
+    onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void;
 }> = React.memo(({ playerNumber, playerName, isEditing, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, playerTally, onUpdate }) => {
+    const isTeamCard = playerNumber === 'Equipo';
+    const playerStatsToShow: StatAction[] = ['goles', 'fallos', 'recuperos', 'perdidas', 'reboteOfensivo', 'reboteDefensivo', 'asistencias', 'faltasPersonales'];
+    const teamStatsToShow: (keyof TallyStatsPeriod)[] = ['recuperos', 'perdidas', 'golesContra'];
+
     return (
-        <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
+        <div 
+            className={`bg-slate-800 p-4 rounded-lg shadow-lg transition-all duration-200`}
+        >
             <div className="mb-4" style={{ minHeight: '40px' }}>
                 {isEditing ? (
                     <div className="flex items-center gap-2">
@@ -185,25 +185,35 @@ const PlayerTallyCard: React.FC<{
                     </div>
                 ) : (
                     <button
-                        onClick={() => onStartEdit(playerNumber)}
-                        className="group text-2xl font-bold text-cyan-400 p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors w-full text-left"
-                        title="Editar nombre del jugador"
-                        aria-label="Editar nombre del jugador"
+                        onClick={(e) => { e.stopPropagation(); onStartEdit(playerNumber); }}
+                        disabled={isTeamCard}
+                        className="group text-2xl font-bold text-cyan-400 p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors w-full text-left disabled:cursor-default disabled:hover:bg-transparent"
+                        title={isTeamCard ? "Estadísticas del Equipo" : "Editar nombre del jugador"}
                     >
-                        <span className="group-hover:underline decoration-dotted underline-offset-4">
-                            {playerName || `Jugador #${playerNumber}`}
+                        <span className={`${!isTeamCard && 'group-hover:underline'} decoration-dotted underline-offset-4`}>
+                            {isTeamCard ? 'Equipo' : (playerName || `Jugador #${playerNumber}`)}
                         </span>
                     </button>
                 )}
             </div>
+            {!isTeamCard && (
+                <div className="flex items-center gap-1.5 mb-3" title={`${playerTally.faltasPersonales} faltas personales`}>
+                    <span className="text-xs font-semibold text-slate-400 mr-1">Faltas:</span>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div 
+                            key={i} 
+                            className={`w-4 h-4 rounded-full border border-slate-600 transition-colors ${i < playerTally.faltasPersonales ? 'bg-red-500' : 'bg-slate-700'}`}
+                        ></div>
+                    ))}
+                </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
-                {Object.keys(statLabels).map(statKey => (
+                {(isTeamCard ? teamStatsToShow : playerStatsToShow).map(statKey => (
                     <CompactTallyStat
                         key={statKey}
                         label={statLabels[statKey as keyof TallyStatsPeriod]}
                         value={playerTally[statKey as keyof TallyStatsPeriod]}
-                        onIncrement={() => onUpdate(playerNumber, statKey as keyof TallyStatsPeriod, 1)}
-                        onDecrement={() => onUpdate(playerNumber, statKey as keyof TallyStatsPeriod, -1)}
+                        onIncrement={() => onUpdate(playerNumber, statKey as StatAction, 1)}
                     />
                 ))}
             </div>
@@ -216,7 +226,7 @@ const StatsTallyView: React.FC<{
     playerNames: Record<string, string>;
     tallyStats: Record<string, TallyStats>;
     currentPeriod: GamePeriod;
-    onUpdate: (playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => void;
+    onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void;
     editingPlayer: string | null;
     tempPlayerName: string;
     setTempPlayerName: (name: string) => void;
@@ -359,6 +369,74 @@ const ShareModal: React.FC<{ isOpen: boolean; onClose: () => void; gameState: Ga
     );
 };
 
+const GameLogView: React.FC<{ log: GameEvent[], playerNames: Record<string, string> }> = ({ log, playerNames }) => {
+    const getActionLabel = (action: StatAction) => {
+        const labels: Record<StatAction, string> = {
+            goles: "GOL",
+            fallos: "FALLO",
+            recuperos: "RECUPERO",
+            perdidas: "PÉRDIDA",
+            reboteOfensivo: "REB. OFENSIVO",
+            reboteDefensivo: "REB. DEFENSIVO",
+            asistencias: "ASISTENCIA",
+            faltasPersonales: "FALTA PERSONAL",
+        };
+        return labels[action] || action.toUpperCase();
+    };
+
+    return (
+        <div className="bg-slate-800 p-3 sm:p-4 rounded-lg shadow-lg">
+            <h3 className="text-lg font-bold text-cyan-400 mb-2 text-center">Registro de Juego</h3>
+            {log.length > 0 ? (
+                <div className="max-h-32 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
+                    {log.map(event => (
+                        <div key={event.id} className="flex justify-between items-center bg-slate-700/50 p-1.5 rounded-md text-sm">
+                            <span className="font-bold text-cyan-300">{`[${getActionLabel(event.action)}]`}</span>
+                            <span className="text-white font-semibold">
+                                {playerNames[event.playerNumber] || (event.playerNumber === 'Equipo' ? 'Equipo' : `#${event.playerNumber}`)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-slate-400 text-center text-sm py-2">Aún no hay acciones registradas.</p>
+            )}
+        </div>
+    );
+};
+
+const QuickActionsPanel: React.FC<{
+    onActionSelect: (action: StatAction) => void;
+}> = ({ onActionSelect }) => {
+    const actions: { action: StatAction, label: string }[] = [
+        { action: 'recuperos', label: 'Recupero' },
+        { action: 'perdidas', label: 'Pérdida' },
+        { action: 'asistencias', label: 'Asistencia' },
+        { action: 'faltasPersonales', label: 'Falta' },
+        { action: 'goles', label: 'Gol' },
+        { action: 'fallos', label: 'Fallo' },
+        { action: 'reboteOfensivo', label: 'Reb. Of.' },
+        { action: 'reboteDefensivo', label: 'Reb. Def.' },
+    ];
+    return (
+        <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg">
+            <h3 className="text-xl font-bold text-cyan-400 mb-4 text-center">Acciones Rápidas</h3>
+            <div className="grid grid-cols-4 gap-2">
+                {actions.map(({ action, label }) => (
+                    <button
+                        key={action}
+                        onClick={() => onActionSelect(action)}
+                        className={`p-3 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+
 /**
  * The main application component.
  * It holds the application's state and orchestrates all UI components and views.
@@ -386,6 +464,9 @@ function App() {
   const [tempPlayerName, setTempPlayerName] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' });
+  const [isPlayerSelectionModalOpen, setIsPlayerSelectionModalOpen] = useState(false);
+  const [actionToAssign, setActionToAssign] = useState<StatAction | null>(null);
+  const [isCorrectionsVisible, setIsCorrectionsVisible] = useState(false);
 
   // Analysis Tab State
   const [mapView, setMapView] = useState<'shotmap' | 'heatmap' | 'zonemap'>('heatmap');
@@ -406,6 +487,10 @@ function App() {
         if (!savedState.gameId) savedState.gameId = null;
         if (!savedState.gameMode) savedState.gameMode = null;
         if (!savedState.tallyStats) savedState.tallyStats = {};
+        if (!savedState.opponentScore) savedState.opponentScore = 0;
+        if (!savedState.teamFouls) savedState.teamFouls = { 'First Half': 0, 'Second Half': 0 };
+        if (!savedState.gameLog) savedState.gameLog = [];
+        if (!savedState.tallyRedoLog) savedState.tallyRedoLog = [];
         
         // Migration for older tallyStats structure
         if (savedState.tallyStats) {
@@ -416,6 +501,12 @@ function App() {
                         'First Half': playerTally,
                         'Second Half': initialTallyStatsPeriod,
                     };
+                }
+                 if (playerTally['First Half'] && playerTally['First Half'].faltasPersonales === undefined) {
+                    playerTally['First Half'].faltasPersonales = 0;
+                }
+                if (playerTally['Second Half'] && playerTally['Second Half'].faltasPersonales === undefined) {
+                    playerTally['Second Half'].faltasPersonales = 0;
                 }
             });
         }
@@ -462,24 +553,30 @@ function App() {
     const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
     
     setGameState(prev => {
-        // A "correction" means we are editing an existing player list, not starting a fresh game.
-        const isCorrection = prev.isSetupComplete;
+        const isCorrection = prev.availablePlayers.length > 0 && prev.gameMode === gameMode;
         
         const playerNames = isCorrection ? prev.playerNames : {};
         const playerStreaks = isCorrection ? prev.playerStreaks : {};
         const tallyStats = isCorrection ? prev.tallyStats : {};
 
-        // Initialize tally stats for any new players added to the roster
+        if (!tallyStats['Equipo']) {
+            tallyStats['Equipo'] = JSON.parse(JSON.stringify(initialPlayerTally));
+        }
+
         sortedRoster.forEach(p => {
             if (!tallyStats[p]) {
                 tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
             }
         });
 
+        // Reset state unless it's a correction
+        const baseState = isCorrection ? prev : initialGameState;
+
         return {
-            ...prev,
+            ...baseState,
+            hasSeenHomepage: true,
             availablePlayers: sortedRoster,
-            activePlayers: sortedRoster.slice(0, 6), // First 6 are starters for shot-chart mode
+            activePlayers: sortedRoster.slice(0, 6),
             playerNames,
             playerStreaks,
             settings: newSettings,
@@ -495,21 +592,38 @@ function App() {
   }, []);
   
 
-  const handleUpdateTallyStat = useCallback((playerNumber: string, stat: keyof TallyStatsPeriod, change: 1 | -1) => {
+  const handleUpdateTallyStat = useCallback((playerNumber: string, stat: StatAction, change: 1) => {
     setGameState(prev => {
         const { currentPeriod } = prev;
+
+        const newLogEntry: GameEvent = {
+            id: new Date().toISOString() + Math.random(),
+            timestamp: Date.now(),
+            period: currentPeriod,
+            playerNumber,
+            action: stat,
+        };
+        const newGameLog = [newLogEntry, ...prev.gameLog];
+        
         const playerTallyStats = prev.tallyStats[playerNumber] || JSON.parse(JSON.stringify(initialPlayerTally));
         const currentPeriodStats = playerTallyStats[currentPeriod];
 
-        const newPeriodStats = { ...currentPeriodStats, [stat]: Math.max(0, currentPeriodStats[stat] + change) };
+        const newPeriodStats = { ...currentPeriodStats, [stat]: currentPeriodStats[stat] + change };
         const newPlayerTallyStats = { ...playerTallyStats, [currentPeriod]: newPeriodStats };
 
-        const newTallyState = {
+        const newState = { 
             ...prev,
-            tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats }
+            tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats },
+            gameLog: newGameLog,
+            tallyRedoLog: [], // Clear redo stack on new action
         };
 
-        // Streak logic only on increments (+1)
+        if (stat === 'faltasPersonales' && playerNumber !== 'Equipo') {
+            const newTeamFouls = { ...prev.teamFouls };
+            newTeamFouls[currentPeriod] = newTeamFouls[currentPeriod] + change;
+            newState.teamFouls = newTeamFouls;
+        }
+        
         if (change === 1 && (stat === 'goles' || stat === 'fallos')) {
             const isGol = stat === 'goles';
             const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
@@ -524,7 +638,7 @@ function App() {
                     triggeredNotification = { type: 'caliente', playerNumber };
                     newStreak.notifiedCaliente = true;
                 }
-            } else { // is Fallo/Miss
+            } else {
                 newStreak.consecutiveMisses += 1;
                 newStreak.consecutiveGoles = 0;
                 newStreak.notifiedCaliente = false;
@@ -538,12 +652,96 @@ function App() {
                 setTimeout(() => setNotificationPopup(triggeredNotification), 200);
             }
 
-            newTallyState.playerStreaks = { ...prev.playerStreaks, [playerNumber]: newStreak };
+            newState.playerStreaks = { ...prev.playerStreaks, [playerNumber]: newStreak };
         }
 
-        return newTallyState;
+        return newState;
     });
   }, []);
+
+  const handleUndoTally = useCallback(() => {
+    setGameState(prev => {
+        if (prev.gameLog.length === 0) return prev;
+
+        const newGameLog = [...prev.gameLog];
+        const eventToUndo = newGameLog.shift(); // remove newest event
+        if (!eventToUndo) return prev;
+
+        const { playerNumber, action, period } = eventToUndo;
+
+        // Decrement the stat
+        const playerTallyStats = prev.tallyStats[playerNumber];
+        const currentPeriodStats = playerTallyStats[period];
+        const newPeriodStats = { ...currentPeriodStats, [action]: Math.max(0, currentPeriodStats[action] - 1) };
+        const newPlayerTallyStats = { ...playerTallyStats, [period]: newPeriodStats };
+
+        const newState = { 
+            ...prev,
+            tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats },
+            gameLog: newGameLog,
+            tallyRedoLog: [eventToUndo, ...prev.tallyRedoLog],
+        };
+        
+        // Also undo team foul if necessary
+        if (action === 'faltasPersonales' && playerNumber !== 'Equipo') {
+            const newTeamFouls = { ...prev.teamFouls };
+            newTeamFouls[period] = Math.max(0, newTeamFouls[period] - 1);
+            newState.teamFouls = newTeamFouls;
+        }
+        
+        // Streaks are not recalculated on undo to keep the logic simple.
+        return newState;
+    });
+  }, []);
+
+  const handleRedoTally = useCallback(() => {
+    setGameState(prev => {
+        if (prev.tallyRedoLog.length === 0) return prev;
+        
+        const newTallyRedoLog = [...prev.tallyRedoLog];
+        const eventToRedo = newTallyRedoLog.shift();
+        if (!eventToRedo) return prev;
+
+        const { playerNumber, action, period } = eventToRedo;
+
+        // Increment the stat
+        const playerTallyStats = prev.tallyStats[playerNumber];
+        const currentPeriodStats = playerTallyStats[period];
+        const newPeriodStats = { ...currentPeriodStats, [action]: currentPeriodStats[action] + 1 };
+        const newPlayerTallyStats = { ...playerTallyStats, [period]: newPeriodStats };
+
+        const newState = { 
+            ...prev,
+            tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats },
+            gameLog: [eventToRedo, ...prev.gameLog],
+            tallyRedoLog: newTallyRedoLog,
+        };
+
+        // Also redo team foul if necessary
+        if (action === 'faltasPersonales' && playerNumber !== 'Equipo') {
+            const newTeamFouls = { ...prev.teamFouls };
+            newTeamFouls[period]++;
+            newState.teamFouls = newTeamFouls;
+        }
+        
+        // Streaks are not recalculated on redo.
+        return newState;
+    });
+  }, []);
+
+
+  const handleActionSelect = (action: StatAction) => {
+      setActionToAssign(action);
+      setIsPlayerSelectionModalOpen(true);
+  };
+
+  const handleAssignActionToPlayer = (playerNumber: string) => {
+      if (actionToAssign) {
+          handleUpdateTallyStat(playerNumber, actionToAssign, 1);
+      }
+      setIsPlayerSelectionModalOpen(false);
+      setActionToAssign(null);
+  };
 
 
   const handleSubstitution = useCallback((playerOut: string, playerIn: string) => {
@@ -635,7 +833,7 @@ function App() {
   }, [pendingShotPosition, gameState.currentPlayer, gameState.currentPeriod, gameState.settings, gameState.playerStreaks]);
   
   const handleStartEditingName = useCallback((playerNumber: string) => {
-      if (!playerNumber || playerNumber === 'Todos') return;
+      if (!playerNumber || playerNumber === 'Todos' || playerNumber === 'Equipo') return;
       setTempPlayerName(gameState.playerNames[playerNumber] || '');
       setEditingPlayer(playerNumber);
   }, [gameState.playerNames]);
@@ -873,6 +1071,7 @@ function App() {
                     reboteDefensivo: stat.rebote_defensivo,
                     asistencias: stat.asistencias,
                     golesContra: stat.goles_contra,
+                    faltasPersonales: stat.faltas_personales || 0,
                 };
             });
             
@@ -990,10 +1189,11 @@ function App() {
       return playerStats.reduce((acc, player) => acc + player.totalPoints, 0);
     }
     if (gameState.gameMode === 'stats-tally') {
-      // FIX: Explicitly type the accumulator in reduce to prevent 'unknown' type errors.
-      return Object.values(gameState.tallyStats).reduce((total: number, playerTally) => {
-          const firstHalfGoles = playerTally?.['First Half']?.goles ?? 0;
-          const secondHalfGoles = playerTally?.['Second Half']?.goles ?? 0;
+      return Object.entries(gameState.tallyStats).reduce((total: number, [playerNumber, playerTally]) => {
+          if (playerNumber === 'Equipo') return total; // Do not count team's 'goles' stat
+          if (!playerTally || playerTally['First Half'] === undefined) return total;
+          const firstHalfGoles = playerTally['First Half']?.goles ?? 0;
+          const secondHalfGoles = playerTally['Second Half']?.goles ?? 0;
           const playerPoints = (firstHalfGoles + secondHalfGoles) * 2;
           return total + playerPoints;
       }, 0);
@@ -1019,7 +1219,7 @@ function App() {
   }, [gameState.gameMode]);
 
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
-  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, tallyStats } = gameState;
+  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, tallyStats, opponentScore, teamFouls, gameLog, tallyRedoLog } = gameState;
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
@@ -1048,6 +1248,8 @@ function App() {
     }
     return '';
   };
+
+  const playersForTally = useMemo(() => ['Equipo', ...availablePlayers], [availablePlayers]);
 
 
   // --- RENDER ---
@@ -1088,7 +1290,8 @@ function App() {
                           title={isSetupComplete ? "Volver a la página de inicio" : ""}
                       >Cesto Tracker 🏐{'\uFE0F'}</button>
                   </h1>
-                  <p className="text-base sm:text-lg text-slate-400 mt-1">
+                   {settings.gameName && <p className="text-lg font-semibold text-white -mb-1 mt-1 truncate">{settings.gameName}</p>}
+                  <p className="text-base text-slate-400 mt-1">
                     {getPageSubtitle()}
                   </p>
               </div>
@@ -1123,36 +1326,83 @@ function App() {
 
           <main className="flex flex-col gap-6">
             {gameMode === 'stats-tally' && activeTab === 'logger' && (
-              <div className="flex flex-col gap-6">
-                  <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
-                    <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Sesión Actual</h2>
-                    <select
-                        id="period-selector"
-                        value={currentPeriod}
-                        onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                        className="w-full max-w-xs bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
-                    >
-                      {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
-                        <option key={period} value={period}>
-                          {periodTranslations[period]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <StatsTallyView
-                      players={availablePlayers}
-                      playerNames={playerNames}
-                      tallyStats={tallyStats}
-                      currentPeriod={currentPeriod}
-                      onUpdate={handleUpdateTallyStat}
-                      editingPlayer={editingPlayer}
-                      tempPlayerName={tempPlayerName}
-                      setTempPlayerName={setTempPlayerName}
-                      onStartEdit={handleStartEditingName}
-                      onSaveEdit={handleSavePlayerName}
-                      onCancelEdit={handleCancelEditingName}
-                  />
-              </div>
+              <>
+                <div className="flex flex-col gap-6">
+                    <Scoreboard totalPoints={totalPoints} />
+                    
+                    <QuickActionsPanel onActionSelect={handleActionSelect} />
+                    
+                    <div className="flex justify-center gap-4">
+                        <button
+                            onClick={handleUndoTally}
+                            disabled={gameLog.length === 0}
+                            className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            aria-label="Deshacer última acción"
+                        >
+                            <UndoIcon className="h-5 w-5" />
+                            <span className="hidden sm:inline">Deshacer</span>
+                        </button>
+                        <button
+                            onClick={handleRedoTally}
+                            disabled={tallyRedoLog.length === 0}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            aria-label="Rehacer última acción"
+                        >
+                            <RedoIcon className="h-5 w-5" />
+                            <span className="hidden sm:inline">Rehacer</span>
+                        </button>
+                    </div>
+
+                    <GameLogView log={gameLog} playerNames={playerNames} />
+                    
+                    <div className="bg-slate-800 rounded-lg shadow-lg">
+                        <button
+                          onClick={() => setIsCorrectionsVisible(prev => !prev)}
+                          className="w-full flex justify-between items-center text-left p-4 font-bold text-xl text-cyan-400 hover:bg-slate-700/50 transition-colors rounded-lg"
+                          aria-expanded={isCorrectionsVisible}
+                        >
+                          <span>modificar accion</span>
+                          <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${isCorrectionsVisible ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCorrectionsVisible ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className="p-4 border-t border-slate-700">
+                                <StatsTallyView
+                                    players={playersForTally}
+                                    playerNames={playerNames}
+                                    tallyStats={tallyStats}
+                                    currentPeriod={currentPeriod}
+                                    onUpdate={handleUpdateTallyStat}
+                                    editingPlayer={editingPlayer}
+                                    tempPlayerName={tempPlayerName}
+                                    setTempPlayerName={setTempPlayerName}
+                                    onStartEdit={handleStartEditingName}
+                                    onSaveEdit={handleSavePlayerName}
+                                    onCancelEdit={handleCancelEditingName}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                     <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex-1 text-center sm:text-left">
+                        <h2 className="text-xl font-bold text-cyan-400">Sesión Actual</h2>
+                        <p className="text-sm text-slate-400">Estás viendo el {periodTranslations[currentPeriod]}</p>
+                      </div>
+                      <select
+                          id="period-selector"
+                          value={currentPeriod}
+                          onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                          className="w-full sm:w-auto bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
+                      >
+                        {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
+                          <option key={period} value={period}>
+                            {periodTranslations[period]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                </div>
+              </>
             )}
 
             {gameMode === 'stats-tally' && activeTab === 'statistics' && (
@@ -1384,6 +1634,20 @@ function App() {
         tabTranslations={tabTranslations}
         tabs={tabsForCurrentMode}
       />
+
+      {isPlayerSelectionModalOpen && actionToAssign && (
+        <PlayerSelectionModal
+            isOpen={isPlayerSelectionModalOpen}
+            onClose={() => {
+                setIsPlayerSelectionModalOpen(false);
+                setActionToAssign(null);
+            }}
+            onSelectPlayer={handleAssignActionToPlayer}
+            players={playersForTally}
+            playerNames={playerNames}
+            actionLabel={statLabels[actionToAssign]}
+        />
+      )}
 
       {isLoadGameModalOpen && (
         <LoadGameModal 

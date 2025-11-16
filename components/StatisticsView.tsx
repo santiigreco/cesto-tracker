@@ -15,6 +15,8 @@ interface StatisticsViewProps {
   tallyStats?: Record<string, TallyStats>;
 }
 
+type TallySortableKey = keyof (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, golPercentage: number });
+
 // Sub-component for the Tally Statistics view
 const TallyStatisticsView: React.FC<{
   tallyStats: Record<string, TallyStats>;
@@ -22,6 +24,7 @@ const TallyStatisticsView: React.FC<{
   isSharing: boolean;
 }> = ({ tallyStats, playerNames, isSharing }) => {
   const [tallyPeriodFilter, setTallyPeriodFilter] = useState<'all' | GamePeriod>('all');
+  const [sortConfig, setSortConfig] = useState<{ key: TallySortableKey; direction: 'ascending' | 'descending' } | null>({ key: 'playerNumber', direction: 'ascending' });
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
@@ -34,10 +37,10 @@ const TallyStatisticsView: React.FC<{
       if (tallyPeriodFilter === 'all') {
         stats = Object.values(playerTally).reduce((acc, periodStats) => {
           (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
-            acc[key] += periodStats[key];
+            acc[key] = (acc[key] || 0) + (periodStats[key] || 0);
           });
           return acc;
-        }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0 });
+        }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 });
       } else {
         stats = playerTally[tallyPeriodFilter];
       }
@@ -47,24 +50,65 @@ const TallyStatisticsView: React.FC<{
       return { playerNumber, ...stats, totalRebounds, golPercentage };
     });
   }, [tallyStats, tallyPeriodFilter]);
+
+  const sortedAggregatedStats = useMemo(() => {
+    let sortableItems = [...aggregatedStats];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (sortConfig.key === 'playerNumber') {
+          const numA = a.playerNumber === 'Equipo' ? Infinity : Number(a.playerNumber);
+          const numB = b.playerNumber === 'Equipo' ? Infinity : Number(b.playerNumber);
+          if (numA < numB) return sortConfig.direction === 'ascending' ? -1 : 1;
+          if (numA > numB) return sortConfig.direction === 'ascending' ? 1 : -1;
+          return 0;
+        }
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [aggregatedStats, sortConfig]);
+
+  const requestSort = (key: TallySortableKey) => {
+    if (isSharing) return;
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIndicator = (key: TallySortableKey) => {
+    if (isSharing) return null;
+    if (!sortConfig || sortConfig.key !== key) return <span className="text-slate-500 opacity-50">↕</span>;
+    return <span className={`text-cyan-400`}>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
+  };
   
   const teamTotals = useMemo(() => {
      return aggregatedStats.reduce((acc, playerStats) => {
-          (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
-            acc[key] += playerStats[key];
-          });
-          return acc;
-        }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0 });
+        if (playerStats.playerNumber !== 'Equipo') { // Exclude team's own stats from totals
+            (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
+                acc[key] += playerStats[key];
+            });
+        }
+        return acc;
+    }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 });
   }, [aggregatedStats]);
 
   const topPerformers = useMemo(() => {
-    const sortedByGoles = [...aggregatedStats].sort((a, b) => b.goles - a.goles).slice(0, 3);
-    const sortedByRebounds = [...aggregatedStats].sort((a, b) => b.totalRebounds - a.totalRebounds).slice(0, 3);
-    const sortedByAsistencias = [...aggregatedStats].sort((a, b) => b.asistencias - a.asistencias).slice(0, 3);
+    const playersOnly = aggregatedStats.filter(p => p.playerNumber !== 'Equipo');
+    const sortedByGoles = [...playersOnly].sort((a, b) => b.goles - a.goles);
+    const sortedByRebounds = [...playersOnly].sort((a, b) => b.totalRebounds - a.totalRebounds);
+    const sortedByAsistencias = [...playersOnly].sort((a, b) => b.asistencias - a.asistencias);
     return { goles: sortedByGoles, rebotes: sortedByRebounds, asistencias: sortedByAsistencias };
   }, [aggregatedStats]);
   
-  const hasData = aggregatedStats.length > 0;
+  const hasData = aggregatedStats.some(p => p.playerNumber !== 'Equipo' && (p.goles > 0 || p.fallos > 0 || p.recuperos > 0 || p.perdidas > 0));
 
   if (!hasData && !isSharing) {
     return (
@@ -76,6 +120,20 @@ const TallyStatisticsView: React.FC<{
   }
 
   const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
+
+   const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
+    { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },
+    { key: 'goles', label: 'G', title: 'Goles' },
+    { key: 'fallos', label: 'F', title: 'Fallos' },
+    { key: 'golPercentage', label: '%G', title: '% Goles' },
+    { key: 'recuperos', label: 'Rec', title: 'Recuperos' },
+    { key: 'perdidas', label: 'Pér', title: 'Pérdidas' },
+    { key: 'reboteOfensivo', label: 'RO', title: 'Rebotes Ofensivos' },
+    { key: 'reboteDefensivo', label: 'RD', title: 'Rebotes Defensivos' },
+    { key: 'asistencias', label: 'Ast', title: 'Asistencias' },
+    { key: 'faltasPersonales', label: 'FP', title: 'Faltas Personales'},
+    { key: 'golesContra', label: 'GC', title: 'Goles en Contra' },
+  ];
 
   return (
     <div className="flex flex-col gap-8">
@@ -97,11 +155,12 @@ const TallyStatisticsView: React.FC<{
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.perdidas}</p><p className="text-xs sm:text-sm text-slate-400">Pérdidas</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}</p><p className="text-xs sm:text-sm text-slate-400">Rebotes</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.asistencias}</p><p className="text-xs sm:text-sm text-slate-400">Asistencias</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg col-span-2 sm:col-span-1 md:col-span-2"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.golesContra}</p><p className="text-xs sm:text-sm text-slate-400">Goles en Contra</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.faltasPersonales}</p><p className="text-xs sm:text-sm text-slate-400">Faltas</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{tallyStats && tallyStats['Equipo'] ? (tallyStats['Equipo']['First Half'].golesContra + tallyStats['Equipo']['Second Half'].golesContra) : 0}</p><p className="text-xs sm:text-sm text-slate-400">G. en Contra</p></div>
         </div>
       </div>
 
-       {/* Top Scorers Section */}
+       {/* Top Performers Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -118,22 +177,19 @@ const TallyStatisticsView: React.FC<{
           <table className="w-full min-w-[700px] text-left table-auto">
             <thead>
               <tr className="border-b-2 border-slate-600">
-                <th className="p-2 text-sm tracking-wider font-semibold">Jugador</th>
-                <th title="Goles" className="p-2 text-sm tracking-wider text-center font-semibold">G</th>
-                <th title="Fallos" className="p-2 text-sm tracking-wider text-center font-semibold">F</th>
-                <th title="% Goles" className="p-2 text-sm tracking-wider text-center font-semibold">%G</th>
-                <th title="Recuperos" className="p-2 text-sm tracking-wider text-center font-semibold">Rec</th>
-                <th title="Pérdidas" className="p-2 text-sm tracking-wider text-center font-semibold">Pér</th>
-                <th title="Rebotes Ofensivos" className="p-2 text-sm tracking-wider text-center font-semibold">RO</th>
-                <th title="Rebotes Defensivos" className="p-2 text-sm tracking-wider text-center font-semibold">RD</th>
-                <th title="Asistencias" className="p-2 text-sm tracking-wider text-center font-semibold">Ast</th>
-                <th title="Goles en Contra" className="p-2 text-sm tracking-wider text-center font-semibold">GC</th>
+                {tableHeaders.map(({ key, label, title }) => (
+                  <th key={key} title={title} className={`p-2 text-sm tracking-wider font-semibold ${key === 'playerNumber' ? 'text-left' : 'text-center'}`}>
+                     <button onClick={() => requestSort(key)} className={`w-full font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit ${key === 'playerNumber' ? 'justify-start' : 'justify-center'}`} disabled={isSharing}>
+                        {label} {getSortIndicator(key)}
+                     </button>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {aggregatedStats.sort((a,b) => Number(a.playerNumber) - Number(b.playerNumber)).map(player => (
+              {sortedAggregatedStats.map(player => (
                 <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
-                  <td className="p-2 font-mono text-cyan-300 font-bold">{playerNames[player.playerNumber] || `#${player.playerNumber}`}</td>
+                  <td className="p-2 font-mono text-cyan-300 font-bold">{playerNames[player.playerNumber] || (player.playerNumber === 'Equipo' ? 'Equipo' : `#${player.playerNumber}`)}</td>
                   <td className="p-2 font-mono text-white text-center">{player.goles}</td>
                   <td className="p-2 font-mono text-white text-center">{player.fallos}</td>
                   <td className="p-2 font-mono text-white text-center">{player.golPercentage.toFixed(0)}%</td>
@@ -142,6 +198,7 @@ const TallyStatisticsView: React.FC<{
                   <td className="p-2 font-mono text-white text-center">{player.reboteOfensivo}</td>
                   <td className="p-2 font-mono text-white text-center">{player.reboteDefensivo}</td>
                   <td className="p-2 font-mono text-white text-center">{player.asistencias}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.faltasPersonales}</td>
                   <td className="p-2 font-mono text-white text-center">{player.golesContra}</td>
                 </tr>
               ))}

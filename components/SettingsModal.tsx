@@ -39,10 +39,21 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
             <div className="bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="settings-modal-title" className="text-3xl font-bold text-cyan-400">Configuración</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white p-2 -mr-2 rounded-full" aria-label="Cerrar"><XIcon/></button>
                 </div>
 
                 <div className="space-y-8">
+                     {/* Game Name Settings */}
+                    <div className="bg-slate-700/50 p-4 rounded-lg">
+                        <h3 className="text-xl font-bold text-white mb-2">Nombre del Partido</h3>
+                        <input
+                            type="text"
+                            value={settings.gameName || ''}
+                            onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
+                            className="bg-slate-900/50 border border-slate-600 text-white text-base rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5"
+                            placeholder="Ej: Final vs. Vélez"
+                        />
+                    </div>
                     {/* Mano Caliente Settings */}
                     <div className="bg-slate-700/50 p-4 rounded-lg">
                         <div className="flex justify-between items-center">

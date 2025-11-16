@@ -51,12 +51,23 @@ export interface TallyStatsPeriod {
   reboteDefensivo: number;
   asistencias: number;
   golesContra: number;
+  faltasPersonales: number;
 }
 
 // Holds stats for both periods
 export type TallyStats = {
     [key in GamePeriod]: TallyStatsPeriod;
 };
+
+export type StatAction = keyof Omit<TallyStatsPeriod, 'golesContra'>;
+
+export interface GameEvent {
+    id: string;
+    timestamp: number;
+    period: GamePeriod;
+    playerNumber: string; // can be 'Equipo'
+    action: StatAction;
+}
 
 
 export interface GameState {
@@ -74,4 +85,8 @@ export interface GameState {
     tutorialStep: number; // 1: Select Player, 2: Tap Court, 3: Done
     gameMode: GameMode;
     tallyStats: Record<string, TallyStats>; // Maps playerNumber to their TallyStats
+    opponentScore: number;
+    teamFouls: { [key in GamePeriod]: number };
+    gameLog: GameEvent[];
+    tallyRedoLog: GameEvent[];
 }

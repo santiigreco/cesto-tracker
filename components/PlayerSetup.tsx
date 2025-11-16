@@ -9,6 +9,7 @@ import ChartBarIcon from './ChartBarIcon';
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 const defaultSettings: Settings = {
+    gameName: '',
     isManoCalienteEnabled: true,
     manoCalienteThreshold: 5,
     isManoFriaEnabled: true,
@@ -67,17 +68,29 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
       }
   };
 
+  const isCorrection = initialSelectedPlayers.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
       <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-2xl text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2">
-          Configuración del Partido
+          {isCorrection ? 'Corregir Equipo' : 'Nuevo Partido'}
         </h1>
         <p className="text-lg text-slate-400 mb-8">
-            Define tu equipo y elige cómo registrarás los datos.
+            {isCorrection ? 'Ajusta el equipo y la configuración del partido actual.' : 'Define tu equipo y elige cómo registrarás los datos.'}
         </p>
         
+        <div className="bg-slate-900/50 p-4 sm:p-6 rounded-xl border border-slate-700 mb-6">
+            <h2 className="text-xl font-semibold text-slate-200 text-left mb-3">Nombre del Partido (Opcional)</h2>
+            <input
+                type="text"
+                value={settings.gameName || ''}
+                onChange={(e) => setSettings(s => ({ ...s, gameName: e.target.value }))}
+                className="bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5"
+                placeholder="Ej: Final vs Vélez"
+            />
+        </div>
+
         <div className="bg-slate-900/50 p-4 sm:p-6 rounded-xl border border-slate-700 mb-8">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-slate-200">1. Selecciona tu Equipo</h2>
@@ -132,7 +145,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
                   className="w-full flex justify-between items-center text-left text-xl font-semibold text-slate-300 p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors"
                   aria-expanded={isAdvancedOpen}
                 >
-                  <span>Configuración Avanzada</span>
+                  <span>Configuración Adicional</span>
                   <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
@@ -182,7 +195,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
               disabled={selectedPlayers.size < 1 || !selectedMode}
               className="w-full max-w-sm bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-lg disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
             >
-              {initialSelectedPlayers.length > 0 ? 'Confirmar y Continuar' : 'Iniciar Partido'}
+              {isCorrection ? 'Confirmar y Continuar' : 'Iniciar Partido'}
             </button>
         </div>
       </div>
