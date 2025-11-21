@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod, StatAction, GameEvent } from './types';
@@ -235,7 +236,8 @@ const StatsTallyView: React.FC<{
     onCancelEdit: () => void;
 }> = ({ players, playerNames, tallyStats, currentPeriod, onUpdate, editingPlayer, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit }) => {
     return (
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+        // Added pb-32 to ensure the last items are accessible via scrolling
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 pb-32">
             {players.map(player => (
                 <PlayerTallyCard
                     key={player}
@@ -408,29 +410,48 @@ const GameLogView: React.FC<{ log: GameEvent[], playerNames: Record<string, stri
 const QuickActionsPanel: React.FC<{
     onActionSelect: (action: StatAction) => void;
 }> = ({ onActionSelect }) => {
-    const actions: { action: StatAction, label: string }[] = [
+    // Define main actions for the left grid
+    const mainActions: { action: StatAction, label: string }[] = [
         { action: 'recuperos', label: 'Recupero' },
         { action: 'perdidas', label: 'Pérdida' },
         { action: 'asistencias', label: 'Asistencia' },
         { action: 'faltasPersonales', label: 'Falta' },
-        { action: 'goles', label: 'Gol' },
-        { action: 'fallos', label: 'Fallo' },
         { action: 'reboteOfensivo', label: 'Reb. Of.' },
         { action: 'reboteDefensivo', label: 'Reb. Def.' },
     ];
+
     return (
         <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg">
-            <h3 className="text-xl font-bold text-cyan-400 mb-4 text-center">Acciones Rápidas</h3>
-            <div className="grid grid-cols-4 gap-2">
-                {actions.map(({ action, label }) => (
+            <h3 className="text-xl font-bold text-cyan-400 mb-4 text-center">Acción de juego</h3>
+            <div className="flex gap-3">
+                {/* Left Side: Grid of stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-grow">
+                    {mainActions.map(({ action, label }) => (
+                        <button
+                            key={action}
+                            onClick={() => onActionSelect(action)}
+                            className="p-3 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600 flex items-center justify-center h-full"
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                
+                {/* Right Side: Big Scoring Buttons (Right thumb ergonomics) */}
+                <div className="flex flex-col gap-2 w-1/3 min-w-[100px]">
                     <button
-                        key={action}
-                        onClick={() => onActionSelect(action)}
-                        className={`p-3 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600`}
+                        onClick={() => onActionSelect('goles')}
+                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg"
                     >
-                        {label}
+                        GOL
                     </button>
-                ))}
+                    <button
+                        onClick={() => onActionSelect('fallos')}
+                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg"
+                    >
+                        FALLO
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -1010,10 +1031,33 @@ function App() {
             // 3. Sync Tally Stats if in stats-tally mode
             if (gameState.gameMode === 'stats-tally' && Object.keys(gameState.tallyStats).length > 0) {
                 const statsPayload: any[] = [];
+                
+                const mapToDb = (stats: TallyStatsPeriod) => ({
+                    goles: stats.goles,
+                    fallos: stats.fallos,
+                    recuperos: stats.recuperos,
+                    perdidas: stats.perdidas,
+                    rebote_ofensivo: stats.reboteOfensivo,
+                    rebote_defensivo: stats.reboteDefensivo,
+                    asistencias: stats.asistencias,
+                    golescontra: stats.golesContra, // CORRECTED: No underscore to match DB schema
+                    faltas_personales: stats.faltasPersonales,
+                });
+
                 for (const playerNumber in gameState.tallyStats) {
                     const playerTally = gameState.tallyStats[playerNumber];
-                    statsPayload.push({ game_id: newGameId, player_number: playerNumber, period: 'First Half', ...playerTally['First Half'] });
-                    statsPayload.push({ game_id: newGameId, player_number: playerNumber, period: 'Second Half', ...playerTally['Second Half'] });
+                    statsPayload.push({ 
+                        game_id: newGameId, 
+                        player_number: playerNumber, 
+                        period: 'First Half', 
+                        ...mapToDb(playerTally['First Half']) 
+                    });
+                    statsPayload.push({ 
+                        game_id: newGameId, 
+                        player_number: playerNumber, 
+                        period: 'Second Half', 
+                        ...mapToDb(playerTally['Second Half']) 
+                    });
                 }
                 const { error: statsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
                 if (statsError) throw statsError;
@@ -1070,7 +1114,7 @@ function App() {
                     reboteOfensivo: stat.rebote_ofensivo,
                     reboteDefensivo: stat.rebote_defensivo,
                     asistencias: stat.asistencias,
-                    golesContra: stat.goles_contra,
+                    golesContra: stat.golescontra, // Map back from DB
                     faltasPersonales: stat.faltas_personales || 0,
                 };
             });
@@ -1361,10 +1405,10 @@ function App() {
                           className="w-full flex justify-between items-center text-left p-4 font-bold text-xl text-cyan-400 hover:bg-slate-700/50 transition-colors rounded-lg"
                           aria-expanded={isCorrectionsVisible}
                         >
-                          <span>modificar accion</span>
+                          <span>Planilla de Jugadores</span>
                           <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${isCorrectionsVisible ? 'rotate-180' : ''}`} />
                         </button>
-                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCorrectionsVisible ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCorrectionsVisible ? 'max-h-[8000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                             <div className="p-4 border-t border-slate-700">
                                 <StatsTallyView
                                     players={playersForTally}

@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useMemo } from 'react';
 import { PlayerStats, Shot, GameMode, TallyStats, GamePeriod, TallyStatsPeriod } from '../types';
 import TrophyIcon from './TrophyIcon';
@@ -15,7 +16,7 @@ interface StatisticsViewProps {
   tallyStats?: Record<string, TallyStats>;
 }
 
-type TallySortableKey = keyof (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, golPercentage: number });
+type TallySortableKey = keyof (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, golPercentage: number, totalShots: number });
 
 // Sub-component for the Tally Statistics view
 const TallyStatisticsView: React.FC<{
@@ -47,7 +48,7 @@ const TallyStatisticsView: React.FC<{
       const totalShots = stats.goles + stats.fallos;
       const totalRebounds = stats.reboteOfensivo + stats.reboteDefensivo;
       const golPercentage = totalShots > 0 ? (stats.goles / totalShots) * 100 : 0;
-      return { playerNumber, ...stats, totalRebounds, golPercentage };
+      return { playerNumber, ...stats, totalRebounds, golPercentage, totalShots };
     });
   }, [tallyStats, tallyPeriodFilter]);
 
@@ -124,7 +125,7 @@ const TallyStatisticsView: React.FC<{
    const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
     { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },
     { key: 'goles', label: 'G', title: 'Goles' },
-    { key: 'fallos', label: 'F', title: 'Fallos' },
+    { key: 'totalShots', label: 'T', title: 'Tiros Totales (Goles + Fallos)' },
     { key: 'golPercentage', label: '%G', title: '% Goles' },
     { key: 'recuperos', label: 'Rec', title: 'Recuperos' },
     { key: 'perdidas', label: 'Pér', title: 'Pérdidas' },
@@ -191,7 +192,7 @@ const TallyStatisticsView: React.FC<{
                 <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
                   <td className="p-2 font-mono text-cyan-300 font-bold">{playerNames[player.playerNumber] || (player.playerNumber === 'Equipo' ? 'Equipo' : `#${player.playerNumber}`)}</td>
                   <td className="p-2 font-mono text-white text-center">{player.goles}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.fallos}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.totalShots}</td>
                   <td className="p-2 font-mono text-white text-center">{player.golPercentage.toFixed(0)}%</td>
                   <td className="p-2 font-mono text-white text-center">{player.recuperos}</td>
                   <td className="p-2 font-mono text-white text-center">{player.perdidas}</td>
