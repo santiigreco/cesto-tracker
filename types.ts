@@ -1,3 +1,4 @@
+
 export type GamePeriod = 'First Half' | 'Second Half';
 export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'faq';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
@@ -59,7 +60,7 @@ export type TallyStats = {
     [key in GamePeriod]: TallyStatsPeriod;
 };
 
-export type StatAction = keyof Omit<TallyStatsPeriod, 'golesContra'>;
+export type StatAction = keyof TallyStatsPeriod;
 
 export interface GameEvent {
     id: string;

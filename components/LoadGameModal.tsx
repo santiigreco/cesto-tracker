@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../App';
+import { supabase } from '../utils/supabaseClient';
 import XIcon from './XIcon';
 import Loader from './Loader';
 import { GameMode, Settings } from '../types';

@@ -1,7 +1,10 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { Shot, ShotPosition, GamePeriod, AppTab, HeatmapFilter, PlayerStats, MapPeriodFilter, Settings, GameState, PlayerStreak, GameMode, TallyStats, TallyStatsPeriod, StatAction, GameEvent } from './types';
+import { supabase } from './utils/supabaseClient';
+import { GAME_STATE_STORAGE_KEY, PERIOD_NAMES, STAT_LABELS } from './constants';
+import { mapTallyPeriodToDb, mapTallyPeriodFromDb, mapShotToDb, mapShotFromDb } from './utils/dbAdapters';
+
 import Court from './components/Court';
 import ShotLog from './components/ShotLog';
 import PlayerSelector from './components/PlayerSelector';
@@ -35,17 +38,10 @@ import Loader from './components/Loader';
 import SaveGameModal from './components/SaveGameModal';
 import PlayerSelectionModal from './components/PlayerSelectionModal';
 import ChevronDownIcon from './components/ChevronDownIcon';
-
-
-// TypeScript declaration for html2canvas global variable
-declare const html2canvas: any;
-
-// --- SUPABASE CLIENT SETUP ---
-const supabaseUrl = 'https://druqnbzzibkrxffftogl.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydXFuYnp6aWJrcnhmZmZ0b2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODAyOTcsImV4cCI6MjA3ODY1NjI5N30.AeFCR_oN71lu0qmS5isdrj4Wu40wSqcr5uM_gjjLzqw';
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
+import GameLogView from './components/GameLogView';
+import QuickActionsPanel from './components/QuickActionsPanel';
+import StatsTallyView from './components/StatsTallyView';
+import ShareModal from './components/ShareModal';
 
 const initialTallyStatsPeriod: TallyStatsPeriod = {
   goles: 0,
@@ -105,358 +101,6 @@ export interface SyncState {
     status: SyncStatus;
     message: string;
 }
-
-// --- NEW IN-FILE COMPONENTS ---
-const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
-    </svg>
-);
-
-const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; }> = React.memo(({ label, value, onIncrement }) => (
-    <div className="flex flex-col items-center p-2 bg-slate-700/50 rounded-md gap-2">
-        <span className="text-xs sm:text-sm text-slate-300 text-center font-semibold">{label}</span>
-        <div className="flex items-center gap-3">
-            <span className="w-8 text-center text-xl font-bold font-mono text-white">{value}</span>
-            <button
-                onClick={onIncrement}
-                className="w-7 h-7 flex items-center justify-center bg-green-600 hover:bg-green-700 rounded-full text-white font-bold transition-colors"
-                aria-label={`Incrementar ${label}`}
-            >
-                <PlusIcon className="w-4 h-4" />
-            </button>
-        </div>
-    </div>
-));
-
-const statLabels: Record<keyof TallyStatsPeriod, string> = {
-    goles: 'Goles',
-    fallos: 'Fallos',
-    recuperos: 'Recuperos',
-    perdidas: 'Pérdidas',
-    reboteOfensivo: 'Reb. Of.',
-    reboteDefensivo: 'Reb. Def.',
-    asistencias: 'Asist.',
-    golesContra: 'G. Contra',
-    faltasPersonales: 'Faltas',
-};
-
-
-const PlayerTallyCard: React.FC<{
-    playerNumber: string;
-    playerName: string;
-    isEditing: boolean;
-    tempPlayerName: string;
-    setTempPlayerName: (name: string) => void;
-    onStartEdit: (player: string) => void;
-    onSaveEdit: () => void;
-    onCancelEdit: () => void;
-    playerTally: TallyStatsPeriod;
-    onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void;
-}> = React.memo(({ playerNumber, playerName, isEditing, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, playerTally, onUpdate }) => {
-    const isTeamCard = playerNumber === 'Equipo';
-    const playerStatsToShow: StatAction[] = ['goles', 'fallos', 'recuperos', 'perdidas', 'reboteOfensivo', 'reboteDefensivo', 'asistencias', 'faltasPersonales'];
-    const teamStatsToShow: (keyof TallyStatsPeriod)[] = ['recuperos', 'perdidas', 'golesContra'];
-
-    return (
-        <div 
-            className={`bg-slate-800 p-4 rounded-lg shadow-lg transition-all duration-200`}
-        >
-            <div className="mb-4" style={{ minHeight: '40px' }}>
-                {isEditing ? (
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="text"
-                            value={tempPlayerName}
-                            onChange={(e) => setTempPlayerName(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') onSaveEdit();
-                                if (e.key === 'Escape') onCancelEdit();
-                            }}
-                            autoFocus
-                            className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2 w-full"
-                            placeholder={`Nombre para #${playerNumber}`}
-                        />
-                        <button onClick={onSaveEdit} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
-                            <CheckIcon className="h-5 w-5" />
-                        </button>
-                        <button onClick={onCancelEdit} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
-                            <XIcon className="h-5 w-5" />
-                        </button>
-                    </div>
-                ) : (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onStartEdit(playerNumber); }}
-                        disabled={isTeamCard}
-                        className="group text-2xl font-bold text-cyan-400 p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors w-full text-left disabled:cursor-default disabled:hover:bg-transparent"
-                        title={isTeamCard ? "Estadísticas del Equipo" : "Editar nombre del jugador"}
-                    >
-                        <span className={`${!isTeamCard && 'group-hover:underline'} decoration-dotted underline-offset-4`}>
-                            {isTeamCard ? 'Equipo' : (playerName || `Jugador #${playerNumber}`)}
-                        </span>
-                    </button>
-                )}
-            </div>
-            {!isTeamCard && (
-                <div className="flex items-center gap-1.5 mb-3" title={`${playerTally.faltasPersonales} faltas personales`}>
-                    <span className="text-xs font-semibold text-slate-400 mr-1">Faltas:</span>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <div 
-                            key={i} 
-                            className={`w-4 h-4 rounded-full border border-slate-600 transition-colors ${i < playerTally.faltasPersonales ? 'bg-red-500' : 'bg-slate-700'}`}
-                        ></div>
-                    ))}
-                </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-                {(isTeamCard ? teamStatsToShow : playerStatsToShow).map(statKey => (
-                    <CompactTallyStat
-                        key={statKey}
-                        label={statLabels[statKey as keyof TallyStatsPeriod]}
-                        value={playerTally[statKey as keyof TallyStatsPeriod]}
-                        onIncrement={() => onUpdate(playerNumber, statKey as StatAction, 1)}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-});
-
-const StatsTallyView: React.FC<{
-    players: string[];
-    playerNames: Record<string, string>;
-    tallyStats: Record<string, TallyStats>;
-    currentPeriod: GamePeriod;
-    onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void;
-    editingPlayer: string | null;
-    tempPlayerName: string;
-    setTempPlayerName: (name: string) => void;
-    onStartEdit: (player: string) => void;
-    onSaveEdit: () => void;
-    onCancelEdit: () => void;
-}> = ({ players, playerNames, tallyStats, currentPeriod, onUpdate, editingPlayer, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit }) => {
-    return (
-        // Added pb-32 to ensure the last items are accessible via scrolling
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 pb-32">
-            {players.map(player => (
-                <PlayerTallyCard
-                    key={player}
-                    playerNumber={player}
-                    playerName={playerNames[player]}
-                    isEditing={editingPlayer === player}
-                    tempPlayerName={tempPlayerName}
-                    setTempPlayerName={setTempPlayerName}
-                    onStartEdit={onStartEdit}
-                    onSaveEdit={onSaveEdit}
-                    onCancelEdit={onCancelEdit}
-                    playerTally={(tallyStats[player] || initialPlayerTally)[currentPeriod]}
-                    onUpdate={onUpdate}
-                />
-            ))}
-        </div>
-    );
-};
-
-
-const ShareReport: React.FC<{ gameState: GameState, playerStats: PlayerStats[] }> = ({ gameState, playerStats }) => {
-    const { shots, playerNames, gameMode, tallyStats, settings } = gameState;
-    const showMaps = gameMode === 'shot-chart' && shots.length > 0;
-
-    return (
-        <div className="p-6 bg-slate-900 text-slate-200 font-sans">
-            <h1 className="text-3xl font-bold text-cyan-400 text-center mb-2">{settings.gameName || 'Reporte de Partido'}</h1>
-            <p className="text-center text-slate-400 mb-6">Generado con Cesto Tracker el {new Date().toLocaleDateString()}</p>
-            
-            <div className="space-y-8">
-                <StatisticsView 
-                    stats={playerStats} 
-                    playerNames={playerNames} 
-                    shots={shots} 
-                    isSharing={true}
-                    gameMode={gameMode}
-                    tallyStats={tallyStats} 
-                />
-
-                {showMaps && (
-                    <>
-                        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Mapa de Tiros</h2>
-                            <Court shots={shots} showShotMarkers={true} />
-                        </div>
-                        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Mapa de Calor</h2>
-                            <Court shots={[]}>
-                                <HeatmapOverlay shots={shots} />
-                            </Court>
-                        </div>
-                        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Análisis de Zonas</h2>
-                            <Court shots={[]}>
-                                <ZoneChart shots={shots} />
-                            </Court>
-                        </div>
-                    </>
-                )}
-            </div>
-             <footer className="w-full text-center text-slate-500 text-xs mt-8 pt-4 border-t border-slate-700">
-                Generado con Cesto Tracker 🏐{'\uFE0F'}
-            </footer>
-        </div>
-    );
-};
-
-
-const ShareModal: React.FC<{ isOpen: boolean; onClose: () => void; gameState: GameState; playerStats: PlayerStats[] }> = ({ isOpen, onClose, gameState, playerStats }) => {
-    const reportRef = useRef<HTMLDivElement>(null);
-    const [isCapturing, setIsCapturing] = useState(false);
-
-    const handleShare = async () => {
-        if (!reportRef.current || isCapturing) return;
-        setIsCapturing(true);
-        try {
-            const canvas = await html2canvas(reportRef.current, {
-                backgroundColor: '#0f172a',
-                useCORS: true,
-                scale: 2,
-            });
-            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-            if (!blob) throw new Error('No se pudo crear la imagen.');
-            
-            const file = new File([blob], 'reporte-cestotracker.png', { type: 'image/png' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Reporte de Partido de Cesto Tracker',
-                    text: 'Aquí están las estadísticas completas del partido de Cestoball.',
-                });
-            } else {
-                alert('La función de compartir archivos no está disponible en este navegador.');
-            }
-        } catch (error) {
-            console.error('Error al compartir:', error);
-            alert('Ocurrió un error al intentar compartir el reporte.');
-        } finally {
-            setIsCapturing(false);
-        }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center p-4 border-b border-slate-700 flex-shrink-0">
-                    <h2 className="text-2xl font-bold text-cyan-400">Compartir Reporte Completo</h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar">
-                        <XIcon />
-                    </button>
-                </div>
-                <div className="flex-grow overflow-y-auto custom-scrollbar">
-                    <div ref={reportRef}>
-                        <ShareReport gameState={gameState} playerStats={playerStats} />
-                    </div>
-                </div>
-                <div className="p-4 border-t border-slate-700 flex-shrink-0">
-                    <button
-                        onClick={handleShare}
-                        disabled={isCapturing}
-                        className="w-full flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 disabled:bg-slate-600 disabled:opacity-50"
-                    >
-                        <ShareIcon />
-                        {isCapturing ? 'Generando imagen...' : 'Compartir como Imagen'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const GameLogView: React.FC<{ log: GameEvent[], playerNames: Record<string, string> }> = ({ log, playerNames }) => {
-    const getActionLabel = (action: StatAction) => {
-        const labels: Record<StatAction, string> = {
-            goles: "GOL",
-            fallos: "FALLO",
-            recuperos: "RECUPERO",
-            perdidas: "PÉRDIDA",
-            reboteOfensivo: "REB. OFENSIVO",
-            reboteDefensivo: "REB. DEFENSIVO",
-            asistencias: "ASISTENCIA",
-            faltasPersonales: "FALTA PERSONAL",
-        };
-        return labels[action] || action.toUpperCase();
-    };
-
-    return (
-        <div className="bg-slate-800 p-3 sm:p-4 rounded-lg shadow-lg">
-            <h3 className="text-lg font-bold text-cyan-400 mb-2 text-center">Registro de Juego</h3>
-            {log.length > 0 ? (
-                <div className="max-h-32 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
-                    {log.map(event => (
-                        <div key={event.id} className="flex justify-between items-center bg-slate-700/50 p-1.5 rounded-md text-sm">
-                            <span className="font-bold text-cyan-300">{`[${getActionLabel(event.action)}]`}</span>
-                            <span className="text-white font-semibold">
-                                {playerNames[event.playerNumber] || (event.playerNumber === 'Equipo' ? 'Equipo' : `#${event.playerNumber}`)}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-slate-400 text-center text-sm py-2">Aún no hay acciones registradas.</p>
-            )}
-        </div>
-    );
-};
-
-const QuickActionsPanel: React.FC<{
-    onActionSelect: (action: StatAction) => void;
-}> = ({ onActionSelect }) => {
-    // Define main actions for the left grid
-    const mainActions: { action: StatAction, label: string }[] = [
-        { action: 'recuperos', label: 'Recupero' },
-        { action: 'perdidas', label: 'Pérdida' },
-        { action: 'asistencias', label: 'Asistencia' },
-        { action: 'faltasPersonales', label: 'Falta' },
-        { action: 'reboteOfensivo', label: 'Reb. Of.' },
-        { action: 'reboteDefensivo', label: 'Reb. Def.' },
-    ];
-
-    return (
-        <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg">
-            <h3 className="text-xl font-bold text-cyan-400 mb-4 text-center">Acción de juego</h3>
-            <div className="flex gap-3">
-                {/* Left Side: Grid of stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-grow">
-                    {mainActions.map(({ action, label }) => (
-                        <button
-                            key={action}
-                            onClick={() => onActionSelect(action)}
-                            className="p-3 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600 flex items-center justify-center h-full"
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-                
-                {/* Right Side: Big Scoring Buttons (Right thumb ergonomics) */}
-                <div className="flex flex-col gap-2 w-1/3 min-w-[100px]">
-                    <button
-                        onClick={() => onActionSelect('goles')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg"
-                    >
-                        GOL
-                    </button>
-                    <button
-                        onClick={() => onActionSelect('fallos')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg"
-                    >
-                        FALLO
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 /**
  * The main application component.
@@ -1015,14 +659,7 @@ function App() {
                 if (deleteError) throw deleteError;
     
                 if (gameState.shots.length > 0) {
-                    const shotsPayload = gameState.shots.map(shot => ({
-                        game_id: newGameId,
-                        player_number: shot.playerNumber,
-                        position: shot.position,
-                        is_gol: shot.isGol,
-                        gol_value: shot.golValue,
-                        period: shot.period,
-                    }));
+                    const shotsPayload = gameState.shots.map(shot => mapShotToDb(shot, newGameId));
                     const { error: shotsError } = await supabase.from('shots').insert(shotsPayload);
                     if (shotsError) throw shotsError;
                 }
@@ -1032,31 +669,19 @@ function App() {
             if (gameState.gameMode === 'stats-tally' && Object.keys(gameState.tallyStats).length > 0) {
                 const statsPayload: any[] = [];
                 
-                const mapToDb = (stats: TallyStatsPeriod) => ({
-                    goles: stats.goles,
-                    fallos: stats.fallos,
-                    recuperos: stats.recuperos,
-                    perdidas: stats.perdidas,
-                    rebote_ofensivo: stats.reboteOfensivo,
-                    rebote_defensivo: stats.reboteDefensivo,
-                    asistencias: stats.asistencias,
-                    golescontra: stats.golesContra, // CORRECTED: No underscore to match DB schema
-                    faltas_personales: stats.faltasPersonales,
-                });
-
                 for (const playerNumber in gameState.tallyStats) {
                     const playerTally = gameState.tallyStats[playerNumber];
                     statsPayload.push({ 
                         game_id: newGameId, 
                         player_number: playerNumber, 
                         period: 'First Half', 
-                        ...mapToDb(playerTally['First Half']) 
+                        ...mapTallyPeriodToDb(playerTally['First Half']) 
                     });
                     statsPayload.push({ 
                         game_id: newGameId, 
                         player_number: playerNumber, 
                         period: 'Second Half', 
-                        ...mapToDb(playerTally['Second Half']) 
+                        ...mapTallyPeriodToDb(playerTally['Second Half']) 
                     });
                 }
                 const { error: statsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
@@ -1090,14 +715,7 @@ function App() {
             const gameData = gameRes.data;
             
             // Reconstruct Shots
-            const loadedShots: Shot[] = (shotsRes.data || []).map((s: any) => ({
-                id: s.id, // Use Supabase UUID as the shot ID
-                playerNumber: s.player_number,
-                position: s.position,
-                isGol: s.is_gol,
-                golValue: s.gol_value,
-                period: s.period,
-            }));
+            const loadedShots: Shot[] = (shotsRes.data || []).map(mapShotFromDb);
             
             // Reconstruct Tally Stats
             const loadedTallyStats: Record<string, TallyStats> = {};
@@ -1106,23 +724,12 @@ function App() {
                 if (!loadedTallyStats[player]) {
                     loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
                 }
-                loadedTallyStats[player][stat.period as GamePeriod] = {
-                    goles: stat.goles,
-                    fallos: stat.fallos,
-                    recuperos: stat.recuperos,
-                    perdidas: stat.perdidas,
-                    reboteOfensivo: stat.rebote_ofensivo,
-                    reboteDefensivo: stat.rebote_defensivo,
-                    asistencias: stat.asistencias,
-                    golesContra: stat.golescontra, // Map back from DB
-                    faltasPersonales: stat.faltas_personales || 0,
-                };
+                loadedTallyStats[player][stat.period as GamePeriod] = mapTallyPeriodFromDb(stat);
             });
             
             // Reconstruct Player Streaks from loaded data
             const loadedPlayerStreaks: Record<string, PlayerStreak> = {};
             // This is a complex calculation. For now, we reset streaks on load.
-            // A more advanced implementation would re-calculate streaks by iterating through shots/stats.
             
             // Build the final game state
             const loadedGameState: GameState = {
@@ -1262,7 +869,6 @@ function App() {
     return [];
   }, [gameState.gameMode]);
 
-  const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
   const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, tallyStats, opponentScore, teamFouls, gameLog, tallyRedoLog } = gameState;
 
   const getFilterButtonClass = (isActive: boolean) =>
@@ -1430,7 +1036,7 @@ function App() {
                      <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="flex-1 text-center sm:text-left">
                         <h2 className="text-xl font-bold text-cyan-400">Sesión Actual</h2>
-                        <p className="text-sm text-slate-400">Estás viendo el {periodTranslations[currentPeriod]}</p>
+                        <p className="text-sm text-slate-400">Estás viendo el {PERIOD_NAMES[currentPeriod]}</p>
                       </div>
                       <select
                           id="period-selector"
@@ -1440,7 +1046,7 @@ function App() {
                       >
                         {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
                           <option key={period} value={period}>
-                            {periodTranslations[period]}
+                            {PERIOD_NAMES[period]}
                           </option>
                         ))}
                       </select>
@@ -1581,7 +1187,7 @@ function App() {
                     >
                       {(['First Half', 'Second Half'] as GamePeriod[]).map((period) => (
                         <option key={period} value={period}>
-                          {periodTranslations[period]}
+                          {PERIOD_NAMES[period]}
                         </option>
                       ))}
                     </select>
@@ -1627,8 +1233,8 @@ function App() {
                           <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
                           <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
                               <button onClick={() => setAnalysisPeriodFilter('all')} className={getFilterButtonClass(analysisPeriodFilter === 'all')}>Ambos</button>
-                              <button onClick={() => setAnalysisPeriodFilter('First Half')} className={getFilterButtonClass(analysisPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
-                              <button onClick={() => setAnalysisPeriodFilter('Second Half')} className={getFilterButtonClass(analysisPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+                              <button onClick={() => setAnalysisPeriodFilter('First Half')} className={getFilterButtonClass(analysisPeriodFilter === 'First Half')}>{PERIOD_NAMES['First Half']}</button>
+                              <button onClick={() => setAnalysisPeriodFilter('Second Half')} className={getFilterButtonClass(analysisPeriodFilter === 'Second Half')}>{PERIOD_NAMES['Second Half']}</button>
                           </div>
                       </div>
                   </div>
@@ -1689,7 +1295,7 @@ function App() {
             onSelectPlayer={handleAssignActionToPlayer}
             players={playersForTally}
             playerNames={playerNames}
-            actionLabel={statLabels[actionToAssign]}
+            actionLabel={STAT_LABELS[actionToAssign]}
         />
       )}
 

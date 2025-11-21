@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { GamePeriod, TallyStats, StatAction, TallyStatsPeriod } from '../types';
 import PlayerTallyCard from './PlayerTallyCard';
@@ -22,7 +23,7 @@ const StatsTallyView: React.FC<{
     };
 
     return (
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 pb-28">
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 pb-32">
             {players.map(player => (
                 <PlayerTallyCard
                     key={player}
