@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { GameState, PlayerStats } from '../types';
 import StatisticsView from './StatisticsView';
@@ -22,12 +21,12 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats }) => 
             
             <div className="space-y-8">
                 <StatisticsView 
-                    stats={playerStats} 
-                    playerNames={playerNames} 
-                    shots={shots} 
+                    externalStats={playerStats} 
+                    externalPlayerNames={playerNames} 
+                    externalShots={shots} 
                     isSharing={true}
-                    gameMode={gameMode}
-                    tallyStats={tallyStats} 
+                    externalGameMode={gameMode}
+                    externalTallyStats={tallyStats} 
                 />
 
                 {showMaps && (

@@ -1,27 +1,38 @@
-
-import React from 'react';
-import { GamePeriod, TallyStats, StatAction, TallyStatsPeriod } from '../types';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useGameContext } from '../context/GameContext';
+import { useGameLogic } from '../hooks/useGameLogic';
 import PlayerTallyCard from './PlayerTallyCard';
+import { initialPlayerTally } from '../context/GameContext';
 
-const StatsTallyView: React.FC<{
-    players: string[];
-    playerNames: Record<string, string>;
-    tallyStats: Record<string, TallyStats>;
-    currentPeriod: GamePeriod;
-    onUpdate: (playerNumber: string, stat: StatAction, change: 1 | -1) => void;
-    editingPlayer: string | null;
-    tempPlayerName: string;
-    setTempPlayerName: (name: string) => void;
-    onStartEdit: (player: string) => void;
-    onSaveEdit: () => void;
-    onCancelEdit: () => void;
-    isReadOnly?: boolean;
-}> = ({ players, playerNames, tallyStats, currentPeriod, onUpdate, editingPlayer, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, isReadOnly = false }) => {
+const StatsTallyView: React.FC = () => {
+    const { gameState } = useGameContext();
+    const { handleUpdateTallyStat, updatePlayerName } = useGameLogic();
+    const { availablePlayers, playerNames, tallyStats, currentPeriod } = gameState;
     
-    const initialPlayerTally: TallyStats = {
-        'First Half': { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 },
-        'Second Half': { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 },
-    };
+    // Local state for name editing within this view
+    const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
+    const [tempPlayerName, setTempPlayerName] = useState('');
+
+    const players = useMemo(() => ['Equipo', ...availablePlayers], [availablePlayers]);
+    const isReadOnly = gameState.isReadOnly;
+
+    const handleStartEditingName = useCallback((playerNumber: string) => {
+        if (isReadOnly) return;
+        setTempPlayerName(playerNames[playerNumber] || '');
+        setEditingPlayer(playerNumber);
+    }, [playerNames, isReadOnly]);
+
+    const handleCancelEditingName = useCallback(() => {
+        setEditingPlayer(null);
+        setTempPlayerName('');
+    }, []);
+
+    const handleSavePlayerName = useCallback(() => {
+        if (!editingPlayer) return;
+        updatePlayerName(editingPlayer, tempPlayerName);
+        setEditingPlayer(null);
+        setTempPlayerName('');
+    }, [editingPlayer, tempPlayerName, updatePlayerName]);
 
     return (
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 pb-32">
@@ -33,11 +44,11 @@ const StatsTallyView: React.FC<{
                     isEditing={editingPlayer === player}
                     tempPlayerName={tempPlayerName}
                     setTempPlayerName={setTempPlayerName}
-                    onStartEdit={onStartEdit}
-                    onSaveEdit={onSaveEdit}
-                    onCancelEdit={onCancelEdit}
+                    onStartEdit={handleStartEditingName}
+                    onSaveEdit={handleSavePlayerName}
+                    onCancelEdit={handleCancelEditingName}
                     playerTally={(tallyStats[player] || initialPlayerTally)[currentPeriod]}
-                    onUpdate={onUpdate}
+                    onUpdate={handleUpdateTallyStat}
                     isReadOnly={isReadOnly}
                 />
             ))}

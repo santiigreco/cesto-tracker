@@ -1,22 +1,36 @@
-
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlayerStats, Shot, GameMode, TallyStats, GamePeriod, TallyStatsPeriod } from '../types';
 import TrophyIcon from './TrophyIcon';
 import DownloadIcon from './DownloadIcon';
 import ShareIcon from './ShareIcon';
 import TemporalChart from './TemporalChart';
+import { useGameContext } from '../context/GameContext';
 
 interface StatisticsViewProps {
-  stats: PlayerStats[];
-  playerNames: Record<string, string>;
-  shots: Shot[];
   onShareClick?: () => void;
   isSharing?: boolean;
-  gameMode?: GameMode;
-  tallyStats?: Record<string, TallyStats>;
+  // Optional overrides for Share Report mode (still needed for snapshot sharing)
+  externalStats?: PlayerStats[];
+  externalPlayerNames?: Record<string, string>;
+  externalShots?: Shot[];
+  externalGameMode?: GameMode;
+  externalTallyStats?: Record<string, TallyStats>;
 }
 
 type TallySortableKey = keyof (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, golPercentage: number, totalShots: number, points: number });
+
+const initialTallyStatsPeriod: TallyStatsPeriod = {
+  goles: 0,
+  triples: 0,
+  fallos: 0,
+  recuperos: 0,
+  perdidas: 0,
+  reboteOfensivo: 0,
+  reboteDefensivo: 0,
+  asistencias: 0,
+  golesContra: 0,
+  faltasPersonales: 0,
+};
 
 // Sub-component for the Tally Statistics view
 const TallyStatisticsView: React.FC<{
@@ -34,17 +48,20 @@ const TallyStatisticsView: React.FC<{
 
   const aggregatedStats = useMemo(() => {
     return Object.entries(tallyStats).map(([playerNumber, playerTally]) => {
-      let stats: TallyStatsPeriod;
+      let stats: TallyStatsPeriod = { ...initialTallyStatsPeriod };
+      
       if (tallyPeriodFilter === 'all') {
-        stats = Object.values(playerTally).reduce((acc, periodStats) => {
-          (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
-            acc[key] = (acc[key] || 0) + (periodStats[key] || 0);
+          // Explicitly sum periods to avoid object iteration issues
+          const fh = playerTally['First Half'] || initialTallyStatsPeriod;
+          const sh = playerTally['Second Half'] || initialTallyStatsPeriod;
+          
+          (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach(key => {
+            stats[key] = (fh[key] || 0) + (sh[key] || 0);
           });
-          return acc;
-        }, { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 });
       } else {
-        stats = playerTally[tallyPeriodFilter];
+        stats = { ...(playerTally[tallyPeriodFilter] || initialTallyStatsPeriod) };
       }
+      
       const totalShots = stats.goles + stats.triples + stats.fallos;
       const totalRebounds = stats.reboteOfensivo + stats.reboteDefensivo;
       const golPercentage = totalShots > 0 ? ((stats.goles + stats.triples) / totalShots) * 100 : 0;
@@ -94,14 +111,16 @@ const TallyStatisticsView: React.FC<{
   
   const teamTotals = useMemo(() => {
      return aggregatedStats.reduce((acc, playerStats) => {
-        if (playerStats.playerNumber !== 'Equipo') { // Exclude team's own stats from totals
-            (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
+        if (playerStats.playerNumber !== 'Equipo') { // Exclude 'Equipo' from summation to prevent double counting
+            // Fix: Iterate only over initialTallyStatsPeriod keys to ensure we don't double count points 
+            // because Object.keys(acc) would include 'points' which is updated below.
+            (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).forEach(key => {
                 acc[key] += playerStats[key];
             });
             acc.points += playerStats.points;
         }
         return acc;
-    }, { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0, points: 0 });
+    }, { ...initialTallyStatsPeriod, points: 0 });
   }, [aggregatedStats]);
 
   const topPerformers = useMemo(() => {
@@ -164,7 +183,7 @@ const TallyStatisticsView: React.FC<{
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}</p><p className="text-xs sm:text-sm text-slate-400">Rebotes</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.asistencias}</p><p className="text-xs sm:text-sm text-slate-400">Asistencias</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.faltasPersonales}</p><p className="text-xs sm:text-sm text-slate-400">Faltas</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{tallyStats && tallyStats['Equipo'] ? (tallyStats['Equipo']['First Half'].golesContra + tallyStats['Equipo']['Second Half'].golesContra) : 0}</p><p className="text-xs sm:text-sm text-slate-400">G. en Contra</p></div>
+            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.golesContra}</p><p className="text-xs sm:text-sm text-slate-400">G. en Contra</p></div>
         </div>
       </div>
 
@@ -268,7 +287,46 @@ const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
 );
 
 
-const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ stats, playerNames, shots, onShareClick, isSharing = false, gameMode, tallyStats }) => {
+const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ 
+    onShareClick, 
+    isSharing = false, 
+    externalStats,
+    externalPlayerNames,
+    externalShots,
+    externalGameMode,
+    externalTallyStats
+}) => {
+  
+  const { gameState } = useGameContext();
+  
+  // Use external props if provided (for sharing snapshot), otherwise use context
+  const gameMode = externalGameMode || gameState.gameMode;
+  const shots = externalShots || gameState.shots;
+  const playerNames = externalPlayerNames || gameState.playerNames;
+  const tallyStats = externalTallyStats || gameState.tallyStats;
+
+  // Compute Shot Chart Stats locally if not provided externally
+  const stats: PlayerStats[] = useMemo(() => {
+      if (externalStats) return externalStats;
+      if (gameMode === 'shot-chart') {
+        const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
+        shots.forEach(shot => {
+            const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
+            pStats.totalShots += 1;
+            if (shot.isGol) {
+                pStats.totalGoles += 1;
+                pStats.totalPoints += shot.golValue;
+            }
+            statsMap.set(shot.playerNumber, pStats);
+        });
+        return Array.from(statsMap.entries()).map(([playerNumber, data]) => ({
+            playerNumber,
+            ...data,
+            golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
+        }));
+      }
+      return [];
+  }, [shots, gameMode, externalStats]);
   
   if (gameMode === 'stats-tally' && tallyStats) {
     return (
