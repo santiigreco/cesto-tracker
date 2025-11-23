@@ -161,27 +161,38 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
             <div className="w-full bg-slate-800/50 border-y border-slate-700/50 py-12">
                 <div className="max-w-5xl mx-auto px-4">
                     <h2 className="text-center text-2xl font-bold text-white mb-10">Tan fácil como usar WhatsApp</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                        <div className="flex flex-col items-center">
-                            <div className="w-16 h-16 bg-cyan-900/50 rounded-full flex items-center justify-center mb-4 text-cyan-400 border border-cyan-500/30">
-                                <span className="text-2xl font-bold">1</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+                        {/* Step 1 */}
+                        <div className="flex flex-row md:flex-col items-start md:items-center gap-4 p-4 md:p-0 bg-slate-900/50 md:bg-transparent rounded-xl md:rounded-none border border-slate-700/50 md:border-none">
+                            <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-cyan-900/50 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 mb-0 md:mb-4">
+                                <span className="text-xl md:text-2xl font-bold">1</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">Elegí tu equipo</h3>
-                            <p className="text-slate-400 text-sm">Seleccioná los números de las jugadoras que entran a la cancha.</p>
+                            <div className="text-left md:text-center">
+                                <h3 className="text-lg md:text-xl font-semibold text-white mb-1 md:mb-2">Elegí tu equipo</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed">Seleccioná los números de las jugadoras que entran a la cancha.</p>
+                            </div>
                         </div>
-                        <div className="flex flex-col items-center">
-                            <div className="w-16 h-16 bg-cyan-900/50 rounded-full flex items-center justify-center mb-4 text-cyan-400 border border-cyan-500/30">
-                                <span className="text-2xl font-bold">2</span>
+
+                        {/* Step 2 */}
+                        <div className="flex flex-row md:flex-col items-start md:items-center gap-4 p-4 md:p-0 bg-slate-900/50 md:bg-transparent rounded-xl md:rounded-none border border-slate-700/50 md:border-none">
+                            <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-cyan-900/50 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 mb-0 md:mb-4">
+                                <span className="text-xl md:text-2xl font-bold">2</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">Tocá los botones</h3>
-                            <p className="text-slate-400 text-sm">GOL verde, FALLO rojo. Así de simple. Olvidate de sumar con los dedos.</p>
+                            <div className="text-left md:text-center">
+                                <h3 className="text-lg md:text-xl font-semibold text-white mb-1 md:mb-2">Tocá los botones</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed">GOL verde, FALLO rojo. Así de simple. Olvidate de sumar con los dedos.</p>
+                            </div>
                         </div>
-                        <div className="flex flex-col items-center">
-                            <div className="w-16 h-16 bg-cyan-900/50 rounded-full flex items-center justify-center mb-4 text-cyan-400 border border-cyan-500/30">
-                                <span className="text-2xl font-bold">3</span>
+
+                        {/* Step 3 */}
+                        <div className="flex flex-row md:flex-col items-start md:items-center gap-4 p-4 md:p-0 bg-slate-900/50 md:bg-transparent rounded-xl md:rounded-none border border-slate-700/50 md:border-none">
+                            <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-cyan-900/50 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 mb-0 md:mb-4">
+                                <span className="text-xl md:text-2xl font-bold">3</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">Mirá el resultado</h3>
-                            <p className="text-slate-400 text-sm">La app calcula todo sola. Al final, compartí la imagen del partido.</p>
+                            <div className="text-left md:text-center">
+                                <h3 className="text-lg md:text-xl font-semibold text-white mb-1 md:mb-2">Mirá el resultado</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed">La app calcula todo sola. Al final, compartí la imagen del partido.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
