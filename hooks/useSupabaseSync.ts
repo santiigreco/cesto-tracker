@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
@@ -96,6 +97,15 @@ export const useSupabaseSync = () => {
             if (tallyRes.error) throw tallyRes.error;
             
             const gameData = gameRes.data;
+
+            // Increment view count in background (fire and forget)
+            // Note: This relies on the table having a 'views' column.
+            try {
+                const currentViews = gameData.views || 0;
+                await supabase.from('games').update({ views: currentViews + 1 }).eq('id', gameId);
+            } catch (err) {
+                console.warn('Could not increment view count', err);
+            }
             
             const loadedShots: Shot[] = (shotsRes.data || []).map(mapShotFromDb);
             

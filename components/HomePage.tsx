@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Shot, PlayerStats } from '../types';
 import Court from './Court';
@@ -149,7 +148,7 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
                         className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
                     >
                         <CloudDownloadIcon className="h-6 w-6" />
-                        Cargar Partido
+                        Ver partidos anteriores
                     </button>
                 </div>
                 <p className="mt-4 text-sm text-slate-500">

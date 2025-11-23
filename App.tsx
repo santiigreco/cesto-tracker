@@ -275,7 +275,21 @@ function App() {
   } 
   
   if (!hasSeenHomepage) {
-    return <HomePage onStart={handleStartApp} onLoadGameClick={() => setIsLoadGameModalOpen(true)} />;
+    return (
+        <>
+            <HomePage onStart={handleStartApp} onLoadGameClick={() => setIsLoadGameModalOpen(true)} />
+            {isLoadGameModalOpen && (
+                <LoadGameModal 
+                    onClose={() => setIsLoadGameModalOpen(false)} 
+                    onLoadGame={async (id) => { 
+                        setIsLoadGameModalOpen(false); 
+                        await handleLoadGame(id); 
+                        setActiveTab('statistics');
+                    }} 
+                />
+            )}
+        </>
+    );
   } 
   
   if (!isSetupComplete || !gameMode) {
@@ -570,7 +584,7 @@ function App() {
             <PlayerSelectionModal isOpen={isPlayerSelectionModalOpen} onClose={() => { setIsPlayerSelectionModalOpen(false); setActionToAssign(null); }} onSelectPlayer={handleAssignActionToPlayer} players={playersForTally} playerNames={playerNames} actionLabel={STAT_LABELS[actionToAssign]} />
         )}
 
-        {isLoadGameModalOpen && <LoadGameModal onClose={() => setIsLoadGameModalOpen(false)} onLoadGame={async (id) => { setIsLoadGameModalOpen(false); await handleLoadGame(id); }} />}
+        {isLoadGameModalOpen && <LoadGameModal onClose={() => setIsLoadGameModalOpen(false)} onLoadGame={async (id) => { setIsLoadGameModalOpen(false); await handleLoadGame(id); setActiveTab('statistics'); }} />}
 
         {isSaveGameModalOpen && <SaveGameModal isOpen={isSaveGameModalOpen} onClose={() => setIsSaveGameModalOpen(false)} onSave={handleSyncToSupabase} syncState={syncState} initialGameName={gameState.settings.gameName} />}
         

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import XIcon from './XIcon';
+import EyeIcon from './EyeIcon';
 import Loader from './Loader';
 import { GameMode, Settings } from '../types';
 
@@ -11,6 +12,7 @@ interface SavedGame {
     game_mode: GameMode;
     player_names: Record<string, string>;
     settings: Settings;
+    views: number;
 }
 
 interface LoadGameModalProps {
@@ -29,7 +31,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
         try {
             const { data, error } = await supabase
                 .from('games')
-                .select('id, created_at, game_mode, player_names, settings')
+                .select('id, created_at, game_mode, player_names, settings, views')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -76,24 +78,39 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
                     {!loading && !error && games.length > 0 && (
                         <div className="space-y-4">
                             {games.map(game => (
-                                <div key={game.id} className="bg-slate-700/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                                <div key={game.id} className="bg-slate-700/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:bg-slate-700 transition-colors">
                                     <div className="flex-grow">
-                                        <p className="font-bold text-white truncate">{game.settings?.gameName || 'Partido sin nombre'}</p>
-                                        <p className="text-sm text-slate-400">
-                                            {getGameModeLabel(game.game_mode)} - {new Date(game.created_at).toLocaleDateString('es-AR', {
-                                                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                            })}
-                                        </p>
-                                        {Object.values(game.player_names).length > 0 && (
-                                            <p className="text-xs text-slate-500 mt-1 truncate">
-                                                Equipo: {Object.values(game.player_names).join(', ')}
+                                        <div className="flex justify-between items-start">
+                                            <p className="font-bold text-white truncate text-lg">{game.settings?.gameName || 'Partido sin nombre'}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 mb-1">
+                                            <p className="text-sm text-slate-400">
+                                                {getGameModeLabel(game.game_mode)}
                                             </p>
-                                        )}
+                                            <span className="text-slate-600">•</span>
+                                            <p className="text-sm text-slate-400">
+                                                {new Date(game.created_at).toLocaleDateString('es-AR', {
+                                                    day: 'numeric', month: 'short'
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div className="flex justify-between items-end mt-2">
+                                            {Object.values(game.player_names).length > 0 ? (
+                                                <p className="text-xs text-slate-500 truncate max-w-[200px] sm:max-w-xs">
+                                                    {Object.values(game.player_names).join(', ')}
+                                                </p>
+                                            ) : <span></span>}
+                                            
+                                            <div className="flex items-center gap-1 bg-slate-800/50 px-2 py-1 rounded text-slate-400 text-xs font-medium" title="Visualizaciones">
+                                                <EyeIcon className="h-3 w-3" />
+                                                <span>{game.views || 0}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-shrink-0 flex gap-2">
+                                    <div className="flex-shrink-0 flex gap-2 w-full sm:w-auto">
                                         <button
                                             onClick={() => onLoadGame(game.id)}
-                                            className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                            className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg"
                                         >
                                             Cargar
                                         </button>
