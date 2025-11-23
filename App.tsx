@@ -40,6 +40,7 @@ import GameLogView from './components/GameLogView';
 import QuickActionsPanel from './components/QuickActionsPanel';
 import StatsTallyView from './components/StatsTallyView';
 import ShareModal from './components/ShareModal';
+import BottomNavigation from './components/BottomNavigation';
 
 function App() {
   // --- STATE FROM CONTEXT & HOOKS ---
@@ -288,7 +289,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops pb-24 md:pb-8">
         <div className="w-full max-w-4xl flex-grow">
           {/* Read Only Banner */}
           {isReadOnly && (
@@ -561,6 +562,8 @@ function App() {
         <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">Santiago Greco - Gresolutions © 2025</footer>
 
         {/* --- MODALS --- */}
+        <BottomNavigation activeTab={activeTab} onSelectTab={setActiveTab} gameMode={gameMode} />
+        
         <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} activeTab={activeTab} onSelectTab={(tab) => { setActiveTab(tab); setIsMobileMenuOpen(false); }} onShare={handleShare} tabTranslations={tabTranslations} tabs={tabsForCurrentMode} />
         
         {isPlayerSelectionModalOpen && actionToAssign && (
