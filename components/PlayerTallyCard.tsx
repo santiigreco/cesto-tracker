@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TallyStatsPeriod, StatAction } from '../types';
 import CheckIcon from './CheckIcon';
@@ -10,24 +11,27 @@ const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; }> = React.memo(({ label, value, onIncrement }) => (
+const CompactTallyStat: React.FC<{ label: string; value: number; onIncrement: () => void; readOnly?: boolean }> = React.memo(({ label, value, onIncrement, readOnly }) => (
     <div className="flex flex-col items-center p-2 bg-slate-700/50 rounded-md gap-2">
         <span className="text-xs sm:text-sm text-slate-300 text-center font-semibold">{label}</span>
         <div className="flex items-center gap-3">
             <span className="w-8 text-center text-xl font-bold font-mono text-white">{value}</span>
-            <button
-                onClick={onIncrement}
-                className="w-7 h-7 flex items-center justify-center bg-green-600 hover:bg-green-700 rounded-full text-white font-bold transition-colors"
-                aria-label={`Incrementar ${label}`}
-            >
-                <PlusIcon className="w-4 h-4" />
-            </button>
+            {!readOnly && (
+                <button
+                    onClick={onIncrement}
+                    className="w-7 h-7 flex items-center justify-center bg-green-600 hover:bg-green-700 rounded-full text-white font-bold transition-colors"
+                    aria-label={`Incrementar ${label}`}
+                >
+                    <PlusIcon className="w-4 h-4" />
+                </button>
+            )}
         </div>
     </div>
 ));
 
 const statLabels: Record<keyof TallyStatsPeriod, string> = {
     goles: 'Goles',
+    triples: 'Triples',
     fallos: 'Fallos',
     recuperos: 'Recuperos',
     perdidas: 'Pérdidas',
@@ -49,9 +53,10 @@ const PlayerTallyCard: React.FC<{
     onCancelEdit: () => void;
     playerTally: TallyStatsPeriod;
     onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void;
-}> = React.memo(({ playerNumber, playerName, isEditing, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, playerTally, onUpdate }) => {
+    isReadOnly?: boolean;
+}> = React.memo(({ playerNumber, playerName, isEditing, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, playerTally, onUpdate, isReadOnly }) => {
     const isTeamCard = playerNumber === 'Equipo';
-    const playerStatsToShow: StatAction[] = ['goles', 'fallos', 'recuperos', 'perdidas', 'reboteOfensivo', 'reboteDefensivo', 'asistencias', 'faltasPersonales'];
+    const playerStatsToShow: StatAction[] = ['goles', 'triples', 'fallos', 'recuperos', 'perdidas', 'reboteOfensivo', 'reboteDefensivo', 'asistencias', 'faltasPersonales'];
     const teamStatsToShow: (keyof TallyStatsPeriod)[] = ['recuperos', 'perdidas', 'golesContra'];
 
     return (
@@ -82,12 +87,12 @@ const PlayerTallyCard: React.FC<{
                     </div>
                 ) : (
                     <button
-                        onClick={(e) => { e.stopPropagation(); onStartEdit(playerNumber); }}
-                        disabled={isTeamCard}
+                        onClick={(e) => { e.stopPropagation(); if(!isReadOnly) onStartEdit(playerNumber); }}
+                        disabled={isTeamCard || isReadOnly}
                         className="group text-2xl font-bold text-cyan-400 p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors w-full text-left disabled:cursor-default disabled:hover:bg-transparent"
-                        title={isTeamCard ? "Estadísticas del Equipo" : "Editar nombre del jugador"}
+                        title={isTeamCard ? "Estadísticas del Equipo" : (isReadOnly ? "Jugador (Modo Lectura)" : "Editar nombre del jugador")}
                     >
-                        <span className={`${!isTeamCard && 'group-hover:underline'} decoration-dotted underline-offset-4`}>
+                        <span className={`${!isTeamCard && !isReadOnly && 'group-hover:underline'} decoration-dotted underline-offset-4`}>
                             {isTeamCard ? 'Equipo' : (playerName || `Jugador #${playerNumber}`)}
                         </span>
                     </button>
@@ -111,6 +116,7 @@ const PlayerTallyCard: React.FC<{
                         label={statLabels[statKey as keyof TallyStatsPeriod]}
                         value={playerTally[statKey as keyof TallyStatsPeriod]}
                         onIncrement={() => onUpdate(playerNumber, statKey as StatAction, 1)}
+                        readOnly={isReadOnly}
                     />
                 ))}
             </div>

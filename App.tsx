@@ -45,6 +45,7 @@ import ShareModal from './components/ShareModal';
 
 const initialTallyStatsPeriod: TallyStatsPeriod = {
   goles: 0,
+  triples: 0,
   fallos: 0,
   recuperos: 0,
   perdidas: 0,
@@ -88,6 +89,7 @@ const initialGameState: GameState = {
     },
     gameLog: [],
     tallyRedoLog: [],
+    isReadOnly: false,
 };
 
 
@@ -156,6 +158,7 @@ function App() {
         if (!savedState.teamFouls) savedState.teamFouls = { 'First Half': 0, 'Second Half': 0 };
         if (!savedState.gameLog) savedState.gameLog = [];
         if (!savedState.tallyRedoLog) savedState.tallyRedoLog = [];
+        if (savedState.isReadOnly === undefined) savedState.isReadOnly = false;
         
         // Migration for older tallyStats structure
         if (savedState.tallyStats) {
@@ -172,6 +175,12 @@ function App() {
                 }
                 if (playerTally['Second Half'] && playerTally['Second Half'].faltasPersonales === undefined) {
                     playerTally['Second Half'].faltasPersonales = 0;
+                }
+                 if (playerTally['First Half'] && playerTally['First Half'].triples === undefined) {
+                    playerTally['First Half'].triples = 0;
+                }
+                if (playerTally['Second Half'] && playerTally['Second Half'].triples === undefined) {
+                    playerTally['Second Half'].triples = 0;
                 }
             });
         }
@@ -213,6 +222,10 @@ function App() {
   const handleStartApp = useCallback(() => {
     setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
   }, []);
+
+  const handleBackToHome = useCallback(() => {
+      setGameState(prev => ({ ...initialGameState, hasSeenHomepage: false }));
+  }, []);
   
   const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings, gameMode: GameMode) => {
     const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
@@ -250,6 +263,7 @@ function App() {
             gameMode: gameMode,
             tallyStats: tallyStats,
             activeTab: 'logger',
+            isReadOnly: false, // Ensure read-only is off for new games/setup
         };
     });
     
@@ -258,6 +272,7 @@ function App() {
   
 
   const handleUpdateTallyStat = useCallback((playerNumber: string, stat: StatAction, change: 1) => {
+    if (gameState.isReadOnly) return;
     setGameState(prev => {
         const { currentPeriod } = prev;
 
@@ -289,13 +304,13 @@ function App() {
             newState.teamFouls = newTeamFouls;
         }
         
-        if (change === 1 && (stat === 'goles' || stat === 'fallos')) {
-            const isGol = stat === 'goles';
+        if (change === 1 && (stat === 'goles' || stat === 'triples' || stat === 'fallos')) {
+            const isScoring = stat === 'goles' || stat === 'triples';
             const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
             let newStreak = { ...currentStreak };
             let triggeredNotification: NotificationInfo | null = null;
     
-            if (isGol) {
+            if (isScoring) {
                 newStreak.consecutiveGoles += 1;
                 newStreak.consecutiveMisses = 0;
                 newStreak.notifiedFria = false;
@@ -322,9 +337,10 @@ function App() {
 
         return newState;
     });
-  }, []);
+  }, [gameState.isReadOnly]);
 
   const handleUndoTally = useCallback(() => {
+    if (gameState.isReadOnly) return;
     setGameState(prev => {
         if (prev.gameLog.length === 0) return prev;
 
@@ -357,9 +373,10 @@ function App() {
         // Streaks are not recalculated on undo to keep the logic simple.
         return newState;
     });
-  }, []);
+  }, [gameState.isReadOnly]);
 
   const handleRedoTally = useCallback(() => {
+    if (gameState.isReadOnly) return;
     setGameState(prev => {
         if (prev.tallyRedoLog.length === 0) return prev;
         
@@ -392,7 +409,7 @@ function App() {
         // Streaks are not recalculated on redo.
         return newState;
     });
-  }, []);
+  }, [gameState.isReadOnly]);
 
 
   const handleActionSelect = (action: StatAction) => {
@@ -422,6 +439,8 @@ function App() {
   }, []);
   
   const handleCourtClick = useCallback((position: ShotPosition) => {
+    if (gameState.isReadOnly) return;
+    
     if (gameState.tutorialStep === 2) {
         setGameState(prev => ({ ...prev, tutorialStep: 3 }));
         return;
@@ -432,7 +451,7 @@ function App() {
       return;
     }
     setPendingShotPosition(position);
-  }, [gameState.currentPlayer, gameState.tutorialStep]);
+  }, [gameState.currentPlayer, gameState.tutorialStep, gameState.isReadOnly]);
 
   const handleOutcomeSelection = useCallback((isGol: boolean) => {
     if (pendingShotPosition) {
@@ -498,10 +517,11 @@ function App() {
   }, [pendingShotPosition, gameState.currentPlayer, gameState.currentPeriod, gameState.settings, gameState.playerStreaks]);
   
   const handleStartEditingName = useCallback((playerNumber: string) => {
+      if (gameState.isReadOnly) return;
       if (!playerNumber || playerNumber === 'Todos' || playerNumber === 'Equipo') return;
       setTempPlayerName(gameState.playerNames[playerNumber] || '');
       setEditingPlayer(playerNumber);
-  }, [gameState.playerNames]);
+  }, [gameState.playerNames, gameState.isReadOnly]);
 
   const handleCancelEditingName = useCallback(() => {
       setEditingPlayer(null);
@@ -519,6 +539,7 @@ function App() {
   }, [editingPlayer, tempPlayerName]);
   
   const handleUndo = useCallback(() => {
+    if (gameState.isReadOnly) return;
     if (gameState.shots.length === 0) return;
     
     const lastShot = gameState.shots[gameState.shots.length - 1];
@@ -527,9 +548,10 @@ function App() {
         ...prev,
         shots: prev.shots.slice(0, -1)
     }));
-  }, [gameState.shots]);
+  }, [gameState.shots, gameState.isReadOnly]);
 
   const handleRedo = useCallback(() => {
+    if (gameState.isReadOnly) return;
     if (redoStack.length === 0) return;
 
     const shotToRedo = redoStack[redoStack.length - 1];
@@ -538,7 +560,7 @@ function App() {
         shots: [...prev.shots, shotToRedo]
     }));
     setRedoStack(prev => prev.slice(0, -1));
-  }, [redoStack]);
+  }, [redoStack, gameState.isReadOnly]);
   
   const handleRequestClearSheet = useCallback(() => {
     if (gameState.shots.length > 0) {
@@ -567,6 +589,7 @@ function App() {
           hasSeenHomepage: true,
           tutorialStep: prev.tutorialStep === 3 ? 3 : 1,
           gameId: null, // Ensure new game doesn't reuse old ID
+          isReadOnly: false,
       }));
       setRedoStack([]);
       setIsNewGameConfirmOpen(false);
@@ -729,7 +752,6 @@ function App() {
             
             // Reconstruct Player Streaks from loaded data
             const loadedPlayerStreaks: Record<string, PlayerStreak> = {};
-            // This is a complex calculation. For now, we reset streaks on load.
             
             // Build the final game state
             const loadedGameState: GameState = {
@@ -745,7 +767,8 @@ function App() {
                 shots: loadedShots,
                 tallyStats: loadedTallyStats,
                 playerStreaks: loadedPlayerStreaks,
-                tutorialStep: 3, // Assume user loading a game is past the tutorial
+                tutorialStep: 3,
+                isReadOnly: true, // Set to Read Only on load
             };
             
             setGameState(loadedGameState);
@@ -843,10 +866,11 @@ function App() {
       return Object.entries(gameState.tallyStats).reduce((total: number, [playerNumber, playerTally]) => {
           if (playerNumber === 'Equipo') return total; // Do not count team's 'goles' stat
           if (!playerTally || playerTally['First Half'] === undefined) return total;
-          const firstHalfGoles = playerTally['First Half']?.goles ?? 0;
-          const secondHalfGoles = playerTally['Second Half']?.goles ?? 0;
-          const playerPoints = (firstHalfGoles + secondHalfGoles) * 2;
-          return total + playerPoints;
+          
+          const firstHalfPoints = (playerTally['First Half']?.goles ?? 0) * 2 + (playerTally['First Half']?.triples ?? 0) * 3;
+          const secondHalfPoints = (playerTally['Second Half']?.goles ?? 0) * 2 + (playerTally['Second Half']?.triples ?? 0) * 3;
+          
+          return total + firstHalfPoints + secondHalfPoints;
       }, 0);
     }
     return 0;
@@ -869,7 +893,7 @@ function App() {
     return [];
   }, [gameState.gameMode]);
 
-  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, tallyStats, opponentScore, teamFouls, gameLog, tallyRedoLog } = gameState;
+  const { shots, isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, tallyStats, opponentScore, teamFouls, gameLog, tallyRedoLog, isReadOnly } = gameState;
 
   const getFilterButtonClass = (isActive: boolean) =>
     `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
@@ -917,6 +941,7 @@ function App() {
   } else if (!isSetupComplete || !gameMode) {
     pageContent = <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
+              onBack={handleBackToHome}
               initialSelectedPlayers={availablePlayers}
               initialSettings={settings}
               initialGameMode={gameMode}
@@ -925,6 +950,13 @@ function App() {
     pageContent = (
       <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops">
         <div className="w-full max-w-4xl flex-grow">
+          {/* Read Only Banner */}
+          {isReadOnly && (
+            <div className="w-full bg-amber-600 text-white text-center py-2 px-4 rounded-lg mb-4 font-bold shadow-lg">
+                ⚠️ Modo Lectura: Estás viendo un partido guardado. No se pueden hacer cambios.
+            </div>
+          )}
+
           <header className="relative flex items-center mb-4">
               <div className="flex-none w-12 md:w-0">
                   <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
@@ -980,28 +1012,30 @@ function App() {
                 <div className="flex flex-col gap-6">
                     <Scoreboard totalPoints={totalPoints} />
                     
-                    <QuickActionsPanel onActionSelect={handleActionSelect} />
+                    {!isReadOnly && <QuickActionsPanel onActionSelect={handleActionSelect} />}
                     
-                    <div className="flex justify-center gap-4">
-                        <button
-                            onClick={handleUndoTally}
-                            disabled={gameLog.length === 0}
-                            className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                            aria-label="Deshacer última acción"
-                        >
-                            <UndoIcon className="h-5 w-5" />
-                            <span className="hidden sm:inline">Deshacer</span>
-                        </button>
-                        <button
-                            onClick={handleRedoTally}
-                            disabled={tallyRedoLog.length === 0}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                            aria-label="Rehacer última acción"
-                        >
-                            <RedoIcon className="h-5 w-5" />
-                            <span className="hidden sm:inline">Rehacer</span>
-                        </button>
-                    </div>
+                    {!isReadOnly && (
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleUndoTally}
+                                disabled={gameLog.length === 0}
+                                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                aria-label="Deshacer última acción"
+                            >
+                                <UndoIcon className="h-5 w-5" />
+                                <span className="hidden sm:inline">Deshacer</span>
+                            </button>
+                            <button
+                                onClick={handleRedoTally}
+                                disabled={tallyRedoLog.length === 0}
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                aria-label="Rehacer última acción"
+                            >
+                                <RedoIcon className="h-5 w-5" />
+                                <span className="hidden sm:inline">Rehacer</span>
+                            </button>
+                        </div>
+                    )}
 
                     <GameLogView log={gameLog} playerNames={playerNames} />
                     
@@ -1028,6 +1062,7 @@ function App() {
                                     onStartEdit={handleStartEditingName}
                                     onSaveEdit={handleSavePlayerName}
                                     onCancelEdit={handleCancelEditingName}
+                                    isReadOnly={isReadOnly}
                                 />
                             </div>
                         </div>
@@ -1078,101 +1113,105 @@ function App() {
                   <TutorialOverlay step={tutorialStep} />
                 )}
                 
-                <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
-                  <div className="flex flex-col items-center">
-                    <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
-                      {editingPlayer === currentPlayer && currentPlayer && currentPlayer !== 'Todos' ? (
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={tempPlayerName}
-                                onChange={(e) => setTempPlayerName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSavePlayerName();
-                                    if (e.key === 'Escape') handleCancelEditingName();
-                                }}
-                                autoFocus
-                                className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
-                                placeholder={`Nombre para #${currentPlayer}`}
-                            />
-                            <button onClick={handleSavePlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
-                              <CheckIcon className="h-5 w-5" />
+                {!isReadOnly && (
+                    <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
+                    <div className="flex flex-col items-center">
+                        <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
+                        {editingPlayer === currentPlayer && currentPlayer && currentPlayer !== 'Todos' ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={tempPlayerName}
+                                    onChange={(e) => setTempPlayerName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSavePlayerName();
+                                        if (e.key === 'Escape') handleCancelEditingName();
+                                    }}
+                                    autoFocus
+                                    className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                                    placeholder={`Nombre para #${currentPlayer}`}
+                                />
+                                <button onClick={handleSavePlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors" title="Guardar nombre" aria-label="Guardar nombre">
+                                <CheckIcon className="h-5 w-5" />
+                                </button>
+                                <button onClick={handleCancelEditingName} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
+                                <XIcon className="h-5 w-5" />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => handleStartEditingName(currentPlayer)}
+                                disabled={!currentPlayer || currentPlayer === 'Todos'}
+                                className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                                title="Editar nombre del jugador"
+                                aria-label="Editar nombre del jugador"
+                            >
+                                <span className="group-hover:underline decoration-dotted underline-offset-4">
+                                {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
+                                </span>
                             </button>
-                            <button onClick={handleCancelEditingName} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors" title="Cancelar edición" aria-label="Cancelar edición">
-                              <XIcon className="h-5 w-5" />
+                        )}
+                        </div>
+                        <p className="text-xs text-slate-500 text-center mb-3">Tocá en el nombre para personalizarlo.</p>
+                        <PlayerSelector 
+                        currentPlayer={currentPlayer} 
+                        setCurrentPlayer={handlePlayerChange} 
+                        playerNames={playerNames} 
+                        availablePlayers={activePlayers}
+                        isTutorialActive={showTutorial}
+                        />
+                        <div className="mt-4 border-t border-slate-700 w-full pt-4 flex justify-center">
+                            <button
+                                onClick={() => setIsSubstitutionModalOpen(true)}
+                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
+                            >
+                                <SwitchIcon className="h-5 w-5" />
+                                <span>Cambio de Jugador</span>
                             </button>
                         </div>
-                      ) : (
-                        <button
-                            onClick={() => handleStartEditingName(currentPlayer)}
-                            disabled={!currentPlayer || currentPlayer === 'Todos'}
-                            className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
-                            title="Editar nombre del jugador"
-                            aria-label="Editar nombre del jugador"
-                        >
-                            <span className="group-hover:underline decoration-dotted underline-offset-4">
-                              {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
-                            </span>
-                        </button>
-                      )}
                     </div>
-                    <p className="text-xs text-slate-500 text-center mb-3">Tocá en el nombre para personalizarlo.</p>
-                    <PlayerSelector 
-                      currentPlayer={currentPlayer} 
-                      setCurrentPlayer={handlePlayerChange} 
-                      playerNames={playerNames} 
-                      availablePlayers={activePlayers}
-                      isTutorialActive={showTutorial}
-                    />
-                    <div className="mt-4 border-t border-slate-700 w-full pt-4 flex justify-center">
-                          <button
-                              onClick={() => setIsSubstitutionModalOpen(true)}
-                              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
-                          >
-                              <SwitchIcon className="h-5 w-5" />
-                              <span>Cambio de Jugador</span>
-                          </button>
-                      </div>
-                  </div>
-                </div>
+                    </div>
+                )}
 
                 <div className={`w-full flex flex-col gap-4 ${showTutorial && tutorialStep === 2 ? 'relative z-50' : ''}`}>
                   <Court
                     shots={filteredLoggerTabShots}
-                    onCourtClick={handleCourtClick}
+                    onCourtClick={isReadOnly ? undefined : handleCourtClick}
                     showShotMarkers={true}
                     currentPlayer={currentPlayer}
                   />
-                  <div className="flex justify-center gap-4 mt-2">
-                      <button
-                          onClick={handleUndo}
-                          disabled={shots.length === 0}
-                          className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                          aria-label="Deshacer último tiro"
-                      >
-                          <UndoIcon className="h-5 w-5" />
-                          <span className="hidden sm:inline">Deshacer</span>
-                      </button>
-                      <button
-                          onClick={handleRedo}
-                          disabled={redoStack.length === 0}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                          aria-label="Rehacer último tiro"
-                      >
-                          <RedoIcon className="h-5 w-5" />
-                          <span className="hidden sm:inline">Rehacer</span>
-                      </button>
-                      <button
-                          onClick={handleRequestClearSheet}
-                          disabled={shots.length === 0}
-                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                          aria-label="Limpiar planilla"
-                          title="Limpiar planilla"
-                      >
-                          <TrashIcon className="h-5 w-5" />
-                          <span className="hidden sm:inline">Limpiar Planilla</span>
-                      </button>
-                  </div>
+                  {!isReadOnly && (
+                    <div className="flex justify-center gap-4 mt-2">
+                        <button
+                            onClick={handleUndo}
+                            disabled={shots.length === 0}
+                            className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-yellow-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            aria-label="Deshacer último tiro"
+                        >
+                            <UndoIcon className="h-5 w-5" />
+                            <span className="hidden sm:inline">Deshacer</span>
+                        </button>
+                        <button
+                            onClick={handleRedo}
+                            disabled={redoStack.length === 0}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            aria-label="Rehacer último tiro"
+                        >
+                            <RedoIcon className="h-5 w-5" />
+                            <span className="hidden sm:inline">Rehacer</span>
+                        </button>
+                        <button
+                            onClick={handleRequestClearSheet}
+                            disabled={shots.length === 0}
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500 disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            aria-label="Limpiar planilla"
+                            title="Limpiar planilla"
+                        >
+                            <TrashIcon className="h-5 w-5" />
+                            <span className="hidden sm:inline">Limpiar Planilla</span>
+                        </button>
+                    </div>
+                  )}
                 </div>
                 
                 <Scoreboard totalPoints={totalPoints} />

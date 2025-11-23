@@ -3,6 +3,7 @@ import { TallyStatsPeriod, Shot } from '../types';
 
 export const mapTallyPeriodToDb = (stats: TallyStatsPeriod) => ({
     goles: stats.goles,
+    triples: stats.triples,
     fallos: stats.fallos,
     recuperos: stats.recuperos,
     perdidas: stats.perdidas,
@@ -15,6 +16,7 @@ export const mapTallyPeriodToDb = (stats: TallyStatsPeriod) => ({
 
 export const mapTallyPeriodFromDb = (dbStats: any): TallyStatsPeriod => ({
     goles: dbStats.goles,
+    triples: dbStats.triples || 0,
     fallos: dbStats.fallos,
     recuperos: dbStats.recuperos,
     perdidas: dbStats.perdidas,

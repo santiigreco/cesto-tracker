@@ -33,17 +33,23 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect })
                     ))}
                 </div>
                 
-                {/* Right Side: Big Scoring Buttons */}
+                {/* Right Side: Scoring Buttons */}
                 <div className="flex flex-col gap-2 w-1/3 min-w-[100px]">
                     <button
+                        onClick={() => onActionSelect('triples')}
+                        className="flex-1 p-2 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-blue-600 hover:bg-blue-700 flex items-center justify-center shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
+                    >
+                        TRIPLE (+3)
+                    </button>
+                    <button
                         onClick={() => onActionSelect('goles')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg"
+                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1"
                     >
                         GOL
                     </button>
                     <button
                         onClick={() => onActionSelect('fallos')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg"
+                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
                     >
                         FALLO
                     </button>

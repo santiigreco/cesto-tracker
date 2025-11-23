@@ -11,6 +11,7 @@ const GameLogView: React.FC<GameLogViewProps> = ({ log, playerNames }) => {
     const getActionLabel = (action: StatAction) => {
         const labels: Record<StatAction, string> = {
             goles: "GOL",
+            triples: "TRIPLE",
             fallos: "FALLO",
             recuperos: "RECUPERO",
             perdidas: "PÉRDIDA",

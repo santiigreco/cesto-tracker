@@ -15,11 +15,12 @@ const StatsTallyView: React.FC<{
     onStartEdit: (player: string) => void;
     onSaveEdit: () => void;
     onCancelEdit: () => void;
-}> = ({ players, playerNames, tallyStats, currentPeriod, onUpdate, editingPlayer, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit }) => {
+    isReadOnly?: boolean;
+}> = ({ players, playerNames, tallyStats, currentPeriod, onUpdate, editingPlayer, tempPlayerName, setTempPlayerName, onStartEdit, onSaveEdit, onCancelEdit, isReadOnly = false }) => {
     
     const initialPlayerTally: TallyStats = {
-        'First Half': { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 },
-        'Second Half': { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 },
+        'First Half': { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 },
+        'Second Half': { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 },
     };
 
     return (
@@ -37,6 +38,7 @@ const StatsTallyView: React.FC<{
                     onCancelEdit={onCancelEdit}
                     playerTally={(tallyStats[player] || initialPlayerTally)[currentPeriod]}
                     onUpdate={onUpdate}
+                    isReadOnly={isReadOnly}
                 />
             ))}
         </div>

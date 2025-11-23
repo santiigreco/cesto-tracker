@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
 import { Settings, GameMode } from '../types';
@@ -5,6 +6,7 @@ import ToggleSwitch from './ToggleSwitch';
 import ChevronDownIcon from './ChevronDownIcon';
 import ClipboardIcon from './ClipboardIcon';
 import ChartBarIcon from './ChartBarIcon';
+import UndoIcon from './UndoIcon';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
@@ -18,12 +20,13 @@ const defaultSettings: Settings = {
 
 interface PlayerSetupProps {
   onSetupComplete: (selectedPlayers: string[], settings: Settings, gameMode: GameMode) => void;
+  onBack: () => void;
   initialSelectedPlayers?: string[];
   initialSettings?: Settings;
   initialGameMode?: GameMode | null;
 }
 
-const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelectedPlayers = [], initialSettings = defaultSettings, initialGameMode = null }) => {
+const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, initialSelectedPlayers = [], initialSettings = defaultSettings, initialGameMode = null }) => {
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(
       new Set(initialSelectedPlayers)
   );
@@ -72,8 +75,17 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, initialSelec
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
-      <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-2xl text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2">
+      <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-2xl text-center relative">
+         {!isCorrection && (
+             <button 
+                 onClick={onBack}
+                 className="absolute top-4 left-4 text-slate-400 hover:text-white flex items-center gap-1 text-sm font-semibold transition-colors"
+             >
+                 <UndoIcon className="h-4 w-4" /> Volver al Inicio
+             </button>
+         )}
+
+        <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400 tracking-tight mb-2 mt-4 sm:mt-0">
           {isCorrection ? 'Corregir Equipo' : 'Nuevo Partido'}
         </h1>
         <p className="text-lg text-slate-400 mb-8">

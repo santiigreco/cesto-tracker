@@ -45,6 +45,7 @@ export interface PlayerStreak {
 // Represents stats for a single period
 export interface TallyStatsPeriod {
   goles: number;
+  triples: number;
   fallos: number;
   recuperos: number;
   perdidas: number;
@@ -90,4 +91,5 @@ export interface GameState {
     teamFouls: { [key in GamePeriod]: number };
     gameLog: GameEvent[];
     tallyRedoLog: GameEvent[];
+    isReadOnly: boolean;
 }

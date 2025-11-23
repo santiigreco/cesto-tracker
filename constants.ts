@@ -8,6 +8,7 @@ export const PERIOD_NAMES = {
 
 export const STAT_LABELS: Record<keyof TallyStatsPeriod, string> = {
     goles: 'Goles',
+    triples: 'Triples',
     fallos: 'Fallos',
     recuperos: 'Recuperos',
     perdidas: 'Pérdidas',

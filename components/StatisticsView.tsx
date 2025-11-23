@@ -16,7 +16,7 @@ interface StatisticsViewProps {
   tallyStats?: Record<string, TallyStats>;
 }
 
-type TallySortableKey = keyof (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, golPercentage: number, totalShots: number });
+type TallySortableKey = keyof (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, golPercentage: number, totalShots: number, points: number });
 
 // Sub-component for the Tally Statistics view
 const TallyStatisticsView: React.FC<{
@@ -41,14 +41,16 @@ const TallyStatisticsView: React.FC<{
             acc[key] = (acc[key] || 0) + (periodStats[key] || 0);
           });
           return acc;
-        }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 });
+        }, { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 });
       } else {
         stats = playerTally[tallyPeriodFilter];
       }
-      const totalShots = stats.goles + stats.fallos;
+      const totalShots = stats.goles + stats.triples + stats.fallos;
       const totalRebounds = stats.reboteOfensivo + stats.reboteDefensivo;
-      const golPercentage = totalShots > 0 ? (stats.goles / totalShots) * 100 : 0;
-      return { playerNumber, ...stats, totalRebounds, golPercentage, totalShots };
+      const golPercentage = totalShots > 0 ? ((stats.goles + stats.triples) / totalShots) * 100 : 0;
+      const points = (stats.goles * 2) + (stats.triples * 3);
+      
+      return { playerNumber, ...stats, totalRebounds, golPercentage, totalShots, points };
     });
   }, [tallyStats, tallyPeriodFilter]);
 
@@ -96,20 +98,21 @@ const TallyStatisticsView: React.FC<{
             (Object.keys(acc) as Array<keyof TallyStatsPeriod>).forEach(key => {
                 acc[key] += playerStats[key];
             });
+            acc.points += playerStats.points;
         }
         return acc;
-    }, { goles: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0 });
+    }, { goles: 0, triples: 0, fallos: 0, recuperos: 0, perdidas: 0, reboteOfensivo: 0, reboteDefensivo: 0, asistencias: 0, golesContra: 0, faltasPersonales: 0, points: 0 });
   }, [aggregatedStats]);
 
   const topPerformers = useMemo(() => {
     const playersOnly = aggregatedStats.filter(p => p.playerNumber !== 'Equipo');
-    const sortedByGoles = [...playersOnly].sort((a, b) => b.goles - a.goles);
+    const sortedByPoints = [...playersOnly].sort((a, b) => b.points - a.points);
     const sortedByRebounds = [...playersOnly].sort((a, b) => b.totalRebounds - a.totalRebounds);
     const sortedByAsistencias = [...playersOnly].sort((a, b) => b.asistencias - a.asistencias);
-    return { goles: sortedByGoles, rebotes: sortedByRebounds, asistencias: sortedByAsistencias };
+    return { points: sortedByPoints, rebotes: sortedByRebounds, asistencias: sortedByAsistencias };
   }, [aggregatedStats]);
   
-  const hasData = aggregatedStats.some(p => p.playerNumber !== 'Equipo' && (p.goles > 0 || p.fallos > 0 || p.recuperos > 0 || p.perdidas > 0));
+  const hasData = aggregatedStats.some(p => p.playerNumber !== 'Equipo' && (p.goles > 0 || p.triples > 0 || p.fallos > 0 || p.recuperos > 0 || p.perdidas > 0));
 
   if (!hasData && !isSharing) {
     return (
@@ -124,9 +127,11 @@ const TallyStatisticsView: React.FC<{
 
    const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
     { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },
-    { key: 'goles', label: 'G', title: 'Goles' },
-    { key: 'totalShots', label: 'T', title: 'Tiros Totales (Goles + Fallos)' },
-    { key: 'golPercentage', label: '%G', title: '% Goles' },
+    { key: 'points', label: 'Pts', title: 'Puntos Totales' },
+    { key: 'goles', label: 'G', title: 'Goles (2 pts)' },
+    { key: 'triples', label: '3P', title: 'Triples (3 pts)' },
+    { key: 'totalShots', label: 'T', title: 'Tiros Totales (Goles + Triples + Fallos)' },
+    { key: 'golPercentage', label: '%G', title: '% Efectividad' },
     { key: 'recuperos', label: 'Rec', title: 'Recuperos' },
     { key: 'perdidas', label: 'Pér', title: 'Pérdidas' },
     { key: 'reboteOfensivo', label: 'RO', title: 'Rebotes Ofensivos' },
@@ -150,7 +155,9 @@ const TallyStatisticsView: React.FC<{
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-center">
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-green-400">{teamTotals.goles}</p><p className="text-xs sm:text-sm text-slate-400">Goles</p></div>
+             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg border border-slate-600"><p className="text-3xl sm:text-4xl font-extrabold text-cyan-400">{teamTotals.points}</p><p className="text-xs sm:text-sm text-slate-400 uppercase tracking-wide">Puntos Totales</p></div>
+             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-green-400">{teamTotals.goles}</p><p className="text-xs sm:text-sm text-slate-400">Goles</p></div>
+             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-blue-400">{teamTotals.triples}</p><p className="text-xs sm:text-sm text-slate-400">Triples</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-red-400">{teamTotals.fallos}</p><p className="text-xs sm:text-sm text-slate-400">Fallos</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.recuperos}</p><p className="text-xs sm:text-sm text-slate-400">Recuperos</p></div>
             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.perdidas}</p><p className="text-xs sm:text-sm text-slate-400">Pérdidas</p></div>
@@ -165,7 +172,7 @@ const TallyStatisticsView: React.FC<{
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <TopPerformerCategory title="Goles" performers={topPerformers.goles} statKey="goles" playerNames={playerNames} />
+            <TopPerformerCategory title="Puntos" performers={topPerformers.points} statKey="points" playerNames={playerNames} />
             <TopPerformerCategory title="Rebotes" performers={topPerformers.rebotes} statKey="totalRebounds" playerNames={playerNames} />
             <TopPerformerCategory title="Asistencias" performers={topPerformers.asistencias} statKey="asistencias" playerNames={playerNames} />
         </div>
@@ -191,7 +198,9 @@ const TallyStatisticsView: React.FC<{
               {sortedAggregatedStats.map(player => (
                 <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
                   <td className="p-2 font-mono text-cyan-300 font-bold">{playerNames[player.playerNumber] || (player.playerNumber === 'Equipo' ? 'Equipo' : `#${player.playerNumber}`)}</td>
+                  <td className="p-2 font-mono text-cyan-400 font-bold text-center">{player.points}</td>
                   <td className="p-2 font-mono text-white text-center">{player.goles}</td>
+                  <td className="p-2 font-mono text-white text-center">{player.triples}</td>
                   <td className="p-2 font-mono text-white text-center">{player.totalShots}</td>
                   <td className="p-2 font-mono text-white text-center">{player.golPercentage.toFixed(0)}%</td>
                   <td className="p-2 font-mono text-white text-center">{player.recuperos}</td>
@@ -213,8 +222,8 @@ const TallyStatisticsView: React.FC<{
 
 const TopPerformerCategory: React.FC<{
     title: string;
-    performers: (TallyStatsPeriod & { playerNumber: string, totalRebounds: number })[];
-    statKey: 'goles' | 'totalRebounds' | 'asistencias';
+    performers: (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, points: number })[];
+    statKey: 'points' | 'totalRebounds' | 'asistencias';
     playerNames: Record<string, string>;
 }> = ({ title, performers, statKey, playerNames }) => (
     <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
