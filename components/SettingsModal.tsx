@@ -1,7 +1,10 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
 import XIcon from './XIcon';
+import ChevronDownIcon from './ChevronDownIcon';
+import TeamSelectorModal from './TeamSelectorModal';
 
 // --- ICONS (local to this component) ---
 const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -21,7 +24,8 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame }) => {
-    
+    const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
+
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
         if (!isNaN(numValue)) {
@@ -42,18 +46,36 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                     <button onClick={onClose} className="text-slate-400 hover:text-white p-2 -mr-2 rounded-full" aria-label="Cerrar"><XIcon/></button>
                 </div>
 
-                <div className="space-y-8">
-                     {/* Game Name Settings */}
-                    <div className="bg-slate-700/50 p-4 rounded-lg">
-                        <h3 className="text-xl font-bold text-white mb-2">Nombre del Partido</h3>
-                        <input
-                            type="text"
-                            value={settings.gameName || ''}
-                            onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
-                            className="bg-slate-900/50 border border-slate-600 text-white text-base rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5"
-                            placeholder="Ej: Final vs. Vélez"
-                        />
+                <div className="space-y-6">
+                     {/* Game Info Settings */}
+                    <div className="bg-slate-700/50 p-4 rounded-lg space-y-4">
+                        <h3 className="text-xl font-bold text-white mb-2">Información del Partido</h3>
+                        
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wide">Tu Equipo</label>
+                            <button
+                                onClick={() => setIsTeamSelectorOpen(true)}
+                                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group mb-2"
+                            >
+                                <span className={`text-base ${settings.myTeam ? 'text-white font-bold' : 'text-slate-500'}`}>
+                                    {settings.myTeam || 'Seleccionar Equipo...'}
+                                </span>
+                                <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wide">Nombre del Partido</label>
+                            <input
+                                type="text"
+                                value={settings.gameName || ''}
+                                onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
+                                className="bg-slate-900/50 border border-slate-600 text-white text-base rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5"
+                                placeholder="Ej: Final vs. Vélez"
+                            />
+                        </div>
                     </div>
+
                     {/* Mano Caliente Settings */}
                     <div className="bg-slate-700/50 p-4 rounded-lg">
                         <div className="flex justify-between items-center">
@@ -176,6 +198,15 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                     </button>
                 </div>
             </div>
+
+            {isTeamSelectorOpen && (
+                <TeamSelectorModal 
+                    isOpen={isTeamSelectorOpen} 
+                    onClose={() => setIsTeamSelectorOpen(false)} 
+                    onSelectTeam={(team) => setSettings({ ...settings, myTeam: team })}
+                    currentTeam={settings.myTeam || ''}
+                />
+            )}
         </div>
     );
 });

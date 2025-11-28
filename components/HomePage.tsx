@@ -126,7 +126,7 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
             {/* --- HERO SECTION --- */}
             <div className="relative w-full max-w-5xl mx-auto text-center flex flex-col items-center px-4 pt-16 sm:pt-24 pb-12">
                 <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 text-white">
-                    Cesto Tracker
+                    Cesto Tracker 🏐
                 </h1>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-cyan-400">
                     Tu planilla digital.

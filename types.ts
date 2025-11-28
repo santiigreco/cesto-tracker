@@ -29,6 +29,7 @@ export interface PlayerStats {
 
 export interface Settings {
   gameName?: string;
+  myTeam?: string;
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
   isManoFriaEnabled: boolean;

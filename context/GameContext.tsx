@@ -32,6 +32,7 @@ export const initialGameState: GameState = {
     currentPeriod: 'First Half',
     settings: {
         gameName: '',
+        myTeam: '',
         isManoCalienteEnabled: true,
         manoCalienteThreshold: 5,
         isManoFriaEnabled: true,
