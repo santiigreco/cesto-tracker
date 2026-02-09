@@ -1,9 +1,11 @@
+
 import React, { useMemo } from 'react';
-import { GameState, PlayerStats, TallyStatsPeriod } from '../types';
+import { GameState, PlayerStats } from '../types';
 import StatisticsView from './StatisticsView';
 import Court from './Court';
 import HeatmapOverlay from './HeatmapOverlay';
 import ZoneChart from './ZoneChart';
+import TeamLogo from './TeamLogo';
 
 interface ShareReportProps {
     gameState: GameState;
@@ -82,7 +84,11 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
                 
                 <div className="relative z-10 w-full p-8 flex flex-col items-center gap-6">
                     {/* Header */}
-                    <div className="text-center">
+                    <div className="flex flex-col items-center text-center">
+                        <div className="mb-3">
+                             {/* Show logo if available, or just space */}
+                             <TeamLogo teamName={settings.myTeam || ''} className="h-16 w-16" />
+                        </div>
                         <h3 className="text-cyan-400 tracking-widest text-sm font-bold uppercase mb-1">
                             {settings.myTeam ? settings.myTeam : 'Resultado Final'}
                         </h3>
@@ -93,7 +99,7 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
                     </div>
 
                     {/* Main Score */}
-                    <div className="flex flex-col items-center justify-center py-4">
+                    <div className="flex flex-col items-center justify-center py-4 border-y border-slate-800 w-full">
                         <span className="text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
                             {summaryData.totalPoints}
                         </span>
@@ -134,7 +140,7 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
                     )}
 
                     {/* Footer / Branding */}
-                    <div className="mt-4 pt-4 border-t border-slate-800 w-full flex justify-between items-center opacity-70">
+                    <div className="mt-2 pt-4 w-full flex justify-between items-center opacity-70">
                         <div className="flex items-center gap-2">
                              <span className="text-xl">🏐</span>
                              <span className="font-bold text-sm tracking-tight">Cesto Tracker</span>
@@ -149,8 +155,11 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
     // --- DETAILED LAYOUT (CLASSIC) ---
     return (
         <div className="p-8 bg-slate-900 text-slate-200 font-sans max-w-[800px] mx-auto">
-            <h1 className="text-4xl font-bold text-cyan-400 text-center mb-1">{settings.myTeam ? `${settings.myTeam} - ` : ''}{settings.gameName || 'Reporte de Partido'}</h1>
-            <p className="text-center text-slate-400 mb-8 text-lg">Generado con Cesto Tracker el {new Date().toLocaleDateString()}</p>
+            <div className="flex flex-col items-center mb-6">
+                <TeamLogo teamName={settings.myTeam || ''} className="h-20 w-20 mb-4" />
+                <h1 className="text-4xl font-bold text-cyan-400 text-center mb-1">{settings.myTeam ? `${settings.myTeam} - ` : ''}{settings.gameName || 'Reporte de Partido'}</h1>
+                <p className="text-center text-slate-400 text-lg">Generado con Cesto Tracker el {new Date().toLocaleDateString()}</p>
+            </div>
             
             <div className="space-y-8">
                 <StatisticsView 

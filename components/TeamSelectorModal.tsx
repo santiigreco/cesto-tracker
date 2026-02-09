@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import XIcon from './XIcon';
-import { PREDEFINED_TEAMS } from '../constants';
-import ChevronDownIcon from './ChevronDownIcon';
+import { TEAMS_CONFIG } from '../constants';
+import TeamLogo from './TeamLogo';
 
 interface TeamSelectorModalProps {
     isOpen: boolean;
@@ -16,8 +16,9 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({ isOpen, onClose, 
     const [showCustomInput, setShowCustomInput] = useState(false);
 
     useEffect(() => {
-        // If current team is custom (not in list), show input by default and populate it
-        if (currentTeam && !PREDEFINED_TEAMS.includes(currentTeam)) {
+        // Check if current team is custom (not in config list)
+        const isPredefined = TEAMS_CONFIG.some(t => t.name === currentTeam);
+        if (currentTeam && !isPredefined) {
             setCustomTeam(currentTeam);
             setShowCustomInput(true);
         }
@@ -50,17 +51,18 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({ isOpen, onClose, 
                 
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-grow">
                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-                        {PREDEFINED_TEAMS.map(team => (
+                        {TEAMS_CONFIG.map(team => (
                             <button
-                                key={team}
-                                onClick={() => handlePredefinedSelect(team)}
-                                className={`p-4 rounded-xl font-bold text-lg transition-all duration-200 transform hover:scale-105 shadow-md flex items-center justify-center text-center h-20 leading-tight ${
-                                    currentTeam === team 
+                                key={team.name}
+                                onClick={() => handlePredefinedSelect(team.name)}
+                                className={`p-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-md flex flex-col items-center justify-center text-center gap-2 h-28 leading-tight ${
+                                    currentTeam === team.name 
                                     ? 'bg-gradient-to-br from-cyan-600 to-cyan-700 text-white ring-2 ring-cyan-300 shadow-cyan-500/20' 
                                     : 'bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white'
                                 }`}
                             >
-                                {team}
+                                <TeamLogo teamName={team.name} className="h-10 w-10" />
+                                <span className="font-bold text-sm">{team.name}</span>
                             </button>
                         ))}
                      </div>

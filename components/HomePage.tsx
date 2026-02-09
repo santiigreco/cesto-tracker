@@ -24,6 +24,12 @@ const CloudDownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+const TrendingUpIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+    </svg>
+);
+
 // --- Mock Data for Visuals ---
 const sampleShots: Shot[] = [
   { id: 's1', playerNumber: '10', position: { x: 10, y: 3 }, isGol: true, golValue: 2, period: 'First Half' },
@@ -95,9 +101,9 @@ const StatsMockup = () => (
 
             <div className="space-y-2">
                 {[
-                    { id: '10', name: 'Sofía', pts: 24, perc: 80, color: 'cyan' },
-                    { id: '7', name: 'Lucía', pts: 18, perc: 65, color: 'emerald' },
-                    { id: '5', name: 'Martina', pts: 12, perc: 50, color: 'amber' },
+                    { id: '10', name: 'Jugadora', pts: 24, perc: 80, color: 'cyan' },
+                    { id: '7', name: 'Jugadora', pts: 18, perc: 65, color: 'emerald' },
+                    { id: '5', name: 'Jugadora', pts: 12, perc: 50, color: 'amber' },
                 ].map((p) => (
                     <div key={p.id} className="bg-slate-800 p-2 rounded border border-slate-700">
                         <div className="flex justify-between items-center mb-1">
@@ -119,80 +125,101 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center font-sans overflow-x-hidden bg-pattern-hoops">
+        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white">
+             
+             {/* Simple CSS for floating animation */}
+             <style>{`
+                @keyframes float {
+                    0% { transform: translateY(0px) rotate(-6deg); }
+                    50% { transform: translateY(-15px) rotate(-6deg); }
+                    100% { transform: translateY(0px) rotate(-6deg); }
+                }
+                @keyframes float-card {
+                    0% { transform: translateY(0px); }
+                    50% { transform: translateY(-8px); }
+                    100% { transform: translateY(0px); }
+                }
+                .animate-float {
+                    animation: float 6s ease-in-out infinite;
+                }
+                .animate-float-card {
+                    animation: float-card 5s ease-in-out infinite;
+                }
+             `}</style>
+
              <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-700/[0.05] pointer-events-none"></div>
              <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-slate-900 via-slate-900/90 to-transparent pointer-events-none"></div>
             
-            {/* --- HERO SECTION --- */}
-            <div className="relative w-full max-w-5xl mx-auto text-center flex flex-col items-center px-4 pt-16 sm:pt-24 pb-12">
-                <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 text-white">
-                    Cesto Tracker 🏐
-                </h1>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-cyan-400">
-                    Tu planilla digital.
-                </h2>
-                <p className="text-xl sm:text-2xl text-slate-400 mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Chau papel y lápiz 👋. Registra goles, faltas y estadísticas al instante desde tu celular.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center">
-                    <button
-                        onClick={onStart}
-                        className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-[0_0_20px_rgba(6,182,212,0.3)] text-xl flex items-center justify-center gap-2"
-                    >
-                        <FeatureTapIcon className="h-6 w-6" />
-                        Empezar Partido
-                    </button>
-                     <button
-                        onClick={onLoadGameClick}
-                        className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
-                    >
-                        <CloudDownloadIcon className="h-6 w-6" />
-                        Ver partidos anteriores
-                    </button>
-                </div>
-                <p className="mt-4 text-sm text-slate-500">
-                    Es gratis y no necesita internet.
-                </p>
-            </div>
+            {/* --- HERO SECTION REDESIGNED --- */}
+            <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 lg:pt-32 lg:pb-40">
+                <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+                    
+                    {/* LEFT COLUMN: Text & CTA */}
+                    <div className="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start">
+                        
+                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-4 text-white animate-fade-in whitespace-nowrap">
+                            Cesto Tracker 🏐
+                        </h1>
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 text-slate-300">
+                             Domina la cancha con <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">datos reales.</span>
+                        </h2>
+                        
+                        <p className="text-xl text-slate-400 mb-8 max-w-2xl leading-relaxed">
+                            Deja el papel y lápiz. Registra goles, recuperos y genera reportes profesionales al instante para compartir con tu equipo.
+                        </p>
 
-            {/* --- HOW IT WORKS (3 STEPS) --- */}
-            <div className="w-full bg-slate-800/50 border-y border-slate-700/50 py-12">
-                <div className="max-w-5xl mx-auto px-4">
-                    <h2 className="text-center text-2xl font-bold text-white mb-10">Tan fácil como usar WhatsApp</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
-                        {/* Step 1 */}
-                        <div className="flex flex-row md:flex-col items-start md:items-center gap-4 p-4 md:p-0 bg-slate-900/50 md:bg-transparent rounded-xl md:rounded-none border border-slate-700/50 md:border-none">
-                            <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-cyan-900/50 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 mb-0 md:mb-4">
-                                <span className="text-xl md:text-2xl font-bold">1</span>
-                            </div>
-                            <div className="text-left md:text-center">
-                                <h3 className="text-lg md:text-xl font-semibold text-white mb-1 md:mb-2">Elegí tu equipo</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">Seleccioná los números de las jugadoras que entran a la cancha.</p>
-                            </div>
+                        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                            <button
+                                onClick={onStart}
+                                className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-[0_0_30px_rgba(6,182,212,0.4)] text-lg flex items-center justify-center gap-2"
+                            >
+                                <FeatureTapIcon className="h-6 w-6" />
+                                Empezar ahora
+                            </button>
+                             <button
+                                onClick={onLoadGameClick}
+                                className="w-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 hover:border-cyan-500/30 text-slate-200 font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 backdrop-blur-sm"
+                            >
+                                <CloudDownloadIcon className="h-6 w-6" />
+                                Ver historial
+                            </button>
                         </div>
+                        <p className="mt-6 text-sm text-slate-500 flex items-center gap-2 font-medium">
+                            <CheckIcon className="h-5 w-5 text-emerald-500"/> No requiere registro. Funciona sin internet.
+                        </p>
+                    </div>
 
-                        {/* Step 2 */}
-                        <div className="flex flex-row md:flex-col items-start md:items-center gap-4 p-4 md:p-0 bg-slate-900/50 md:bg-transparent rounded-xl md:rounded-none border border-slate-700/50 md:border-none">
-                            <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-cyan-900/50 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 mb-0 md:mb-4">
-                                <span className="text-xl md:text-2xl font-bold">2</span>
+                    {/* RIGHT COLUMN: Visual & Mockup */}
+                    <div className="flex-1 relative w-full max-w-[320px] lg:max-w-md mx-auto perspective-1000 mt-10 lg:mt-0">
+                         {/* Glow Effect */}
+                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-cyan-500/20 to-emerald-500/20 blur-[70px] rounded-full animate-pulse"></div>
+                         
+                         {/* Floating Phone */}
+                         <div className="relative animate-float transition-transform duration-500 ease-out hover:scale-105 cursor-pointer">
+                            <TallyMockup />
+                            
+                            {/* Floating Stats Card 1 */}
+                            <div className="absolute -right-8 top-16 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float-card" style={{ animationDelay: '1s' }}>
+                                <div className="bg-green-500/20 p-2 rounded-xl">
+                                    <TrendingUpIcon className="h-6 w-6 text-green-400"/>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Efectividad</p>
+                                    <p className="text-lg font-bold text-white leading-none">+85%</p>
+                                </div>
                             </div>
-                            <div className="text-left md:text-center">
-                                <h3 className="text-lg md:text-xl font-semibold text-white mb-1 md:mb-2">Tocá los botones</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">GOL verde, FALLO rojo. Así de simple. Olvidate de sumar con los dedos.</p>
-                            </div>
-                        </div>
 
-                        {/* Step 3 */}
-                        <div className="flex flex-row md:flex-col items-start md:items-center gap-4 p-4 md:p-0 bg-slate-900/50 md:bg-transparent rounded-xl md:rounded-none border border-slate-700/50 md:border-none">
-                            <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-cyan-900/50 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 mb-0 md:mb-4">
-                                <span className="text-xl md:text-2xl font-bold">3</span>
+                             {/* Floating Stats Card 2 */}
+                             <div className="absolute -left-10 bottom-24 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float-card" style={{ animationDelay: '0s' }}>
+                                <div className="bg-amber-500/20 p-2 rounded-xl">
+                                    <FeatureTrophyIcon className="h-6 w-6 text-amber-400"/>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">MVP</p>
+                                    <p className="text-lg font-bold text-white leading-none">#10</p>
+                                </div>
                             </div>
-                            <div className="text-left md:text-center">
-                                <h3 className="text-lg md:text-xl font-semibold text-white mb-1 md:mb-2">Mirá el resultado</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">La app calcula todo sola. Al final, compartí la imagen del partido.</p>
-                            </div>
-                        </div>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -200,9 +227,9 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
             {/* --- FEATURES DEEP DIVE --- */}
             <div className="max-w-5xl mx-auto px-4 py-16 space-y-24">
                 
-                {/* Feature 1: Tally */}
-                <div className="flex flex-col md:flex-row items-center gap-12">
-                    <div className="flex-1 space-y-6 text-center md:text-left">
+                {/* Feature 1: Tally - CENTERED & NO MOCKUP */}
+                <div className="flex flex-col items-center gap-12 text-center max-w-3xl mx-auto">
+                     <div className="space-y-6">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
                             <FeatureTapIcon className="h-4 w-4" /> Anotador Rápido
                         </div>
@@ -216,10 +243,6 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
                             <li className="flex items-center gap-3"><CheckIcon className="h-5 w-5 text-emerald-500"/> Control de Faltas por jugadora</li>
                             <li className="flex items-center gap-3"><CheckIcon className="h-5 w-5 text-emerald-500"/> Historial para deshacer errores</li>
                         </ul>
-                    </div>
-                    <div className="flex-1 flex justify-center relative">
-                        <div className="absolute inset-0 bg-cyan-500/20 blur-3xl rounded-full"></div>
-                        <TallyMockup />
                     </div>
                 </div>
 
@@ -245,13 +268,14 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
                 </div>
 
                 {/* Feature 3: Maps (Bonus) */}
-                 <div className="bg-slate-800/40 rounded-3xl p-8 md:p-12 border border-slate-700 text-center">
-                    <FeatureMapIcon className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">¿Querés ir más allá?</h2>
-                    <p className="text-slate-400 max-w-2xl mx-auto mb-8">
+                 <div className="bg-slate-800/40 rounded-3xl p-8 md:p-12 border border-slate-700 text-center relative overflow-hidden group hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/50 pointer-events-none"></div>
+                    <FeatureMapIcon className="h-12 w-12 text-purple-400 mx-auto mb-4 relative z-10" />
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 relative z-10">¿Querés ir más allá?</h2>
+                    <p className="text-slate-400 max-w-2xl mx-auto mb-8 relative z-10">
                         Si te gusta la táctica, usá el modo "Registro de Tiros" para marcar exactamente dónde pica la pelota en la cancha y ver Mapas de Calor.
                     </p>
-                    <div className="inline-block relative rounded-xl overflow-hidden border-2 border-slate-600 shadow-2xl">
+                    <div className="inline-block relative rounded-xl overflow-hidden border-2 border-slate-600 shadow-2xl z-10 transform group-hover:scale-105 transition-transform duration-500">
                          <div className="w-64 h-48 bg-slate-800 relative">
                             <Court shots={[]}>
                                 <HeatmapOverlay shots={sampleShots} />

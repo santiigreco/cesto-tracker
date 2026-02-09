@@ -24,7 +24,30 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
-export const PREDEFINED_TEAMS = [
-    "APV", "Ballester", "Ciudad", "Avellaneda", "Hacoaj", 
-    "SITAS", "Social Parque", "CEF", "GEVP", "Vélez"
+// Configuration for Teams with Logo support
+export interface TeamConfig {
+    name: string;
+    logo?: string; // Path to image in /public/teams/ or URL
+}
+
+export const TEAMS_CONFIG: TeamConfig[] = [
+    { name: "Ballester", logo: "/teams/Ballester.png" },
+    { name: "APV" },
+    { name: "Ciudad" },
+    { name: "Avellaneda" },
+    { name: "Hacoaj" },
+    { name: "SITAS" },
+    { name: "Social Parque" },
+    { name: "CEF" },
+    { name: "GEVP" },
+    { name: "Vélez" }
 ];
+
+// Helper to maintain compatibility with simple string arrays
+export const PREDEFINED_TEAMS = TEAMS_CONFIG.map(t => t.name);
+
+// Helper to get logo by name
+export const getTeamLogo = (teamName: string): string | undefined => {
+    const team = TEAMS_CONFIG.find(t => t.name === teamName);
+    return team?.logo;
+};

@@ -26,6 +26,10 @@ export const useSupabaseSync = () => {
                 settings: { ...gameState.settings, gameName: gameName.trim() },
                 player_names: gameState.playerNames,
                 available_players: gameState.availablePlayers,
+                // New Fields for Database Relation
+                tournament_id: gameState.settings.tournamentId || null,
+                my_team_name: gameState.settings.myTeam || null,
+                opponent_name: gameName.trim(), // Assuming user writes opponent in gameName for now
             };
 
             const { data: gameData, error: gameError } = await supabase
@@ -87,7 +91,7 @@ export const useSupabaseSync = () => {
         setIsLoading(true);
         try {
             const [gameRes, shotsRes, tallyRes] = await Promise.all([
-                supabase.from('games').select('*').eq('id', gameId).single(),
+                supabase.from('games').select('*, tournaments(name)').eq('id', gameId).single(),
                 supabase.from('shots').select('*').eq('game_id', gameId),
                 supabase.from('tally_stats').select('*').eq('game_id', gameId),
             ]);
@@ -98,8 +102,7 @@ export const useSupabaseSync = () => {
             
             const gameData = gameRes.data;
 
-            // Increment view count in background (fire and forget)
-            // Note: This relies on the table having a 'views' column.
+            // Increment view count in background
             try {
                 const currentViews = gameData.views || 0;
                 await supabase.from('games').update({ views: currentViews + 1 }).eq('id', gameId);
@@ -118,21 +121,26 @@ export const useSupabaseSync = () => {
                 loadedTallyStats[player][stat.period as GamePeriod] = mapTallyPeriodFromDb(stat);
             });
             
-            const loadedPlayerStreaks: Record<string, PlayerStreak> = {};
-            
+            // Enrich settings with DB data if missing in JSON
+            const enrichedSettings = {
+                ...gameData.settings,
+                tournamentId: gameData.tournament_id || gameData.settings?.tournamentId,
+                tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
+            };
+
             const loadedGameState: GameState = {
                 ...initialGameState,
                 gameId: gameData.id,
                 gameMode: gameData.game_mode,
                 isSetupComplete: true,
                 hasSeenHomepage: true,
-                settings: gameData.settings,
+                settings: enrichedSettings,
                 availablePlayers: gameData.available_players,
                 playerNames: gameData.player_names,
                 activePlayers: gameData.available_players.slice(0, 6),
                 shots: loadedShots,
                 tallyStats: loadedTallyStats,
-                playerStreaks: loadedPlayerStreaks,
+                playerStreaks: {},
                 tutorialStep: 3,
                 isReadOnly: true,
             };

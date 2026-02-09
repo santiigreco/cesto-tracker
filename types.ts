@@ -30,6 +30,8 @@ export interface PlayerStats {
 export interface Settings {
   gameName?: string;
   myTeam?: string;
+  tournamentId?: string; // ID del torneo en base de datos
+  tournamentName?: string; // Nombre para mostrar en UI
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
   isManoFriaEnabled: boolean;

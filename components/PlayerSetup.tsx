@@ -6,12 +6,15 @@ import ToggleSwitch from './ToggleSwitch';
 import ChevronDownIcon from './ChevronDownIcon';
 import UndoIcon from './UndoIcon';
 import TeamSelectorModal from './TeamSelectorModal';
+import TournamentSelectorModal from './TournamentSelectorModal';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 const defaultSettings: Settings = {
     gameName: '',
     myTeam: '',
+    tournamentId: '',
+    tournamentName: '',
     isManoCalienteEnabled: true,
     manoCalienteThreshold: 5,
     isManoFriaEnabled: true,
@@ -37,6 +40,8 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
+  const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
+  
   const [settings, setSettings] = useState<Settings>(initialSettings);
   
   // Default to 'stats-tally' (Anotador) if no mode provided
@@ -101,6 +106,20 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
         </h1>
         
         <div className="mb-6 space-y-4 max-w-sm mx-auto">
+            {/* Tournament Selector */}
+            <div className="text-left">
+                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Torneo / Temporada</label>
+                <button
+                    onClick={() => setIsTournamentSelectorOpen(true)}
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group"
+                >
+                    <span className={`text-base ${settings.tournamentName ? 'text-cyan-300 font-bold' : 'text-slate-500'}`}>
+                        {settings.tournamentName || 'Seleccionar Torneo...'}
+                    </span>
+                    <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+                </button>
+            </div>
+
             {/* Team Selector Trigger */}
             <div className="text-left">
                 <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Tu Equipo</label>
@@ -117,13 +136,13 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
 
             {/* Game Name Input */}
             <div className="text-left">
-                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Rival / Torneo</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Rival / Detalle</label>
                 <input
                     type="text"
                     value={settings.gameName || ''}
                     onChange={(e) => setSettings(s => ({ ...s, gameName: e.target.value }))}
                     className="bg-transparent border-b border-slate-600 text-white text-lg placeholder-slate-500 focus:border-cyan-500 focus:outline-none w-full py-2 transition-colors"
-                    placeholder="Nombre del partido (Opcional)"
+                    placeholder="Nombre del partido (Ej: Vs. Vélez)"
                 />
             </div>
         </div>
@@ -212,6 +231,15 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
               onClose={() => setIsTeamSelectorOpen(false)} 
               onSelectTeam={(team) => setSettings(prev => ({ ...prev, myTeam: team }))}
               currentTeam={settings.myTeam || ''}
+          />
+      )}
+
+      {isTournamentSelectorOpen && (
+          <TournamentSelectorModal
+              isOpen={isTournamentSelectorOpen}
+              onClose={() => setIsTournamentSelectorOpen(false)}
+              onSelectTournament={(id, name) => setSettings(prev => ({ ...prev, tournamentId: id, tournamentName: name }))}
+              currentTournamentId={settings.tournamentId}
           />
       )}
     </div>
