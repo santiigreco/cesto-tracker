@@ -1,5 +1,4 @@
 
-
 export type GamePeriod = 'First Half' | 'Second Half';
 export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'faq';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
@@ -109,4 +108,14 @@ export interface SavedTeam {
     players: RosterPlayer[];
     category?: string;
     created_at?: string;
+}
+
+export type UserRole = 'jugador' | 'entrenador' | 'hincha' | 'dirigente' | 'periodista' | 'otro';
+
+export interface UserProfile {
+    id: string;
+    full_name: string | null;
+    favorite_club: string | null;
+    role: UserRole | null;
+    updated_at?: string;
 }

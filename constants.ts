@@ -24,14 +24,13 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
-// Configuration for Teams with Logo support
+// Configuration for Teams
 export interface TeamConfig {
     name: string;
-    logo?: string; // Path to image in /public/teams/ or URL
 }
 
 export const TEAMS_CONFIG: TeamConfig[] = [
-    { name: "Ballester", logo: "/teams/Ballester.png" },
+    { name: "Ballester" },
     { name: "APV" },
     { name: "Ciudad" },
     { name: "Avellaneda" },
@@ -46,8 +45,7 @@ export const TEAMS_CONFIG: TeamConfig[] = [
 // Helper to maintain compatibility with simple string arrays
 export const PREDEFINED_TEAMS = TEAMS_CONFIG.map(t => t.name);
 
-// Helper to get logo by name
+// Helper to get logo by name (Deprecated: handled in TeamLogo.tsx now, keeping for compatibility if needed elsewhere, but returning null)
 export const getTeamLogo = (teamName: string): string | undefined => {
-    const team = TEAMS_CONFIG.find(t => t.name === teamName);
-    return team?.logo;
+    return undefined;
 };

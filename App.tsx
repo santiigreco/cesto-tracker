@@ -650,7 +650,7 @@ function App() {
           </main>
         </div>
         
-        <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">Santiago Greco - Gresolutions © 2025</footer>
+        <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">Santiago Greco - Gresolutions © 2026</footer>
 
         {/* --- MODALS --- */}
         <BottomNavigation activeTab={activeTab} onSelectTab={setActiveTab} gameMode={gameMode} />

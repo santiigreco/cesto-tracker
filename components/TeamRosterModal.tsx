@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import XIcon from './XIcon';
 import Loader from './Loader';
@@ -118,12 +119,19 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
                             {!loading && (
                                 <div className="space-y-4">
                                     <button 
-                                        onClick={() => setView('create')}
+                                        onClick={() => {
+                                            setNewTeamName('');
+                                            setSelectedNumbers(new Set());
+                                            setRoster({});
+                                            setView('create');
+                                        }}
                                         className="w-full bg-cyan-900/30 border border-cyan-500/50 hover:bg-cyan-900/50 text-cyan-400 font-bold p-4 rounded-xl flex items-center justify-center gap-2 transition-all"
                                     >
                                         <PlusIcon className="h-6 w-6" />
                                         <span>Crear Nuevo Equipo</span>
                                     </button>
+
+                                    <h3 className="text-slate-400 text-sm uppercase font-bold tracking-wider pt-2">Equipos Guardados</h3>
 
                                     {teams.length === 0 ? (
                                         <p className="text-center text-slate-500 py-8">No tienes equipos guardados aún.</p>
@@ -136,13 +144,13 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
                                                     className="relative group p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500 hover:shadow-lg cursor-pointer transition-all"
                                                 >
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <h3 className="font-bold text-lg text-white group-hover:text-cyan-300">{team.name}</h3>
+                                                        <h3 className="font-bold text-lg text-white group-hover:text-cyan-300 truncate pr-6">{team.name}</h3>
                                                         <button 
                                                             onClick={(e) => handleDelete(team.id, e)}
-                                                            className="text-slate-500 hover:text-red-500 p-1 rounded transition-colors"
+                                                            className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-2 rounded transition-colors"
                                                             title="Eliminar"
                                                         >
-                                                            <TrashIcon className="h-5 w-5" />
+                                                            <TrashIcon className="h-4 w-4" />
                                                         </button>
                                                     </div>
                                                     <p className="text-sm text-slate-400">
@@ -167,6 +175,11 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
 
                     {view === 'create' && (
                         <div className="space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-white font-bold text-lg">Editar Plantel</h3>
+                                <button onClick={() => setView('list')} className="text-sm text-slate-400 hover:text-white underline">Volver</button>
+                            </div>
+                            
                             <div>
                                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Nombre del Equipo</label>
                                 <input 
@@ -194,18 +207,18 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
 
                             {selectedNumbers.size > 0 && (
                                 <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Nombres (Opcional)</label>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Nombres (Camisetas)</label>
                                     <div className="grid grid-cols-2 gap-3">
                                         {(Array.from(selectedNumbers) as string[]).sort((a,b) => Number(a)-Number(b)).map(num => (
                                             <div key={num} className="flex items-center gap-2">
-                                                <span className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white font-bold text-sm">
+                                                <span className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white font-bold text-sm flex-shrink-0">
                                                     {num}
                                                 </span>
                                                 <input 
                                                     type="text"
                                                     value={roster[num] || ''}
                                                     onChange={e => handleNameChange(num, e.target.value)}
-                                                    className="flex-grow bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm text-white focus:border-cyan-500 outline-none"
+                                                    className="flex-grow min-w-0 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm text-white focus:border-cyan-500 outline-none"
                                                     placeholder="Nombre..."
                                                 />
                                             </div>

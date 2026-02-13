@@ -14,6 +14,8 @@ import { faqData } from './faqData';
 import GoogleIcon from './GoogleIcon';
 import { User } from '@supabase/supabase-js';
 import UsersIcon from './UsersIcon';
+import UserProfileModal from './UserProfileModal';
+import { supabase } from '../utils/supabaseClient';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -141,6 +143,12 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin }) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setIsProfileOpen(false);
+    };
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white relative">
@@ -171,11 +179,14 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
              {/* Top Bar for Auth */}
              <div className="absolute top-0 right-0 p-4 z-50">
                  {user ? (
-                     <div className="flex items-center gap-3 bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-700 shadow-lg">
-                         <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase">
+                     <div 
+                        onClick={() => setIsProfileOpen(true)}
+                        className="flex items-center gap-3 bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-700 shadow-lg cursor-pointer hover:bg-slate-800 transition-colors group"
+                     >
+                         <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase ring-2 ring-transparent group-hover:ring-cyan-400 transition-all">
                              {user.email?.charAt(0) || 'U'}
                          </div>
-                         <span className="text-sm text-slate-300 hidden sm:inline">{user.email?.split('@')[0]}</span>
+                         <span className="text-sm text-slate-300 hidden sm:inline group-hover:text-white transition-colors">{user.email?.split('@')[0]}</span>
                      </div>
                  ) : (
                      <button 
@@ -379,8 +390,17 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 <div className="flex justify-center gap-6 mb-4">
                      <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors" aria-label="Instagram"><InstagramIcon /></a>
                 </div>
-                <p>Santiago Greco - Gresolutions © 2025</p>
+                <p>Santiago Greco - Gresolutions © 2026</p>
             </footer>
+
+            {user && (
+                <UserProfileModal 
+                    isOpen={isProfileOpen} 
+                    onClose={() => setIsProfileOpen(false)} 
+                    user={user}
+                    onLogout={handleLogout}
+                />
+            )}
         </div>
     );
 });

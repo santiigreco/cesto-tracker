@@ -265,7 +265,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
         </div>
       </div>
        <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">
-        Santiago Greco - Gresolutions © 2025
+        Santiago Greco - Gresolutions © 2026
       </footer>
 
       {isTeamSelectorOpen && (
