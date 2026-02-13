@@ -26,7 +26,7 @@ export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
 // --- ADMIN CONFIGURATION ---
 // Reemplaza esto con tu email real para ver el panel de admin
-export const ADMIN_EMAILS = ['gresolutions_info@gmail.com', 'santiagogreco@gmail.com']; 
+export const ADMIN_EMAILS = ['gresolutions.info@gmail.com', 'santiagogreco@gmail.com']; 
 
 // Configuration for Teams
 export interface TeamConfig {
