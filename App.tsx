@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
@@ -326,6 +327,7 @@ function App() {
                         await handleLoadGame(id); 
                         setActiveTab('statistics');
                     }} 
+                    user={user}
                 />
             )}
         </>
@@ -624,7 +626,17 @@ function App() {
             <PlayerSelectionModal isOpen={isPlayerSelectionModalOpen} onClose={() => { setIsPlayerSelectionModalOpen(false); setActionToAssign(null); }} onSelectPlayer={handleAssignActionToPlayer} players={playersForTally} playerNames={playerNames} actionLabel={STAT_LABELS[actionToAssign]} />
         )}
 
-        {isLoadGameModalOpen && <LoadGameModal onClose={() => setIsLoadGameModalOpen(false)} onLoadGame={async (id) => { setIsLoadGameModalOpen(false); await handleLoadGame(id); setActiveTab('statistics'); }} />}
+        {isLoadGameModalOpen && (
+            <LoadGameModal 
+                onClose={() => setIsLoadGameModalOpen(false)} 
+                onLoadGame={async (id) => { 
+                    setIsLoadGameModalOpen(false); 
+                    await handleLoadGame(id); 
+                    setActiveTab('statistics');
+                }} 
+                user={user}
+            />
+        )}
 
         {isSaveGameModalOpen && <SaveGameModal isOpen={isSaveGameModalOpen} onClose={() => setIsSaveGameModalOpen(false)} onSave={handleSyncToSupabase} syncState={syncState} initialGameName={gameState.settings.gameName} />}
         

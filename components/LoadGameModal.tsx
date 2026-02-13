@@ -10,6 +10,7 @@ import TeamLogo from './TeamLogo';
 import TrophyIcon from './TrophyIcon';
 import ChevronDownIcon from './ChevronDownIcon';
 import { GameMode, Settings } from '../types';
+import { User } from '@supabase/supabase-js';
 
 interface SavedGame {
     id: string;
@@ -29,9 +30,10 @@ interface TournamentSummary {
 interface LoadGameModalProps {
     onClose: () => void;
     onLoadGame: (gameId: string) => void;
+    user: User | null;
 }
 
-const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) => {
+const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user }) => {
     // Navigation State
     const [view, setView] = useState<'tournaments' | 'games'>('tournaments');
     const [selectedTournament, setSelectedTournament] = useState<TournamentSummary | null>(null);
@@ -49,9 +51,14 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
     // --- FETCH DATA ---
 
     const fetchTournaments = useCallback(async () => {
+        if (!user) return;
+        
         setLoading(true);
         setError(null);
         try {
+            // Fetch tournaments that have games belonging to this user
+            // Or fetch all public tournaments? For now, let's just fetch all tournaments for simplicity
+            // ideally we would filter this too, but let's focus on filtering games.
             const { data, error } = await supabase
                 .from('tournaments')
                 .select('id, name')
@@ -61,7 +68,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
             
             // Add static options
             const allTournaments: TournamentSummary[] = [
-                { id: 'all', name: 'Todos los Partidos' },
+                { id: 'all', name: 'Todos mis Partidos' },
                 ...(data || []),
                 { id: 'none', name: 'Partidos Sin Torneo' }
             ];
@@ -73,15 +80,18 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
 
     const fetchGames = useCallback(async (tournamentId: string) => {
+        if (!user) return;
+
         setLoading(true);
         setError(null);
         try {
             let query = supabase
                 .from('games')
                 .select('id, created_at, game_mode, player_names, settings, views, tournament_id')
+                .eq('user_id', user.id) // Filter by current user
                 .order('created_at', { ascending: false });
 
             // Apply filters based on tournament selection
@@ -101,14 +111,14 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
 
     // Initial Load
     useEffect(() => {
-        if (view === 'tournaments') {
+        if (view === 'tournaments' && user) {
             fetchTournaments();
         }
-    }, [view, fetchTournaments]);
+    }, [view, fetchTournaments, user]);
 
     // Handle Tournament Selection
     const handleTournamentSelect = (tournament: TournamentSummary) => {
@@ -155,6 +165,20 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
         return 'Desconocido';
     };
 
+    if (!user) {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+                <div className="bg-slate-900 rounded-xl shadow-2xl p-8 max-w-sm w-full text-center border border-slate-700">
+                    <h2 className="text-2xl font-bold text-white mb-4">Iniciar Sesión</h2>
+                    <p className="text-slate-400 mb-6">Necesitas ingresar con tu cuenta para ver y guardar tus partidos en la nube.</p>
+                    <button onClick={onClose} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity p-4 backdrop-blur-sm animate-fade-in">
             <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-slate-700 overflow-hidden">
@@ -172,9 +196,9 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
                         )}
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-                                {view === 'tournaments' ? 'Seleccionar Torneo' : selectedTournament?.name}
+                                {view === 'tournaments' ? 'Mis Partidos' : selectedTournament?.name}
                             </h2>
-                            {view === 'games' && <p className="text-slate-400 text-xs">Mostrando partidos del torneo</p>}
+                            {view === 'games' && <p className="text-slate-400 text-xs">Historial personal</p>}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white" aria-label="Cerrar">
@@ -204,7 +228,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
                                                     {t.name}
                                                 </h3>
                                                 <p className="text-sm text-slate-500 mt-1">
-                                                    {t.id === 'all' ? 'Ver historial completo' : t.id === 'none' ? 'Partidos sueltos' : 'Ver partidos'}
+                                                    {t.id === 'all' ? 'Ver todo mi historial' : t.id === 'none' ? 'Partidos sueltos' : 'Ver partidos'}
                                                 </p>
                                             </div>
                                         </div>

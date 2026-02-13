@@ -19,6 +19,9 @@ export const useSupabaseSync = () => {
     const handleSyncToSupabase = async (gameName: string) => {
         setSyncState({ status: 'syncing', message: 'Sincronizando con la nube...' });
         try {
+            // Get current user
+            const { data: { user } } = await supabase.auth.getUser();
+
             // 1. Prepare and Upsert Game data
             const gamePayload = {
                 id: gameState.gameId || undefined, // Let Supabase generate UUID on first sync
@@ -29,7 +32,8 @@ export const useSupabaseSync = () => {
                 // New Fields for Database Relation
                 tournament_id: gameState.settings.tournamentId || null,
                 my_team_name: gameState.settings.myTeam || null,
-                opponent_name: gameName.trim(), // Assuming user writes opponent in gameName for now
+                opponent_name: gameName.trim(), 
+                user_id: user?.id || null, // Associate with user
             };
 
             const { data: gameData, error: gameError } = await supabase
