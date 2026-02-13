@@ -1,12 +1,15 @@
 
 import React, { useState } from 'react';
 import JerseyIcon from './JerseyIcon';
-import { Settings, GameMode } from '../types';
+import { Settings, GameMode, SavedTeam } from '../types';
 import ToggleSwitch from './ToggleSwitch';
 import ChevronDownIcon from './ChevronDownIcon';
 import UndoIcon from './UndoIcon';
+import UsersIcon from './UsersIcon';
 import TeamSelectorModal from './TeamSelectorModal';
 import TournamentSelectorModal from './TournamentSelectorModal';
+import TeamRosterModal from './TeamRosterModal';
+import { supabase } from '../utils/supabaseClient';
 
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
@@ -22,7 +25,7 @@ const defaultSettings: Settings = {
 };
 
 interface PlayerSetupProps {
-  onSetupComplete: (selectedPlayers: string[], settings: Settings, gameMode: GameMode) => void;
+  onSetupComplete: (selectedPlayers: string[], settings: Settings, gameMode: GameMode, initialPlayerNames?: Record<string, string>) => void;
   onBack: () => void;
   initialSelectedPlayers?: string[];
   initialSettings?: Settings;
@@ -37,10 +40,14 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
       }
       return new Set(allPlayers);
   });
+  
+  // Local state to hold player names when a team is loaded
+  const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>({});
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
   const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
+  const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
   
   const [settings, setSettings] = useState<Settings>(initialSettings);
   
@@ -77,7 +84,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
         gameName: settings.gameName?.trim() || `Partido del ${new Date().toLocaleDateString()}`
     };
 
-    onSetupComplete(sortedPlayers, finalSettings, selectedMode || 'stats-tally');
+    onSetupComplete(sortedPlayers, finalSettings, selectedMode || 'stats-tally', localPlayerNames);
   };
 
   const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
@@ -86,8 +93,32 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
           setSettings({ ...settings, [key]: numValue });
       }
   };
+  
+  const handleTeamLoaded = (team: SavedTeam) => {
+      // 1. Set Team Name
+      setSettings(prev => ({ ...prev, myTeam: team.name }));
+      
+      // 2. Set Players
+      const newSelected = new Set<string>();
+      const newNames: Record<string, string> = {};
+      
+      team.players.forEach(p => {
+          newSelected.add(p.number);
+          if (p.name) newNames[p.number] = p.name;
+      });
+      
+      setSelectedPlayers(newSelected);
+      setLocalPlayerNames(newNames);
+      setIsRosterModalOpen(false);
+  };
 
   const isCorrection = initialSelectedPlayers.length > 0;
+  const [user, setUser] = useState<any>(null);
+
+    React.useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    }, []);
+
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans bg-pattern-hoops">
@@ -120,9 +151,20 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
                 </button>
             </div>
 
-            {/* Team Selector Trigger */}
+            {/* Team Selector Trigger & Roster Manager */}
             <div className="text-left">
-                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Tu Equipo</label>
+                <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-semibold text-slate-400 ml-1 uppercase tracking-wide">Tu Equipo</label>
+                    {user && (
+                         <button 
+                            onClick={() => setIsRosterModalOpen(true)}
+                            className="text-xs flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-bold bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/30 hover:bg-cyan-900/50 transition-colors"
+                        >
+                            <UsersIcon className="h-3 w-3" /> Mis Planteles
+                        </button>
+                    )}
+                </div>
+                
                 <button
                     onClick={() => setIsTeamSelectorOpen(true)}
                     className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group"
@@ -156,6 +198,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
                 <JerseyIcon
                   key={num}
                   number={num}
+                  name={localPlayerNames[num]}
                   isSelected={selectedPlayers.has(num)}
                   onClick={togglePlayer}
                 />
@@ -240,6 +283,18 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
               onClose={() => setIsTournamentSelectorOpen(false)}
               onSelectTournament={(id, name) => setSettings(prev => ({ ...prev, tournamentId: id, tournamentName: name }))}
               currentTournamentId={settings.tournamentId}
+          />
+      )}
+      
+      {isRosterModalOpen && (
+          <TeamRosterModal
+            isOpen={isRosterModalOpen}
+            onClose={() => setIsRosterModalOpen(false)}
+            onLoadTeam={handleTeamLoaded}
+            currentSelection={{
+                name: settings.myTeam || '',
+                players: Array.from(selectedPlayers)
+            }}
           />
       )}
     </div>

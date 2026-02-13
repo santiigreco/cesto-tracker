@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction } from './types';
+import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -44,6 +44,7 @@ import QuickActionsPanel from './components/QuickActionsPanel';
 import StatsTallyView from './components/StatsTallyView';
 import ShareModal from './components/ShareModal';
 import BottomNavigation from './components/BottomNavigation';
+import TeamRosterModal from './components/TeamRosterModal';
 
 function App() {
   // --- AUTH STATE ---
@@ -108,6 +109,7 @@ function App() {
   const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isLoadGameModalOpen, setIsLoadGameModalOpen] = useState(false);
+  const [isTeamManagerOpen, setIsTeamManagerOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPlayerSelectionModalOpen, setIsPlayerSelectionModalOpen] = useState(false);
   
@@ -257,6 +259,30 @@ function App() {
       console.error('Error sharing:', error);
     }
   };
+  
+  // Handle team loaded from Home Page (TeamManager)
+  const handleTeamLoadedFromHome = (team: SavedTeam) => {
+      setIsTeamManagerOpen(false);
+      
+      const newNames: Record<string, string> = {};
+      team.players.forEach(p => {
+          if (p.name) newNames[p.number] = p.name;
+      });
+      
+      const newAvailablePlayers = team.players.map(p => p.number);
+
+      setGameState(prev => ({
+          ...initialGameState,
+          hasSeenHomepage: true, // Go to setup
+          isSetupComplete: false,
+          availablePlayers: newAvailablePlayers, // Pre-select these
+          playerNames: newNames,
+          settings: {
+              ...initialGameState.settings,
+              myTeam: team.name
+          }
+      }));
+  };
 
 
   // --- COMPUTED VALUES ---
@@ -316,6 +342,7 @@ function App() {
             <HomePage 
               onStart={handleStartApp} 
               onLoadGameClick={() => setIsLoadGameModalOpen(true)}
+              onManageTeamsClick={() => setIsTeamManagerOpen(true)}
               user={user}
               onLogin={handleLogin}
             />
@@ -328,6 +355,14 @@ function App() {
                         setActiveTab('statistics');
                     }} 
                     user={user}
+                />
+            )}
+            {isTeamManagerOpen && (
+                <TeamRosterModal
+                    isOpen={isTeamManagerOpen}
+                    onClose={() => setIsTeamManagerOpen(false)}
+                    onLoadTeam={handleTeamLoadedFromHome}
+                    currentSelection={{ name: '', players: [] }}
                 />
             )}
         </>

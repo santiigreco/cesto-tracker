@@ -1,4 +1,5 @@
 
+
 export type GamePeriod = 'First Half' | 'Second Half';
 export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'faq';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
@@ -95,4 +96,17 @@ export interface GameState {
     gameLog: GameEvent[];
     tallyRedoLog: GameEvent[];
     isReadOnly: boolean;
+}
+
+export interface RosterPlayer {
+    number: string;
+    name: string;
+}
+
+export interface SavedTeam {
+    id: string;
+    name: string;
+    players: RosterPlayer[];
+    category?: string;
+    created_at?: string;
 }

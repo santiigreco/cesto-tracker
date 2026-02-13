@@ -1,3 +1,4 @@
+
 import { useCallback, useState } from 'react';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
 import { Shot, ShotPosition, GameMode, Settings, StatAction, GameEvent } from '../types';
@@ -7,13 +8,17 @@ export const useGameLogic = () => {
     const [notificationPopup, setNotificationPopup] = useState<{ type: 'caliente' | 'fria'; playerNumber: string } | null>(null);
 
     // --- SETUP ---
-    const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings, gameMode: GameMode) => {
+    const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings, gameMode: GameMode, initialPlayerNames?: Record<string, string>) => {
         const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
         
         setGameState(prev => {
             const isCorrection = prev.availablePlayers.length > 0 && prev.gameMode === gameMode;
             
-            const playerNames = isCorrection ? prev.playerNames : {};
+            // If we are loading a team (initialPlayerNames provided), use that. 
+            // Otherwise, if it's a correction, keep existing names. 
+            // Otherwise, start empty.
+            const playerNames = initialPlayerNames || (isCorrection ? prev.playerNames : {});
+            
             const playerStreaks = isCorrection ? prev.playerStreaks : {};
             const tallyStats = isCorrection ? prev.tallyStats : {};
 
