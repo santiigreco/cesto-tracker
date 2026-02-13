@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shot, PlayerStats } from '../types';
+import { Shot } from '../types';
 import Court from './Court';
 import HeatmapOverlay from './HeatmapOverlay';
 import PhoneMockup from './PhoneMockup';
@@ -10,6 +10,8 @@ import ChevronDownIcon from './ChevronDownIcon';
 import WhatsappIcon from './WhatsappIcon';
 import CheckIcon from './CheckIcon';
 import { faqData } from './faqData';
+import GoogleIcon from './GoogleIcon';
+import { User } from '@supabase/supabase-js';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -101,13 +103,13 @@ const StatsMockup = () => (
 
             <div className="space-y-2">
                 {[
-                    { id: '10', name: 'Jugadora', pts: 24, perc: 80, color: 'cyan' },
-                    { id: '7', name: 'Jugadora', pts: 18, perc: 65, color: 'emerald' },
-                    { id: '5', name: 'Jugadora', pts: 12, perc: 50, color: 'amber' },
+                    { id: '10', pts: 24, perc: 80, color: 'cyan' },
+                    { id: '7', pts: 18, perc: 65, color: 'emerald' },
+                    { id: '5', pts: 12, perc: 50, color: 'amber' },
                 ].map((p) => (
                     <div key={p.id} className="bg-slate-800 p-2 rounded border border-slate-700">
                         <div className="flex justify-between items-center mb-1">
-                            <span className={`font-bold text-${p.color}-300 text-xs`}>#{p.id} {p.name}</span>
+                            <span className={`font-bold text-${p.color}-300 text-xs`}>Jugadora #{p.id}</span>
                             <span className="text-xs font-bold">{p.pts} Pts</span>
                         </div>
                          <div className="w-full bg-slate-700 rounded-full h-1">
@@ -121,11 +123,18 @@ const StatsMockup = () => (
 );
 
 
-const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> = React.memo(({ onStart, onLoadGameClick }) => {
+interface HomePageProps {
+    onStart: () => void;
+    onLoadGameClick: () => void;
+    user?: User | null;
+    onLogin?: () => void;
+}
+
+const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, user, onLogin }) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white">
+        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white relative">
              
              {/* Simple CSS for floating animation */}
              <style>{`
@@ -149,6 +158,26 @@ const HomePage: React.FC<{ onStart: () => void; onLoadGameClick: () => void; }> 
 
              <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-700/[0.05] pointer-events-none"></div>
              <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-slate-900 via-slate-900/90 to-transparent pointer-events-none"></div>
+
+             {/* Top Bar for Auth */}
+             <div className="absolute top-0 right-0 p-4 z-50">
+                 {user ? (
+                     <div className="flex items-center gap-3 bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-700 shadow-lg">
+                         <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase">
+                             {user.email?.charAt(0) || 'U'}
+                         </div>
+                         <span className="text-sm text-slate-300 hidden sm:inline">{user.email?.split('@')[0]}</span>
+                     </div>
+                 ) : (
+                     <button 
+                        onClick={onLogin}
+                        className="flex items-center gap-2 bg-white text-slate-900 hover:bg-gray-100 font-medium px-4 py-2 rounded-full shadow-lg transition-transform hover:scale-105"
+                     >
+                         <GoogleIcon className="h-5 w-5" />
+                         <span className="text-sm">Ingresar con Google</span>
+                     </button>
+                 )}
+             </div>
             
             {/* --- HERO SECTION REDESIGNED --- */}
             <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 lg:pt-32 lg:pb-40">

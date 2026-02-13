@@ -5,6 +5,7 @@ import { Settings } from '../types';
 import XIcon from './XIcon';
 import ChevronDownIcon from './ChevronDownIcon';
 import TeamSelectorModal from './TeamSelectorModal';
+import { User } from '@supabase/supabase-js';
 
 // --- ICONS (local to this component) ---
 const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -21,9 +22,11 @@ interface SettingsModalProps {
   onRequestReselectPlayers: () => void;
   onRequestChangeMode: () => void;
   onRequestSaveGame: () => void;
+  user: User | null;
+  onLogout: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame, user, onLogout }) => {
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
@@ -47,6 +50,27 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                 </div>
 
                 <div className="space-y-6">
+                    {/* User Session Info */}
+                    {user && (
+                        <div className="bg-slate-700/50 p-4 rounded-lg flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-lg uppercase">
+                                    {user.email?.charAt(0) || 'U'}
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-sm text-slate-400">Sesión iniciada como:</p>
+                                    <p className="text-white font-semibold truncate">{user.email}</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={onLogout}
+                                className="text-xs text-red-400 hover:text-red-300 font-bold border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded-lg hover:bg-red-900/40 transition-colors"
+                            >
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                    )}
+
                      {/* Game Info Settings */}
                     <div className="bg-slate-700/50 p-4 rounded-lg space-y-4">
                         <h3 className="text-xl font-bold text-white mb-2">Información del Partido</h3>
@@ -162,7 +186,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
 
                 {/* Session Management Section */}
                 <div className="border-t border-slate-700 mt-8 pt-6">
-                    <h3 className="text-xl font-bold text-white mb-2">Gestión de la Sesión</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">Gestión del Partido</h3>
                     <p className="text-slate-400 mb-4">
                         Estas acciones afectarán el partido actual.
                     </p>

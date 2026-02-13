@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
 import { useSupabaseSync } from './hooks/useSupabaseSync';
+import { supabase } from './utils/supabaseClient';
+import { User } from '@supabase/supabase-js';
 
 // Components
 import Court from './components/Court';
@@ -43,6 +45,39 @@ import ShareModal from './components/ShareModal';
 import BottomNavigation from './components/BottomNavigation';
 
 function App() {
+  // --- AUTH STATE ---
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
   // --- STATE FROM CONTEXT & HOOKS ---
   const { gameState, setGameState, redoStack } = useGameContext();
   const { 
@@ -265,11 +300,11 @@ function App() {
   const playersForTally = useMemo(() => ['Equipo', ...availablePlayers], [availablePlayers]);
 
   // --- RENDER ---
-  if (isAppLoading) {
+  if (isAppLoading || authLoading) {
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
             <Loader />
-            <p className="text-slate-400 mt-4">Cargando partido...</p>
+            <p className="text-slate-400 mt-4">Cargando...</p>
         </div>
     );
   } 
@@ -277,7 +312,12 @@ function App() {
   if (!hasSeenHomepage) {
     return (
         <>
-            <HomePage onStart={handleStartApp} onLoadGameClick={() => setIsLoadGameModalOpen(true)} />
+            <HomePage 
+              onStart={handleStartApp} 
+              onLoadGameClick={() => setIsLoadGameModalOpen(true)}
+              user={user}
+              onLogin={handleLogin}
+            />
             {isLoadGameModalOpen && (
                 <LoadGameModal 
                     onClose={() => setIsLoadGameModalOpen(false)} 
@@ -588,7 +628,17 @@ function App() {
 
         {isSaveGameModalOpen && <SaveGameModal isOpen={isSaveGameModalOpen} onClose={() => setIsSaveGameModalOpen(false)} onSave={handleSyncToSupabase} syncState={syncState} initialGameName={gameState.settings.gameName} />}
         
-        {isSettingsModalOpen && <SettingsModal settings={settings} setSettings={handleSettingsChange} onClose={() => setIsSettingsModalOpen(false)} onRequestNewGame={handleRequestNewGame} onRequestReselectPlayers={handleRequestReselectPlayers} onRequestChangeMode={handleChangeMode} onRequestSaveGame={handleRequestSaveGame} />}
+        {isSettingsModalOpen && <SettingsModal 
+            settings={settings} 
+            setSettings={handleSettingsChange} 
+            onClose={() => setIsSettingsModalOpen(false)} 
+            onRequestNewGame={handleRequestNewGame} 
+            onRequestReselectPlayers={handleRequestReselectPlayers} 
+            onRequestChangeMode={handleChangeMode} 
+            onRequestSaveGame={handleRequestSaveGame}
+            user={user}
+            onLogout={handleLogout}
+        />}
         
         <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} gameState={gameState} playerStats={[]} />
 
