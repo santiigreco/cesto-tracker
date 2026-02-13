@@ -200,7 +200,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
              </div>
             
             {/* --- HERO SECTION REDESIGNED --- */}
-            <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 lg:pt-32 lg:pb-40">
+            {/* Increased top padding (pt-24) on mobile to clear the auth button */}
+            <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 lg:pt-32 lg:pb-40">
                 <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
                     
                     {/* LEFT COLUMN: Text & CTA */}
@@ -226,11 +227,13 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 Empezar ahora
                             </button>
                              <button
-                                onClick={onLoadGameClick}
-                                className={`w-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 hover:border-cyan-500/30 text-slate-200 font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 backdrop-blur-sm`}
+                                onClick={user ? onLoadGameClick : onLogin}
+                                className={`w-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 hover:border-cyan-500/30 text-slate-200 font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 backdrop-blur-sm group`}
+                                title={!user ? "Inicia sesión para ver tu historial" : ""}
                             >
                                 <CloudDownloadIcon className="h-6 w-6" />
-                                Ver historial
+                                <span>Ver historial</span>
+                                {!user && <LockIcon className="h-5 w-5 opacity-50 group-hover:opacity-100 transition-opacity ml-1" />}
                             </button>
                         </div>
                         

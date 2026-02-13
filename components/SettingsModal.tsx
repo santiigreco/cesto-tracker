@@ -6,6 +6,7 @@ import XIcon from './XIcon';
 import ChevronDownIcon from './ChevronDownIcon';
 import TeamSelectorModal from './TeamSelectorModal';
 import { User } from '@supabase/supabase-js';
+import GoogleIcon from './GoogleIcon';
 
 // --- ICONS (local to this component) ---
 const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -24,9 +25,10 @@ interface SettingsModalProps {
   onRequestSaveGame: () => void;
   user: User | null;
   onLogout: () => void;
+  onLogin: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame, user, onLogout }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame, user, onLogout, onLogin }) => {
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
@@ -174,13 +176,23 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                         Guarda los datos de este partido en la nube para tener un respaldo.
                     </p>
                     <div className="flex flex-col items-center">
-                         <button
-                            onClick={onRequestSaveGame}
-                            className="w-full max-w-xs flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform bg-cyan-600 hover:bg-cyan-700 hover:scale-105"
-                        >
-                            <CloudUploadIcon className="h-5 w-5" />
-                            <span>Guardar Partido en la Nube</span>
-                        </button>
+                        {user ? (
+                             <button
+                                onClick={onRequestSaveGame}
+                                className="w-full max-w-xs flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform bg-cyan-600 hover:bg-cyan-700 hover:scale-105"
+                            >
+                                <CloudUploadIcon className="h-5 w-5" />
+                                <span>Guardar Partido en la Nube</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={onLogin}
+                                className="w-full max-w-xs flex items-center justify-center gap-3 bg-white text-slate-900 hover:bg-gray-100 font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105"
+                            >
+                                <GoogleIcon className="h-5 w-5" />
+                                <span>Ingresar para Guardar</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 

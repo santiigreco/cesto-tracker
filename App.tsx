@@ -685,6 +685,7 @@ function App() {
             onRequestSaveGame={handleRequestSaveGame}
             user={user}
             onLogout={handleLogout}
+            onLogin={handleLogin}
         />}
         
         <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} gameState={gameState} playerStats={[]} />
