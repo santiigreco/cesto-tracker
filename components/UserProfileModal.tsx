@@ -38,7 +38,10 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     
     // Admin State
     const [showAdmin, setShowAdmin] = useState(false);
-    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    
+    // Hierarchical Permissions
+    const isOwner = user.email ? ADMIN_EMAILS.includes(user.email) : false;
+    const isAdmin = isOwner || profile?.role === 'admin';
 
     useEffect(() => {
         if (profile) {
@@ -95,7 +98,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                         
                         {role && (
                             <span className="mt-2 px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30 uppercase tracking-wide flex items-center gap-1">
-                                {ROLES.find(r => r.value === role)?.emoji} {ROLES.find(r => r.value === role)?.label}
+                                {ROLES.find(r => r.value === role)?.emoji} {ROLES.find(r => r.value === role)?.label || role}
                             </span>
                         )}
                     </div>
@@ -161,13 +164,13 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                             )}
                         </button>
 
-                        {/* Admin Button (Secret) */}
+                        {/* Admin Button (Secret - Visible for Owner and Admins) */}
                         {isAdmin && (
                             <button
                                 onClick={() => setShowAdmin(true)}
                                 className="w-full py-2 bg-red-900/20 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
                             >
-                                🛡️ Abrir Panel Admin
+                                🛡️ Abrir Panel Admin {isOwner ? '(Owner)' : ''}
                             </button>
                         )}
 
@@ -183,8 +186,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                 </div>
             </div>
             
-            {/* Render Admin Dashboard on top if active */}
-            <AdminDashboard isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
+            {/* Render Admin Dashboard on top if active, passing isOwner prop */}
+            <AdminDashboard isOpen={showAdmin} onClose={() => setShowAdmin(false)} isOwner={isOwner} />
         </>
     );
 };

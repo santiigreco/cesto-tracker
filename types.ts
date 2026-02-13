@@ -110,7 +110,7 @@ export interface SavedTeam {
     created_at?: string;
 }
 
-export type UserRole = 'jugador' | 'entrenador' | 'hincha' | 'dirigente' | 'periodista' | 'otro';
+export type UserRole = 'jugador' | 'entrenador' | 'hincha' | 'dirigente' | 'periodista' | 'admin' | 'otro';
 
 export interface UserProfile {
     id: string;

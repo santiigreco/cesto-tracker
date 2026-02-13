@@ -14,8 +14,13 @@ import { faqData } from './faqData';
 import GoogleIcon from './GoogleIcon';
 import { User } from '@supabase/supabase-js';
 import UsersIcon from './UsersIcon';
+import CalendarIcon from './CalendarIcon';
 import UserProfileModal from './UserProfileModal';
 import { supabase } from '../utils/supabaseClient';
+import { useProfile } from '../hooks/useProfile';
+import { ADMIN_EMAILS } from '../constants';
+import FixtureView from './FixtureView';
+import ConfirmationModal from './ConfirmationModal';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -144,10 +149,24 @@ interface HomePageProps {
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin }) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    
+    // Fixture Logic
+    const [isFixtureOpen, setIsFixtureOpen] = useState(false);
+    const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+    const { profile } = useProfile();
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setIsProfileOpen(false);
+    };
+
+    const handleFixtureClick = () => {
+        const isAdmin = user && (ADMIN_EMAILS.includes(user.email || '') || profile?.role === 'admin');
+        if (isAdmin) {
+            setIsFixtureOpen(true);
+        } else {
+            setIsComingSoonOpen(true);
+        }
     };
 
     return (
@@ -237,19 +256,30 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             </button>
                         </div>
                         
-                        <button
-                            onClick={user ? onManageTeamsClick : onLogin}
-                            className={`mt-6 flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                user 
-                                ? "text-cyan-400 border-cyan-500/30 hover:bg-cyan-900/20 hover:border-cyan-400 hover:text-cyan-300 font-bold" 
-                                : "text-slate-500 border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:text-slate-400 group cursor-pointer font-semibold"
-                            }`}
-                            title={user ? "Gestionar equipos" : "Inicia sesión para gestionar equipos"}
-                        >
-                            <UsersIcon className="h-5 w-5" />
-                            <span>Gestionar Mis Equipos</span>
-                            {!user && <LockIcon className="h-4 w-4 opacity-70 group-hover:opacity-100 ml-1" />}
-                        </button>
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-6">
+                            <button
+                                onClick={user ? onManageTeamsClick : onLogin}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                    user 
+                                    ? "text-cyan-400 border-cyan-500/30 hover:bg-cyan-900/20 hover:border-cyan-400 hover:text-cyan-300 font-bold" 
+                                    : "text-slate-500 border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:text-slate-400 group cursor-pointer font-semibold"
+                                }`}
+                                title={user ? "Gestionar equipos" : "Inicia sesión para gestionar equipos"}
+                            >
+                                <UsersIcon className="h-5 w-5" />
+                                <span>Gestionar Equipos</span>
+                                {!user && <LockIcon className="h-4 w-4 opacity-70 group-hover:opacity-100 ml-1" />}
+                            </button>
+
+                            {/* FIXTURE BUTTON */}
+                            <button
+                                onClick={handleFixtureClick}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-400 hover:text-yellow-300 font-bold transition-all duration-300"
+                            >
+                                <CalendarIcon className="h-5 w-5" />
+                                <span>Fixture</span>
+                            </button>
+                        </div>
 
                         <p className="mt-6 text-sm text-slate-500 flex items-center gap-2 font-medium">
                             <CheckIcon className="h-5 w-5 text-emerald-500"/> No requiere registro. Funciona sin internet.
@@ -291,10 +321,11 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 </div>
             </div>
 
+            {/* ... Features & FAQ sections ... */}
+            
             {/* --- FEATURES DEEP DIVE --- */}
             <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 space-y-24">
-                
-                {/* Feature 1: Tally - CENTERED & NO MOCKUP */}
+                {/* Feature 1: Tally */}
                 <div className="flex flex-col items-center gap-12 text-center max-w-3xl mx-auto">
                      <div className="space-y-6">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
@@ -402,6 +433,26 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     onClose={() => setIsProfileOpen(false)} 
                     user={user}
                     onLogout={handleLogout}
+                />
+            )}
+
+            {isFixtureOpen && (
+                <FixtureView 
+                    isOpen={isFixtureOpen} 
+                    onClose={() => setIsFixtureOpen(false)} 
+                    isAdmin={user ? (ADMIN_EMAILS.includes(user.email || '') || profile?.role === 'admin') : false} 
+                />
+            )}
+
+            {isComingSoonOpen && (
+                <ConfirmationModal 
+                    title="Fixture 📅" 
+                    message="¡Próximamente! Estamos trabajando para traerte el calendario completo de partidos, resultados en vivo y tabla de posiciones."
+                    confirmText="¡Genial!"
+                    cancelText="Cerrar"
+                    onConfirm={() => setIsComingSoonOpen(false)}
+                    onClose={() => setIsComingSoonOpen(false)}
+                    confirmButtonColor="bg-cyan-600 hover:bg-cyan-700"
                 />
             )}
         </div>
