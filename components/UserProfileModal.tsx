@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import XIcon from './XIcon';
 import CheckIcon from './CheckIcon';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
+import CameraIcon from './CameraIcon';
 import { useProfile } from '../hooks/useProfile';
 import { TEAMS_CONFIG, ADMIN_EMAILS } from '../constants';
 import { UserRole } from '../types';
@@ -27,17 +28,24 @@ const ROLES: { value: UserRole; label: string; emoji: string }[] = [
 ];
 
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user, onLogout }) => {
-    const { profile, loading: profileLoading, updateProfile } = useProfile();
+    const { profile, loading: profileLoading, updateProfile, uploadAvatar } = useProfile();
     
     // Form State
     const [fullName, setFullName] = useState('');
     const [favoriteClub, setFavoriteClub] = useState<string>('');
     const [role, setRole] = useState<UserRole | ''>('');
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    
+    // UI State
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     
     // Admin State
     const [showAdmin, setShowAdmin] = useState(false);
+    
+    // File Input Ref
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
     // Hierarchical Permissions
     const isOwner = user.email ? ADMIN_EMAILS.includes(user.email) : false;
@@ -48,6 +56,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
             setFullName(profile.full_name || '');
             setFavoriteClub(profile.favorite_club || '');
             setRole(profile.role || '');
+            setAvatarUrl(profile.avatar_url || null);
         }
     }, [profile]);
 
@@ -66,6 +75,29 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
         }
     };
 
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || event.target.files.length === 0) return;
+        const file = event.target.files[0];
+        
+        // Basic validation
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+            alert("La imagen es demasiado grande. Máximo 2MB.");
+            return;
+        }
+
+        setIsUploading(true);
+        const newUrl = await uploadAvatar(file);
+        setIsUploading(false);
+        
+        if (newUrl) {
+            setAvatarUrl(newUrl);
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -79,10 +111,30 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                             <XIcon />
                         </button>
 
-                        <div className="relative group">
-                            <div className="w-24 h-24 rounded-full bg-cyan-600 border-4 border-slate-800 flex items-center justify-center text-white font-bold text-4xl uppercase shadow-lg">
-                                {user.email?.charAt(0) || 'U'}
+                        <div className="relative group cursor-pointer" onClick={triggerFileInput}>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange} 
+                                accept="image/*" 
+                                className="hidden" 
+                            />
+                            
+                            <div className="w-24 h-24 rounded-full bg-cyan-600 border-4 border-slate-800 flex items-center justify-center text-white font-bold text-4xl uppercase shadow-lg overflow-hidden relative">
+                                {isUploading ? (
+                                    <Loader className="h-8 w-8 text-white" />
+                                ) : avatarUrl ? (
+                                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    user.email?.charAt(0) || 'U'
+                                )}
+                                
+                                {/* Overlay for Edit */}
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <CameraIcon className="h-8 w-8 text-white" />
+                                </div>
                             </div>
+                            
                             {/* Club Badge */}
                             {favoriteClub && (
                                 <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 shadow-md">

@@ -32,7 +32,8 @@ export const useProfile = () => {
                     id: user.id,
                     full_name: user.user_metadata?.full_name || '',
                     favorite_club: null,
-                    role: null
+                    role: null,
+                    avatar_url: null
                 });
             }
         } catch (err: any) {
@@ -73,6 +74,41 @@ export const useProfile = () => {
         }
     };
 
+    const uploadAvatar = async (file: File) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        setLoading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // Upload to Supabase Storage 'avatars' bucket
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            // Update profile with new URL
+            await updateProfile({ avatar_url: publicUrl });
+            
+            return publicUrl;
+        } catch (err: any) {
+            console.error("Error uploading avatar:", err);
+            setError('Error al subir la imagen.');
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchProfile();
     }, [fetchProfile]);
@@ -82,6 +118,7 @@ export const useProfile = () => {
         loading,
         error,
         updateProfile,
+        uploadAvatar,
         refreshProfile: fetchProfile
     };
 };

@@ -21,6 +21,7 @@ import { useProfile } from '../hooks/useProfile';
 import { ADMIN_EMAILS } from '../constants';
 import FixtureView from './FixtureView';
 import ConfirmationModal from './ConfirmationModal';
+import InstallApp from './InstallApp'; // Import InstallApp
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -202,8 +203,12 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                         onClick={() => setIsProfileOpen(true)}
                         className="flex items-center gap-3 bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-700 shadow-lg cursor-pointer hover:bg-slate-800 transition-colors group"
                      >
-                         <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase ring-2 ring-transparent group-hover:ring-cyan-400 transition-all">
-                             {user.email?.charAt(0) || 'U'}
+                         <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase ring-2 ring-transparent group-hover:ring-cyan-400 transition-all overflow-hidden relative">
+                             {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                             ) : (
+                                user.email?.charAt(0) || 'U'
+                             )}
                          </div>
                          <span className="text-sm text-slate-300 hidden sm:inline group-hover:text-white transition-colors">{user.email?.split('@')[0]}</span>
                      </div>
@@ -256,7 +261,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             </button>
                         </div>
                         
-                        <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-6">
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-6 items-center">
                             <button
                                 onClick={user ? onManageTeamsClick : onLogin}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${
@@ -279,6 +284,9 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 <CalendarIcon className="h-5 w-5" />
                                 <span>Fixture</span>
                             </button>
+
+                            {/* INSTALL APP BUTTON (PWA) */}
+                            <InstallApp />
                         </div>
 
                         <p className="mt-6 text-sm text-slate-500 flex items-center gap-2 font-medium">

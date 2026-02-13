@@ -117,5 +117,6 @@ export interface UserProfile {
     full_name: string | null;
     favorite_club: string | null;
     role: UserRole | null;
+    avatar_url: string | null;
     updated_at?: string;
 }

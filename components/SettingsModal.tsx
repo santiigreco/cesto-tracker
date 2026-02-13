@@ -7,6 +7,7 @@ import ChevronDownIcon from './ChevronDownIcon';
 import TeamSelectorModal from './TeamSelectorModal';
 import { User } from '@supabase/supabase-js';
 import GoogleIcon from './GoogleIcon';
+import { useProfile } from '../hooks/useProfile';
 
 // --- ICONS (local to this component) ---
 const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -30,6 +31,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame, user, onLogout, onLogin }) => {
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
+    const { profile } = useProfile();
 
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
@@ -56,8 +58,12 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                     {user && (
                         <div className="bg-slate-700/50 p-4 rounded-lg flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-lg uppercase">
-                                    {user.email?.charAt(0) || 'U'}
+                                <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-lg uppercase overflow-hidden relative">
+                                    {profile?.avatar_url ? (
+                                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        user.email?.charAt(0) || 'U'
+                                    )}
                                 </div>
                                 <div className="overflow-hidden">
                                     <p className="text-sm text-slate-400">Sesión iniciada como:</p>
