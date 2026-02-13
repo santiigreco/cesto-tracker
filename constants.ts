@@ -24,6 +24,10 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
+// --- ADMIN CONFIGURATION ---
+// Reemplaza esto con tu email real para ver el panel de admin
+export const ADMIN_EMAILS = ['gresolutions_info@gmail.com', 'santiagogreco@gmail.com']; 
+
 // Configuration for Teams
 export interface TeamConfig {
     name: string;

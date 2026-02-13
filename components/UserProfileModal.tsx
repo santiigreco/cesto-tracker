@@ -6,8 +6,9 @@ import CheckIcon from './CheckIcon';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
 import { useProfile } from '../hooks/useProfile';
-import { TEAMS_CONFIG } from '../constants';
+import { TEAMS_CONFIG, ADMIN_EMAILS } from '../constants';
 import { UserRole } from '../types';
+import AdminDashboard from './AdminDashboard'; // Import AdminDashboard
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -34,6 +35,10 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     const [role, setRole] = useState<UserRole | ''>('');
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    
+    // Admin State
+    const [showAdmin, setShowAdmin] = useState(false);
+    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
 
     useEffect(() => {
         if (profile) {
@@ -61,111 +66,126 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 animate-fade-in backdrop-blur-sm">
-            <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-slate-700 overflow-hidden relative">
-                
-                {/* Header Profile Card Style */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 flex flex-col items-center border-b border-slate-700 relative">
-                    <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" aria-label="Cerrar">
-                        <XIcon />
-                    </button>
-
-                    <div className="relative group">
-                        <div className="w-24 h-24 rounded-full bg-cyan-600 border-4 border-slate-800 flex items-center justify-center text-white font-bold text-4xl uppercase shadow-lg">
-                            {user.email?.charAt(0) || 'U'}
-                        </div>
-                        {/* Club Badge */}
-                        {favoriteClub && (
-                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 shadow-md">
-                                <TeamLogo teamName={favoriteClub} className="h-7 w-7" />
-                            </div>
-                        )}
-                    </div>
+        <>
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 animate-fade-in backdrop-blur-sm">
+                <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-slate-700 overflow-hidden relative">
                     
-                    <h2 className="mt-4 text-xl font-bold text-white text-center">
-                        {fullName || 'Usuario de Cesto Tracker'}
-                    </h2>
-                    <p className="text-sm text-slate-400">{user.email}</p>
-                    
-                    {role && (
-                        <span className="mt-2 px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30 uppercase tracking-wide flex items-center gap-1">
-                            {ROLES.find(r => r.value === role)?.emoji} {ROLES.find(r => r.value === role)?.label}
-                        </span>
-                    )}
-                </div>
-
-                {/* Content */}
-                <div className="p-6 space-y-6 bg-slate-900">
-                    
-                    {/* Identity */}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Nombre Completo</label>
-                        <input 
-                            type="text" 
-                            value={fullName}
-                            onChange={e => setFullName(e.target.value)}
-                            placeholder="Ej: Juan Pérez"
-                            className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors"
-                        />
-                    </div>
-
-                    {/* Cestoball Identity */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Club Favorito ❤️</label>
-                            <select
-                                value={favoriteClub}
-                                onChange={e => setFavoriteClub(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors appearance-none"
-                            >
-                                <option value="">Seleccionar...</option>
-                                {TEAMS_CONFIG.map(team => (
-                                    <option key={team.name} value={team.name}>{team.name}</option>
-                                ))}
-                                <option value="Otro">Otro</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Rol</label>
-                            <select
-                                value={role}
-                                onChange={e => setRole(e.target.value as UserRole)}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors appearance-none"
-                            >
-                                <option value="">Seleccionar...</option>
-                                {ROLES.map(r => (
-                                    <option key={r.value} value={r.value}>{r.emoji} {r.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving || profileLoading}
-                        className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all transform active:scale-95 ${
-                            saveSuccess 
-                            ? 'bg-green-600 text-white' 
-                            : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
-                        }`}
-                    >
-                        {isSaving ? <Loader className="h-5 w-5 text-white" /> : (
-                            saveSuccess ? <><CheckIcon className="h-5 w-5" /> Guardado</> : 'Guardar Perfil'
-                        )}
-                    </button>
-
-                    <div className="border-t border-slate-800 pt-4 mt-2">
-                        <button 
-                            onClick={onLogout}
-                            className="w-full py-2 text-sm text-red-400 hover:text-red-300 font-semibold hover:bg-red-900/10 rounded-lg transition-colors"
-                        >
-                            Cerrar Sesión
+                    {/* Header Profile Card Style */}
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 flex flex-col items-center border-b border-slate-700 relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" aria-label="Cerrar">
+                            <XIcon />
                         </button>
+
+                        <div className="relative group">
+                            <div className="w-24 h-24 rounded-full bg-cyan-600 border-4 border-slate-800 flex items-center justify-center text-white font-bold text-4xl uppercase shadow-lg">
+                                {user.email?.charAt(0) || 'U'}
+                            </div>
+                            {/* Club Badge */}
+                            {favoriteClub && (
+                                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 shadow-md">
+                                    <TeamLogo teamName={favoriteClub} className="h-7 w-7" />
+                                </div>
+                            )}
+                        </div>
+                        
+                        <h2 className="mt-4 text-xl font-bold text-white text-center">
+                            {fullName || 'Usuario de Cesto Tracker'}
+                        </h2>
+                        <p className="text-sm text-slate-400">{user.email}</p>
+                        
+                        {role && (
+                            <span className="mt-2 px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30 uppercase tracking-wide flex items-center gap-1">
+                                {ROLES.find(r => r.value === role)?.emoji} {ROLES.find(r => r.value === role)?.label}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 space-y-6 bg-slate-900">
+                        
+                        {/* Identity */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Nombre Completo</label>
+                            <input 
+                                type="text" 
+                                value={fullName}
+                                onChange={e => setFullName(e.target.value)}
+                                placeholder="Ej: Juan Pérez"
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors"
+                            />
+                        </div>
+
+                        {/* Cestoball Identity */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Club Favorito ❤️</label>
+                                <select
+                                    value={favoriteClub}
+                                    onChange={e => setFavoriteClub(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors appearance-none"
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {TEAMS_CONFIG.map(team => (
+                                        <option key={team.name} value={team.name}>{team.name}</option>
+                                    ))}
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Rol</label>
+                                <select
+                                    value={role}
+                                    onChange={e => setRole(e.target.value as UserRole)}
+                                    className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors appearance-none"
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {ROLES.map(r => (
+                                        <option key={r.value} value={r.value}>{r.emoji} {r.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || profileLoading}
+                            className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all transform active:scale-95 ${
+                                saveSuccess 
+                                ? 'bg-green-600 text-white' 
+                                : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
+                            }`}
+                        >
+                            {isSaving ? <Loader className="h-5 w-5 text-white" /> : (
+                                saveSuccess ? <><CheckIcon className="h-5 w-5" /> Guardado</> : 'Guardar Perfil'
+                            )}
+                        </button>
+
+                        {/* Admin Button (Secret) */}
+                        {isAdmin && (
+                            <button
+                                onClick={() => setShowAdmin(true)}
+                                className="w-full py-2 bg-red-900/20 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
+                            >
+                                🛡️ Abrir Panel Admin
+                            </button>
+                        )}
+
+                        <div className="border-t border-slate-800 pt-4 mt-2">
+                            <button 
+                                onClick={onLogout}
+                                className="w-full py-2 text-sm text-red-400 hover:text-red-300 font-semibold hover:bg-red-900/10 rounded-lg transition-colors"
+                            >
+                                Cerrar Sesión
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+            
+            {/* Render Admin Dashboard on top if active */}
+            <AdminDashboard isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
+        </>
     );
 };
 
