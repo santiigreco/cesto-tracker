@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import JerseyIcon from './JerseyIcon';
-import { Settings, GameMode, SavedTeam } from '../types';
+import { Settings, GameMode, SavedTeam, RosterPlayer } from '../types';
 import ToggleSwitch from './ToggleSwitch';
 import ChevronDownIcon from './ChevronDownIcon';
 import UndoIcon from './UndoIcon';
@@ -105,22 +105,37 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
       }
   };
   
-  const handleTeamLoaded = (team: SavedTeam) => {
+  // Unified handler for loading a team (either from "My Teams" modal or "Team Selector")
+  const applyTeamRoster = (name: string, players: RosterPlayer[]) => {
       // 1. Set Team Name
-      setSettings(prev => ({ ...prev, myTeam: team.name }));
+      setSettings(prev => ({ ...prev, myTeam: name }));
       
       // 2. Set Players
       const newSelected = new Set<string>();
       const newNames: Record<string, string> = {};
       
-      team.players.forEach(p => {
+      players.forEach(p => {
           newSelected.add(p.number);
           if (p.name) newNames[p.number] = p.name;
       });
       
       setSelectedPlayers(newSelected);
       setLocalPlayerNames(newNames);
+  };
+
+  const handleTeamLoadedFromManager = (team: SavedTeam) => {
+      applyTeamRoster(team.name, team.players);
       setIsRosterModalOpen(false);
+  };
+
+  const handleTeamSelectedFromDropdown = (name: string, roster?: RosterPlayer[]) => {
+      if (roster && roster.length > 0) {
+          // If roster data came from the selector (because it was a saved team), apply it directly
+          applyTeamRoster(name, roster);
+      } else {
+          // Just set the name if it's a generic team
+          setSettings(prev => ({ ...prev, myTeam: name }));
+      }
   };
 
   const isCorrection = initialSelectedPlayers.length > 0;
@@ -171,7 +186,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
                             onClick={() => setIsRosterModalOpen(true)}
                             className="text-xs flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-bold bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/30 hover:bg-cyan-900/50 transition-colors"
                         >
-                            <UsersIcon className="h-3 w-3" /> Mis Planteles
+                            <UsersIcon className="h-3 w-3" /> Editar Mis Planteles
                         </button>
                     )}
                 </div>
@@ -285,7 +300,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
           <TeamSelectorModal 
               isOpen={isTeamSelectorOpen} 
               onClose={() => setIsTeamSelectorOpen(false)} 
-              onSelectTeam={(team) => setSettings(prev => ({ ...prev, myTeam: team }))}
+              onSelectTeam={handleTeamSelectedFromDropdown}
               currentTeam={settings.myTeam || ''}
           />
       )}
@@ -312,7 +327,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
           <TeamRosterModal
             isOpen={isRosterModalOpen}
             onClose={() => setIsRosterModalOpen(false)}
-            onLoadTeam={handleTeamLoaded}
+            onLoadTeam={handleTeamLoadedFromManager}
             currentSelection={{
                 name: settings.myTeam || '',
                 players: Array.from(selectedPlayers)
