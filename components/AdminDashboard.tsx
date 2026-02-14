@@ -7,6 +7,7 @@ import CheckIcon from './CheckIcon';
 import Loader from './Loader';
 import PencilIcon from './PencilIcon';
 import PlusIcon from './PlusIcon';
+import RefreshIcon from './RefreshIcon';
 import { UserRole } from '../types';
 
 interface AdminDashboardProps {
@@ -32,7 +33,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
 
     const fetchData = async () => {
         setLoading(true);
-        setData([]);
+        // Don't clear data immediately to avoid flickering if it's just a refresh
+        // setData([]); 
         try {
             let query;
             if (activeTab === 'users') {
@@ -67,7 +69,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
 
     useEffect(() => {
         if (isOpen) {
-            // Reset tab if user is not owner but somehow 'users' was selected (e.g. from previous session state)
+            // Reset tab if user is not owner but somehow 'users' was selected
             if (!isOwner && activeTab === 'users') {
                 setActiveTab('tournaments');
             } else {
@@ -75,6 +77,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
             }
         }
     }, [isOpen, activeTab, isOwner]);
+
+    // --- REALTIME SUBSCRIPTION ---
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const tableName = activeTab === 'users' ? 'profiles' : activeTab; // 'profiles', 'tournaments', 'games'
+
+        const channel = supabase
+            .channel('admin_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: tableName },
+                () => {
+                    console.log(`Change detected in ${tableName}, refreshing...`);
+                    fetchData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [isOpen, activeTab]);
 
     // --- ACTIONS ---
 
@@ -87,9 +112,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
         try {
             const { error } = await supabase.from(table).delete().eq('id', id);
             if (error) throw error;
+            // Optimistic update
             setData(prev => prev.filter(item => item.id !== id));
         } catch (err: any) {
             alert("Error al eliminar: " + err.message);
+            fetchData(); // Revert/Refresh on error
         }
     };
 
@@ -164,9 +191,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
             <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col border border-slate-700">
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800">
-                    <h2 className="text-xl font-bold text-red-500 flex items-center gap-2">
-                        🛡️ Panel de Administrador {isOwner ? '(Owner)' : ''}
-                    </h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-bold text-red-500 flex items-center gap-2">
+                            🛡️ Panel Admin {isOwner ? '(Owner)' : ''}
+                        </h2>
+                        <button 
+                            onClick={() => fetchData()} 
+                            disabled={loading}
+                            className={`p-2 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title="Actualizar datos"
+                        >
+                            <RefreshIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
                         <XIcon />
                     </button>
@@ -216,8 +253,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
                     )}
 
                     {/* Table Container */}
-                    <div className="flex-grow overflow-auto custom-scrollbar border border-slate-700 rounded-lg">
-                        {loading ? (
+                    <div className="flex-grow overflow-auto custom-scrollbar border border-slate-700 rounded-lg relative">
+                        {loading && data.length === 0 ? (
                             <div className="flex justify-center items-center h-full"><Loader /></div>
                         ) : (
                             <table className="w-full text-left border-collapse">
@@ -370,6 +407,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
                                     )}
                                 </tbody>
                             </table>
+                        )}
+                        {/* Dimmer Overlay for Refresh Loading */}
+                        {loading && data.length > 0 && (
+                            <div className="absolute inset-0 bg-slate-900/50 flex justify-center items-center z-20">
+                                <Loader />
+                            </div>
                         )}
                     </div>
                 </div>

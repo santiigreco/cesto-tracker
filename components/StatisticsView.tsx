@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, Shot, GameMode, TallyStats, GamePeriod, TallyStatsPeriod } from '../types';
 import TrophyIcon from './TrophyIcon';
@@ -5,6 +6,7 @@ import DownloadIcon from './DownloadIcon';
 import ShareIcon from './ShareIcon';
 import TemporalChart from './TemporalChart';
 import { useGameContext } from '../context/GameContext';
+import { generateFederationExcel } from '../utils/exportToExcel';
 
 interface StatisticsViewProps {
   onShareClick?: () => void;
@@ -305,6 +307,16 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
   const playerNames = externalPlayerNames || gameState.playerNames;
   const tallyStats = externalTallyStats || gameState.tallyStats;
 
+  // Handle Export to Excel
+  const handleExportExcel = () => {
+      // Use current gameState or the one passed via props if sharing
+      // Note: generateFederationExcel expects GameState, we might need to construct a partial one if externalTallyStats is used
+      // But usually this button is only visible in the main view, not the shared snapshot view.
+      if (!isSharing) {
+          generateFederationExcel(gameState);
+      }
+  };
+
   // Compute Shot Chart Stats locally if not provided externally
   const stats: PlayerStats[] = useMemo(() => {
       if (externalStats) return externalStats;
@@ -332,18 +344,28 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
     return (
       <>
        {!isSharing && (
-        <div className="flex justify-between items-center -mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center -mb-4 gap-4">
           <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
-          {onShareClick && typeof navigator.share === 'function' && Object.keys(tallyStats).length > 0 && (
+          <div className="flex gap-2">
+            {onShareClick && typeof navigator.share === 'function' && Object.keys(tallyStats).length > 0 && (
+                <button
+                onClick={onShareClick}
+                className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
+                aria-label="Compartir estadísticas"
+                >
+                <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+                <span className="hidden sm:inline">Compartir</span>
+                </button>
+            )}
             <button
-              onClick={onShareClick}
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
-              aria-label="Compartir estadísticas"
+                onClick={handleExportExcel}
+                className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500"
+                aria-label="Exportar Excel Federación"
             >
-              <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-              <span className="hidden sm:inline">Compartir Reporte</span>
+                <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+                <span className="hidden sm:inline">Excel Oficial</span>
             </button>
-          )}
+          </div>
         </div>
       )}
       <div className="pt-4">
@@ -436,18 +458,28 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
   return (
     <>
       {!isSharing && (
-        <div className="flex justify-between items-center -mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center -mb-4 gap-4">
           <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
-          {onShareClick && typeof navigator.share === 'function' && hasData && (
-            <button
-              onClick={onShareClick}
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
-              aria-label="Compartir estadísticas"
+          <div className="flex gap-2">
+            {onShareClick && typeof navigator.share === 'function' && hasData && (
+                <button
+                onClick={onShareClick}
+                className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
+                aria-label="Compartir estadísticas"
+                >
+                <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+                <span className="hidden sm:inline">Compartir</span>
+                </button>
+            )}
+             <button
+                onClick={handleExportExcel}
+                className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500"
+                aria-label="Exportar Excel Federación"
             >
-              <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-              <span className="hidden sm:inline">Compartir Reporte</span>
+                <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+                <span className="hidden sm:inline">Excel Oficial</span>
             </button>
-          )}
+          </div>
         </div>
       )}
       
