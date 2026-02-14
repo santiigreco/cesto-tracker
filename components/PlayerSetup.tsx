@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import JerseyIcon from './JerseyIcon';
 import { Settings, GameMode, SavedTeam } from '../types';
 import ToggleSwitch from './ToggleSwitch';
@@ -17,7 +17,7 @@ const defaultSettings: Settings = {
     gameName: '',
     myTeam: '',
     tournamentId: '',
-    tournamentName: '',
+    tournamentName: 'Primera A - Apertura 2026', // Pre-selected tournament
     isManoCalienteEnabled: true,
     manoCalienteThreshold: 5,
     isManoFriaEnabled: true,
@@ -46,11 +46,22 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
+  const [isRivalSelectorOpen, setIsRivalSelectorOpen] = useState(false); // State for Rival selector
   const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
   const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
   
   const [settings, setSettings] = useState<Settings>(initialSettings);
   
+  // Force default tournament if not set (fixing the issue where previous state might have empty tournament)
+  useEffect(() => {
+      if (!settings.tournamentName) {
+          setSettings(prev => ({
+              ...prev,
+              tournamentName: defaultSettings.tournamentName
+          }));
+      }
+  }, []); // Run once on mount
+
   // Default to 'stats-tally' (Anotador) if no mode provided
   const [selectedMode, setSelectedMode] = useState<GameMode>(initialGameMode || 'stats-tally');
 
@@ -176,16 +187,18 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
                 </button>
             </div>
 
-            {/* Game Name Input */}
+            {/* Rival / Game Name Input - Now a Button Selector */}
             <div className="text-left">
-                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Rival / Detalle</label>
-                <input
-                    type="text"
-                    value={settings.gameName || ''}
-                    onChange={(e) => setSettings(s => ({ ...s, gameName: e.target.value }))}
-                    className="bg-transparent border-b border-slate-600 text-white text-lg placeholder-slate-500 focus:border-cyan-500 focus:outline-none w-full py-2 transition-colors"
-                    placeholder="Nombre del partido (Ej: Vs. Vélez)"
-                />
+                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Rival</label>
+                <button
+                    onClick={() => setIsRivalSelectorOpen(true)}
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group"
+                >
+                    <span className={`text-lg ${settings.gameName ? 'text-white font-bold' : 'text-slate-500'}`}>
+                        {settings.gameName || 'Seleccionar Rival...'}
+                    </span>
+                    <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+                </button>
             </div>
         </div>
 
@@ -274,6 +287,15 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
               onClose={() => setIsTeamSelectorOpen(false)} 
               onSelectTeam={(team) => setSettings(prev => ({ ...prev, myTeam: team }))}
               currentTeam={settings.myTeam || ''}
+          />
+      )}
+
+      {isRivalSelectorOpen && (
+          <TeamSelectorModal 
+              isOpen={isRivalSelectorOpen} 
+              onClose={() => setIsRivalSelectorOpen(false)} 
+              onSelectTeam={(team) => setSettings(prev => ({ ...prev, gameName: team }))}
+              currentTeam={settings.gameName || ''}
           />
       )}
 

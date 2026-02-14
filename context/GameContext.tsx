@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { GameState, Shot, TallyStats, TallyStatsPeriod } from '../types';
 import { GAME_STATE_STORAGE_KEY } from '../constants';
@@ -33,6 +34,8 @@ export const initialGameState: GameState = {
     settings: {
         gameName: '',
         myTeam: '',
+        tournamentId: '',
+        tournamentName: 'Primera A - Apertura 2026', // Default tournament
         isManoCalienteEnabled: true,
         manoCalienteThreshold: 5,
         isManoFriaEnabled: true,

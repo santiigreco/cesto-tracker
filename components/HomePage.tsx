@@ -21,7 +21,7 @@ import { useProfile } from '../hooks/useProfile';
 import { ADMIN_EMAILS } from '../constants';
 import FixtureView from './FixtureView';
 import ConfirmationModal from './ConfirmationModal';
-import InstallApp from './InstallApp'; // Import InstallApp
+import InstallApp from './InstallApp';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -48,7 +48,7 @@ const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-// --- Mock Data for Visuals ---
+// --- Mock Data ---
 const sampleShots: Shot[] = [
   { id: 's1', playerNumber: '10', position: { x: 10, y: 3 }, isGol: true, golValue: 2, period: 'First Half' },
   { id: 's2', playerNumber: '10', position: { x: 12, y: 4 }, isGol: true, golValue: 2, period: 'First Half' },
@@ -56,8 +56,6 @@ const sampleShots: Shot[] = [
   { id: 's4', playerNumber: '10', position: { x: 5, y: 2 }, isGol: false, golValue: 0, period: 'First Half' },
   { id: 's5', playerNumber: '10', position: { x: 15, y: 2 }, isGol: false, golValue: 0, period: 'First Half' },
 ];
-
-// --- Mockups Components ---
 
 const TallyMockup = () => (
     <PhoneMockup>
@@ -67,7 +65,6 @@ const TallyMockup = () => (
                 <p className="text-lg font-bold text-cyan-400">#10</p>
             </div>
             <div className="flex gap-2 h-full">
-                {/* Left Actions */}
                 <div className="grid grid-cols-2 gap-2 w-2/3">
                     {['Recupero', 'Pérdida', 'Asistencia', 'Rebote', 'Falta', 'Tapa'].map(label => (
                         <div key={label} className="bg-slate-700 rounded flex items-center justify-center text-[10px] font-bold text-slate-300">
@@ -75,7 +72,6 @@ const TallyMockup = () => (
                         </div>
                     ))}
                 </div>
-                {/* Right Scoring */}
                 <div className="flex flex-col gap-2 w-1/3">
                     <div className="bg-green-600 rounded flex-1 flex flex-col items-center justify-center shadow-lg">
                         <span className="text-xl font-bold text-white">GOL</span>
@@ -98,47 +94,6 @@ const TallyMockup = () => (
     </PhoneMockup>
 );
 
-const StatsMockup = () => (
-     <PhoneMockup>
-        <div className="p-3 w-full h-full flex flex-col bg-slate-900 text-white overflow-hidden">
-            <div className="text-center mb-3">
-                <h2 className="text-sm font-bold text-cyan-400">Resumen</h2>
-                <p className="text-[10px] text-slate-400">Final del Partido</p>
-            </div>
-            
-            <div className="flex justify-around mb-4 px-2">
-                <div className="text-center">
-                    <p className="text-2xl font-bold text-green-400">86</p>
-                    <p className="text-[10px] text-slate-400">Puntos</p>
-                </div>
-                 <div className="text-center">
-                    <p className="text-2xl font-bold text-white">12</p>
-                    <p className="text-[10px] text-slate-400">Recuperos</p>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                {[
-                    { id: '10', pts: 24, perc: 80, color: 'cyan' },
-                    { id: '7', pts: 18, perc: 65, color: 'emerald' },
-                    { id: '5', pts: 12, perc: 50, color: 'amber' },
-                ].map((p) => (
-                    <div key={p.id} className="bg-slate-800 p-2 rounded border border-slate-700">
-                        <div className="flex justify-between items-center mb-1">
-                            <span className={`font-bold text-${p.color}-300 text-xs`}>Jugadora #{p.id}</span>
-                            <span className="text-xs font-bold">{p.pts} Pts</span>
-                        </div>
-                         <div className="w-full bg-slate-700 rounded-full h-1">
-                            <div className={`bg-${p.color}-500 h-1 rounded-full`} style={{ width: `${p.perc}%` }}></div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </PhoneMockup>
-);
-
-
 interface HomePageProps {
     onStart: () => void;
     onLoadGameClick: () => void;
@@ -150,8 +105,6 @@ interface HomePageProps {
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin }) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    
-    // Fixture Logic
     const [isFixtureOpen, setIsFixtureOpen] = useState(false);
     const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
     const { profile } = useProfile();
@@ -170,267 +123,199 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
         }
     };
 
+    // --- ANIMATIONS & STYLES ---
+    const gridItemClass = "flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-750 transition-all group active:scale-95 cursor-pointer shadow-lg";
+    const iconContainerClass = "p-3 bg-slate-900 rounded-full group-hover:bg-slate-800 transition-colors";
+    const labelClass = "text-sm font-bold text-slate-300 group-hover:text-white";
+
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col items-center font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white relative">
+        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white">
              
-             {/* Simple CSS for floating animation */}
-             <style>{`
-                @keyframes float {
-                    0% { transform: translateY(0px) rotate(-6deg); }
-                    50% { transform: translateY(-15px) rotate(-6deg); }
-                    100% { transform: translateY(0px) rotate(-6deg); }
-                }
-                @keyframes float-card {
-                    0% { transform: translateY(0px); }
-                    50% { transform: translateY(-8px); }
-                    100% { transform: translateY(0px); }
-                }
-                .animate-float {
-                    animation: float 6s ease-in-out infinite;
-                }
-                .animate-float-card {
-                    animation: float-card 5s ease-in-out infinite;
-                }
-             `}</style>
+             {/* Navbar */}
+             <nav className="sticky top-0 z-50 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <span className="text-2xl">🏐</span>
+                    <h1 className="font-extrabold text-lg tracking-tight text-white">Cesto Tracker</h1>
+                </div>
+                <div>
+                    {user ? (
+                        <div 
+                            onClick={() => setIsProfileOpen(true)}
+                            className="flex items-center gap-3 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors group"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase overflow-hidden relative ring-2 ring-transparent group-hover:ring-cyan-400 transition-all">
+                                {profile?.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    user.email?.charAt(0) || 'U'
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={onLogin}
+                            className="flex items-center gap-2 bg-white text-slate-900 hover:bg-gray-100 font-bold px-4 py-2 rounded-full text-sm transition-transform hover:scale-105"
+                        >
+                            <GoogleIcon className="h-4 w-4" />
+                            <span>Ingresar</span>
+                        </button>
+                    )}
+                </div>
+             </nav>
 
-             <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-700/[0.05] pointer-events-none"></div>
-             <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-slate-900 via-slate-900/90 to-transparent pointer-events-none"></div>
-
-             {/* Top Bar for Auth */}
-             <div className="absolute top-0 right-0 p-4 z-50">
-                 {user ? (
-                     <div 
-                        onClick={() => setIsProfileOpen(true)}
-                        className="flex items-center gap-3 bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-700 shadow-lg cursor-pointer hover:bg-slate-800 transition-colors group"
-                     >
-                         <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase ring-2 ring-transparent group-hover:ring-cyan-400 transition-all overflow-hidden relative">
-                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                             ) : (
-                                user.email?.charAt(0) || 'U'
-                             )}
-                         </div>
-                         <span className="text-sm text-slate-300 hidden sm:inline group-hover:text-white transition-colors">{user.email?.split('@')[0]}</span>
-                     </div>
-                 ) : (
-                     <button 
-                        onClick={onLogin}
-                        className="flex items-center gap-2 bg-white text-slate-900 hover:bg-gray-100 font-medium px-4 py-2 rounded-full shadow-lg transition-transform hover:scale-105"
-                     >
-                         <GoogleIcon className="h-5 w-5" />
-                         <span className="text-sm">Ingresar con Google</span>
-                     </button>
-                 )}
-             </div>
-            
-            {/* --- HERO SECTION REDESIGNED --- */}
-            {/* Increased top padding (pt-24) on mobile to clear the auth button */}
-            <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 lg:pt-32 lg:pb-40">
-                <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+            <main className="flex-grow flex flex-col relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
+                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
                     
-                    {/* LEFT COLUMN: Text & CTA */}
-                    <div className="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start">
+                    {/* LEFT COLUMN: User Dashboard / CTA */}
+                    <div className="flex-1 w-full max-w-lg mx-auto lg:mx-0 flex flex-col gap-8">
                         
-                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-4 text-white animate-fade-in whitespace-nowrap">
-                            Cesto Tracker 🏐
-                        </h1>
-                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 text-slate-300">
-                             Domina la cancha con <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">datos reales.</span>
-                        </h2>
-                        
-                        <p className="text-xl text-slate-400 mb-8 max-w-2xl leading-relaxed">
-                            Deja el papel y lápiz. Registra goles, recuperos y genera reportes profesionales al instante para compartir con tu equipo.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                            <button
-                                onClick={onStart}
-                                className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-[0_0_30px_rgba(6,182,212,0.4)] text-lg flex items-center justify-center gap-2"
-                            >
-                                <FeatureTapIcon className="h-6 w-6" />
-                                Empezar ahora
-                            </button>
-                             <button
-                                onClick={user ? onLoadGameClick : onLogin}
-                                className={`w-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600/50 hover:border-cyan-500/30 text-slate-200 font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 backdrop-blur-sm group`}
-                                title={!user ? "Inicia sesión para ver tu historial" : ""}
-                            >
-                                <CloudDownloadIcon className="h-6 w-6" />
-                                <span>Ver historial</span>
-                                {!user && <LockIcon className="h-5 w-5 opacity-50 group-hover:opacity-100 transition-opacity ml-1" />}
-                            </button>
-                        </div>
-                        
-                        <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-6 items-center">
-                            <button
-                                onClick={user ? onManageTeamsClick : onLogin}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                    user 
-                                    ? "text-cyan-400 border-cyan-500/30 hover:bg-cyan-900/20 hover:border-cyan-400 hover:text-cyan-300 font-bold" 
-                                    : "text-slate-500 border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:text-slate-400 group cursor-pointer font-semibold"
-                                }`}
-                                title={user ? "Gestionar equipos" : "Inicia sesión para gestionar equipos"}
-                            >
-                                <UsersIcon className="h-5 w-5" />
-                                <span>Gestionar Equipos</span>
-                                {!user && <LockIcon className="h-4 w-4 opacity-70 group-hover:opacity-100 ml-1" />}
-                            </button>
-
-                            {/* FIXTURE BUTTON */}
-                            <button
-                                onClick={handleFixtureClick}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-400 hover:text-yellow-300 font-bold transition-all duration-300"
-                            >
-                                <CalendarIcon className="h-5 w-5" />
-                                <span>Fixture</span>
-                            </button>
-
-                            {/* INSTALL APP BUTTON (PWA) */}
-                            <InstallApp />
+                        {/* Welcome Header */}
+                        <div className="text-center lg:text-left space-y-2">
+                            {user && profile && (
+                                <h2 className="text-2xl font-medium text-slate-400">Hola, <span className="text-white font-bold">{profile.full_name || user.email?.split('@')[0]}</span> 👋</h2>
+                            )}
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-none">
+                                Domina la cancha <br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">con datos reales.</span>
+                            </h1>
+                            <p className="text-lg text-slate-400 max-w-md mx-auto lg:mx-0 pt-2">
+                                La app definitiva para el <strong>Cestoball</strong>. Planilla digital, estadísticas en vivo y gestión de equipos.
+                            </p>
                         </div>
 
-                        <p className="mt-6 text-sm text-slate-500 flex items-center gap-2 font-medium">
-                            <CheckIcon className="h-5 w-5 text-emerald-500"/> No requiere registro. Funciona sin internet.
-                        </p>
+                        {/* --- BENTO GRID ACTION CENTER --- */}
+                        <div className="w-full bg-slate-800/30 p-4 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                {/* Primary Action: New Game (Full Width) */}
+                                <button
+                                    onClick={onStart}
+                                    className="col-span-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold py-5 px-6 rounded-2xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] flex items-center justify-center gap-3 group"
+                                >
+                                    <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
+                                        <FeatureTapIcon className="h-6 w-6" />
+                                    </div>
+                                    <span className="text-xl tracking-tight">Empezar Partido</span>
+                                </button>
+
+                                {/* Secondary Actions Grid */}
+                                <button
+                                    onClick={user ? onLoadGameClick : onLogin}
+                                    className={gridItemClass}
+                                >
+                                    <div className={iconContainerClass}>
+                                        <CloudDownloadIcon className="h-6 w-6 text-slate-400 group-hover:text-emerald-400" />
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className={labelClass}>Historial</span>
+                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3"/> Login</span>}
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={user ? onManageTeamsClick : onLogin}
+                                    className={gridItemClass}
+                                >
+                                    <div className={iconContainerClass}>
+                                        <UsersIcon className="h-6 w-6 text-slate-400 group-hover:text-blue-400" />
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className={labelClass}>Mis Equipos</span>
+                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3"/> Login</span>}
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={handleFixtureClick}
+                                    className={gridItemClass}
+                                >
+                                    <div className={iconContainerClass}>
+                                        <CalendarIcon className="h-6 w-6 text-slate-400 group-hover:text-yellow-400" />
+                                    </div>
+                                    <span className={labelClass}>Fixture</span>
+                                </button>
+
+                                <InstallApp variant="card" />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Visual & Mockup */}
-                    <div className="flex-1 relative w-full max-w-[320px] lg:max-w-md mx-auto perspective-1000 mt-10 lg:mt-0">
-                         {/* Glow Effect */}
-                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-cyan-500/20 to-emerald-500/20 blur-[70px] rounded-full animate-pulse"></div>
+                    {/* RIGHT COLUMN: Visuals (Desktop only or stacked below) */}
+                    <div className="flex-1 w-full flex flex-col items-center lg:items-end mt-8 lg:mt-0 relative">
+                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
                          
-                         {/* Floating Phone */}
-                         <div className="relative animate-float transition-transform duration-500 ease-out hover:scale-105 cursor-pointer">
+                         {/* This section disappears on small screens to prioritize the dashboard grid */}
+                         <div className="hidden lg:block relative transition-transform duration-500 ease-out hover:scale-105 cursor-pointer">
                             <TallyMockup />
-                            
-                            {/* Floating Stats Card 1 */}
-                            <div className="absolute -right-8 top-16 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float-card" style={{ animationDelay: '1s' }}>
+                            <div className="absolute -right-12 top-20 bg-slate-800/90 backdrop-blur-md p-4 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
                                 <div className="bg-green-500/20 p-2 rounded-xl">
                                     <TrendingUpIcon className="h-6 w-6 text-green-400"/>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Efectividad</p>
-                                    <p className="text-lg font-bold text-white leading-none">+85%</p>
-                                </div>
-                            </div>
-
-                             {/* Floating Stats Card 2 */}
-                             <div className="absolute -left-10 bottom-24 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float-card" style={{ animationDelay: '0s' }}>
-                                <div className="bg-amber-500/20 p-2 rounded-xl">
-                                    <FeatureTrophyIcon className="h-6 w-6 text-amber-400"/>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">MVP</p>
-                                    <p className="text-lg font-bold text-white leading-none">#10</p>
+                                    <p className="text-xl font-bold text-white leading-none">+85%</p>
                                 </div>
                             </div>
                          </div>
                     </div>
                 </div>
-            </div>
 
-            {/* ... Features & FAQ sections ... */}
-            
-            {/* --- FEATURES DEEP DIVE --- */}
-            <div className="relative z-10 max-w-5xl mx-auto px-4 py-16 space-y-24">
-                {/* Feature 1: Tally */}
-                <div className="flex flex-col items-center gap-12 text-center max-w-3xl mx-auto">
-                     <div className="space-y-6">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
-                            <FeatureTapIcon className="h-4 w-4" /> Anotador Rápido
-                        </div>
-                        <h2 className="text-3xl md:text-4xl font-bold text-white">Botones Grandes y Fáciles.</h2>
-                        <p className="text-lg text-slate-400 leading-relaxed">
-                            Diseñamos una pantalla especial para que no tengas que mirar el celular. 
-                            Los botones de <strong>GOL</strong> y <strong>FALLO</strong> están ubicados a la derecha para usar con una sola mano.
-                        </p>
-                        <ul className="space-y-3 text-slate-300 inline-block text-left">
-                            <li className="flex items-center gap-3"><CheckIcon className="h-5 w-5 text-emerald-500"/> Registra Recuperos y Pérdidas</li>
-                            <li className="flex items-center gap-3"><CheckIcon className="h-5 w-5 text-emerald-500"/> Control de Faltas por jugadora</li>
-                            <li className="flex items-center gap-3"><CheckIcon className="h-5 w-5 text-emerald-500"/> Historial para deshacer errores</li>
-                        </ul>
+                {/* FEATURE HIGHLIGHTS (Mini) */}
+                <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-80">
+                    <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 flex flex-col items-center text-center">
+                        <FeatureTapIcon className="h-10 w-10 text-emerald-400 mb-3" />
+                        <h3 className="font-bold text-white mb-2">Fácil de usar</h3>
+                        <p className="text-sm text-slate-400">Interfaz diseñada con botones grandes para no perder detalle del juego.</p>
+                    </div>
+                    <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 flex flex-col items-center text-center">
+                        <FeatureTrophyIcon className="h-10 w-10 text-amber-400 mb-3" />
+                        <h3 className="font-bold text-white mb-2">Reportes Pro</h3>
+                        <p className="text-sm text-slate-400">Genera imágenes con las estadísticas listas para compartir en WhatsApp.</p>
+                    </div>
+                    <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 flex flex-col items-center text-center">
+                        <FeatureMapIcon className="h-10 w-10 text-purple-400 mb-3" />
+                        <h3 className="font-bold text-white mb-2">Análisis Táctico</h3>
+                        <p className="text-sm text-slate-400">Mapas de calor y gráficos de zonas para entender dónde tira tu equipo.</p>
                     </div>
                 </div>
 
-                {/* Feature 2: Stats */}
-                <div className="flex flex-col md:flex-row-reverse items-center gap-12">
-                     <div className="flex-1 space-y-6 text-center md:text-left">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-900/30 border border-amber-500/30 text-amber-400 text-sm font-medium">
-                            <FeatureTrophyIcon className="h-4 w-4" /> Reportes Automáticos
-                        </div>
-                        <h2 className="text-3xl md:text-4xl font-bold text-white">La matemática la hacemos nosotros.</h2>
-                        <p className="text-lg text-slate-400 leading-relaxed">
-                            ¿Cuántos puntos hizo la 10? ¿Quién tiene más recuperos? 
-                            Al terminar el partido, tenés todas las estadísticas listas.
-                        </p>
-                         <p className="text-lg text-slate-400 leading-relaxed">
-                            Generamos una imagen resumen perfecta para mandar al grupo de <strong>WhatsApp</strong> del equipo.
-                        </p>
-                    </div>
-                    <div className="flex-1 flex justify-center relative">
-                        <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full"></div>
-                        <StatsMockup />
-                    </div>
-                </div>
-
-                {/* Feature 3: Maps (Bonus) */}
-                 <div className="bg-slate-800/40 rounded-3xl p-8 md:p-12 border border-slate-700 text-center relative overflow-hidden group hover:border-cyan-500/30 transition-colors">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/50 pointer-events-none"></div>
-                    <FeatureMapIcon className="h-12 w-12 text-purple-400 mx-auto mb-4 relative z-10" />
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 relative z-10">¿Querés ir más allá?</h2>
-                    <p className="text-slate-400 max-w-2xl mx-auto mb-8 relative z-10">
-                        Si te gusta la táctica, usá el modo "Registro de Tiros" para marcar exactamente dónde pica la pelota en la cancha y ver Mapas de Calor.
-                    </p>
-                    <div className="inline-block relative rounded-xl overflow-hidden border-2 border-slate-600 shadow-2xl z-10 transform group-hover:scale-105 transition-transform duration-500">
-                         <div className="w-64 h-48 bg-slate-800 relative">
-                            <Court shots={[]}>
-                                <HeatmapOverlay shots={sampleShots} />
-                            </Court>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* --- FAQ SECTION --- */}
-             <section className="w-full bg-slate-900 py-16 px-4 border-t border-slate-800">
-                <div className="max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold text-slate-100 mb-8 text-center">Preguntas Frecuentes</h2>
-                    <div className="space-y-4">
+                {/* FAQ SECTION */}
+                <section className="mt-24 max-w-3xl mx-auto w-full">
+                    <h2 className="text-2xl font-bold text-white mb-8 text-center">Preguntas Frecuentes</h2>
+                    <div className="space-y-3">
                         {faqData.slice(0, 4).map((faq, index) => (
-                            <div key={index} className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+                            <div key={index} className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
                                 <button
                                     onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                                    className="w-full flex justify-between items-center text-left p-5 font-semibold text-lg hover:bg-slate-700 transition-colors text-slate-200"
-                                    aria-expanded={openFaq === index}
+                                    className="w-full flex justify-between items-center text-left p-4 font-medium text-slate-200 hover:bg-slate-800 transition-colors"
                                 >
                                     <span>{faq.question}</span>
-                                    <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
+                                    <ChevronDownIcon className={`h-5 w-5 text-slate-500 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
                                 </button>
-                                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openFaq === index ? 'max-h-48' : 'max-h-0'}`}>
-                                    <div className="p-5 pt-0 text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: faq.answer }}>
+                                {openFaq === index && (
+                                    <div className="p-4 pt-0 text-sm text-slate-400 border-t border-slate-700/50 mt-2">
+                                        <div dangerouslySetInnerHTML={{ __html: faq.answer }}></div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         ))}
                     </div>
-                     <div className="mt-12 text-center">
-                        <p className="text-slate-400 mb-4">¿Tenés alguna duda o sugerencia?</p>
+                    <div className="mt-8 text-center">
                         <a
-                           href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20consulta%20sobre%20Cesto%20Tracker..."
+                           href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20consulta..."
                            target="_blank"
                            rel="noopener noreferrer"
-                           className="inline-flex items-center justify-center gap-2 text-green-400 hover:text-green-300 font-semibold transition-colors"
+                           className="inline-flex items-center gap-2 text-green-400 hover:text-green-300 font-semibold text-sm"
                         >
-                            <WhatsappIcon className="h-5 w-5" />
-                            Escribime por WhatsApp
+                            <WhatsappIcon className="h-4 w-4" />
+                            Tienes dudas? Escríbeme
                         </a>
                      </div>
-                </div>
-            </section>
+                </section>
+            </main>
 
-             <footer className="w-full py-8 text-center text-slate-600 text-sm border-t border-slate-800 bg-slate-950">
-                <div className="flex justify-center gap-6 mb-4">
-                     <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors" aria-label="Instagram"><InstagramIcon /></a>
+             <footer className="w-full py-8 text-center text-slate-600 text-xs border-t border-slate-800 bg-slate-950">
+                <div className="flex justify-center gap-4 mb-3">
+                     <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors" aria-label="Instagram"><InstagramIcon className="h-5 w-5"/></a>
                 </div>
                 <p>Santiago Greco - Gresolutions © 2026</p>
             </footer>
@@ -455,8 +340,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
             {isComingSoonOpen && (
                 <ConfirmationModal 
                     title="Fixture 📅" 
-                    message="¡Próximamente! Estamos trabajando para traerte el calendario completo de partidos, resultados en vivo y tabla de posiciones."
-                    confirmText="¡Genial!"
+                    message="Próximamente: Calendario completo, resultados en vivo y tabla de posiciones."
+                    confirmText="Entendido"
                     cancelText="Cerrar"
                     onConfirm={() => setIsComingSoonOpen(false)}
                     onClose={() => setIsComingSoonOpen(false)}
