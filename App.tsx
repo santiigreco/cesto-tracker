@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam } from './types';
+import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, RosterPlayer } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -126,13 +126,32 @@ function App() {
   const [analysisResultFilter, setAnalysisResultFilter] = useState<HeatmapFilter>('all');
   const [analysisPeriodFilter, setAnalysisPeriodFilter] = useState<MapPeriodFilter>('all');
 
+  // Preloaded data from Home selection
+  const [initialSetupData, setInitialSetupData] = useState<{
+      teamName?: string;
+      selectedPlayers?: string[];
+      playerNames?: Record<string, string>;
+  } | null>(null);
+
   // --- HANDLERS (UI Specific) ---
-  const handleStartApp = useCallback(() => {
+  const handleStartApp = useCallback((teamName?: string, roster?: RosterPlayer[]) => {
+    if (teamName) {
+        const players = roster ? roster.map(p => p.number) : [];
+        const names = roster ? roster.reduce((acc, p) => ({ ...acc, [p.number]: p.name }), {} as Record<string, string>) : {};
+        setInitialSetupData({
+            teamName,
+            selectedPlayers: players.length > 0 ? players : undefined,
+            playerNames: names
+        });
+    } else {
+        setInitialSetupData(null);
+    }
     setGameState(prev => ({ ...prev, hasSeenHomepage: true }));
   }, [setGameState]);
 
   const handleBackToHome = useCallback(() => {
       setGameState(prev => ({ ...initialGameState, hasSeenHomepage: false }));
+      setInitialSetupData(null);
   }, [setGameState]);
 
   const handleActionSelect = (action: StatAction) => {
@@ -373,9 +392,10 @@ function App() {
     return <PlayerSetup 
               onSetupComplete={handleSetupComplete} 
               onBack={handleBackToHome}
-              initialSelectedPlayers={availablePlayers}
-              initialSettings={settings}
+              initialSelectedPlayers={initialSetupData?.selectedPlayers || availablePlayers}
+              initialSettings={{ ...settings, myTeam: initialSetupData?.teamName || settings.myTeam }}
               initialGameMode={gameMode}
+              initialPlayerNames={initialSetupData?.playerNames}
             />;
   }
 

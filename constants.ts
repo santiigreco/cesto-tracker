@@ -4,6 +4,8 @@ import { TallyStatsPeriod } from './types';
 export const PERIOD_NAMES = {
   'First Half': 'Primer Tiempo',
   'Second Half': 'Segundo Tiempo',
+  'First Overtime': '1er Suplementario',
+  'Second Overtime': '2do Suplementario',
 };
 
 export const STAT_LABELS: Record<keyof TallyStatsPeriod, string> = {

@@ -43,7 +43,8 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({ isOpen, onClose, 
 
     const handleSelect = (name: string, roster?: RosterPlayer[]) => {
         onSelectTeam(name, roster);
-        onClose();
+        // Do NOT call onClose() here. The parent component handles the flow (closing/transitioning).
+        // Calling onClose() here would trigger the "dismiss" logic in parent (e.g. going to empty setup), causing a race condition.
     };
 
     const handleCustomSubmit = (e: React.FormEvent) => {
@@ -135,7 +136,7 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({ isOpen, onClose, 
                                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Nombre personalizado</label>
                                 <form onSubmit={handleCustomSubmit} className="flex gap-2">
                                     <input 
-                                        type="text"
+                                        type="text" 
                                         value={customTeam}
                                         onChange={(e) => setCustomTeam(e.target.value)}
                                         placeholder="Ej: Mi Equipo Amigos"

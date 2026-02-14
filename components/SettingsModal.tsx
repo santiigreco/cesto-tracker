@@ -245,7 +245,10 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                 <TeamSelectorModal 
                     isOpen={isTeamSelectorOpen} 
                     onClose={() => setIsTeamSelectorOpen(false)} 
-                    onSelectTeam={(team) => setSettings({ ...settings, myTeam: team })}
+                    onSelectTeam={(team) => {
+                        setSettings({ ...settings, myTeam: team });
+                        setIsTeamSelectorOpen(false);
+                    }}
                     currentTeam={settings.myTeam || ''}
                 />
             )}

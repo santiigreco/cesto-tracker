@@ -279,20 +279,25 @@ export const generateFederationExcel = async (gameState: GameState) => {
 
         const stats1 = getStats('First Half');
         const stats2 = getStats('Second Half');
+        const statsOt1 = getStats('First Overtime');
+        const statsOt2 = getStats('Second Overtime');
+
         const statsTotal: CalculatedStats = {
-            lanzamientos: stats1.lanzamientos + stats2.lanzamientos,
-            goles: stats1.goles + stats2.goles,
-            triples: stats1.triples + stats2.triples,
-            reboteOfensivo: stats1.reboteOfensivo + stats2.reboteOfensivo,
-            reboteDefensivo: stats1.reboteDefensivo + stats2.reboteDefensivo,
-            recuperos: stats1.recuperos + stats2.recuperos,
-            perdidas: stats1.perdidas + stats2.perdidas,
-            faltas: stats1.faltas + stats2.faltas
+            lanzamientos: stats1.lanzamientos + stats2.lanzamientos + statsOt1.lanzamientos + statsOt2.lanzamientos,
+            goles: stats1.goles + stats2.goles + statsOt1.goles + statsOt2.goles,
+            triples: stats1.triples + stats2.triples + statsOt1.triples + statsOt2.triples,
+            reboteOfensivo: stats1.reboteOfensivo + stats2.reboteOfensivo + statsOt1.reboteOfensivo + statsOt2.reboteOfensivo,
+            reboteDefensivo: stats1.reboteDefensivo + stats2.reboteDefensivo + statsOt1.reboteDefensivo + statsOt2.reboteDefensivo,
+            recuperos: stats1.recuperos + stats2.recuperos + statsOt1.recuperos + statsOt2.recuperos,
+            perdidas: stats1.perdidas + stats2.perdidas + statsOt1.perdidas + statsOt2.perdidas,
+            faltas: stats1.faltas + stats2.faltas + statsOt1.faltas + statsOt2.faltas
         };
 
         // Accumulate for Grand Totals
         addStats(totals.firstHalf, stats1);
         addStats(totals.secondHalf, stats2);
+        addStats(totals.ot1, statsOt1);
+        addStats(totals.ot2, statsOt2);
         addStats(totals.gameTotal, statsTotal);
 
         // Fill Row Helper
@@ -316,11 +321,8 @@ export const generateFederationExcel = async (gameState: GameState) => {
         // Fill Grid
         fillBlock(3, stats1);  // 1er tiempo (C)
         fillBlock(11, stats2); // 2do tiempo (K)
-        // Fill OTs with 0s (Logic could be expanded later if app supports OT)
-        const emptyStats = getZeroStats();
-        fillBlock(19, emptyStats);
-        fillBlock(27, emptyStats);
-        // Fill Total
+        fillBlock(19, statsOt1); // 1er OT (S)
+        fillBlock(27, statsOt2); // 2do OT (AA)
         fillBlock(35, statsTotal); // Total (AI)
 
         currentRow++;
@@ -407,7 +409,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
 
     // Rows
     players.forEach(playerNum => {
-        ['First Half', 'Second Half'].forEach(periodKey => {
+        ['First Half', 'Second Half', 'First Overtime', 'Second Overtime'].forEach(periodKey => {
             const stats = (gameState.gameMode === 'stats-tally') 
                 ? (gameState.tallyStats[playerNum]?.[periodKey as any] || {})
                 : { goles:0, triples:0, fallos:0, reboteOfensivo:0, reboteDefensivo:0, recuperos:0, perdidas:0, faltasPersonales:0 };
@@ -426,7 +428,18 @@ export const generateFederationExcel = async (gameState: GameState) => {
                 });
             }
 
+            // Only add row if period has data or is main time
+            if (periodKey === 'First Overtime' || periodKey === 'Second Overtime') {
+                const totalActivity = (stats.goles||0) + (stats.triples||0) + (stats.fallos||0) + 
+                                      (stats.recuperos||0) + (stats.perdidas||0) + (stats.faltasPersonales||0);
+                if(totalActivity === 0) return;
+            }
+
             const lanzamientos = (stats.goles||0) + (stats.triples||0) + (stats.fallos||0);
+            
+            let periodLabel = periodKey === 'First Half' ? '1er Tiempo' : '2do Tiempo';
+            if (periodKey === 'First Overtime') periodLabel = '1er Suple';
+            if (periodKey === 'Second Overtime') periodLabel = '2do Suple';
 
             sheetRaw.addRow([
                 '-', // Categoría
@@ -434,7 +447,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
                 new Date().toLocaleDateString(),
                 gameState.settings.myTeam || '-',
                 gameState.settings.gameName || '-',
-                periodKey === 'First Half' ? '1er Tiempo' : '2do Tiempo',
+                periodLabel,
                 Number(playerNum),
                 gameState.playerNames[playerNum] || '',
                 lanzamientos,

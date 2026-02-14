@@ -27,14 +27,21 @@ export const useProfile = () => {
             if (data) {
                 setProfile(data as UserProfile);
             } else {
-                // Initialize empty profile structure if none exists
-                setProfile({
+                // Initialize empty profile structure if none exists AND save it to DB
+                // This ensures the user appears in the Admin Dashboard immediately
+                const newProfile: UserProfile = {
                     id: user.id,
-                    full_name: user.user_metadata?.full_name || '',
+                    full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
                     favorite_club: null,
-                    role: null,
-                    avatar_url: null
-                });
+                    role: 'jugador', // Default role
+                    avatar_url: user.user_metadata?.avatar_url || null,
+                    updated_at: new Date().toISOString()
+                };
+
+                setProfile(newProfile);
+
+                // Auto-create in DB
+                await supabase.from('profiles').upsert(newProfile);
             }
         } catch (err: any) {
             console.error('Error fetching profile:', err);

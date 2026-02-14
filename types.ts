@@ -1,5 +1,5 @@
 
-export type GamePeriod = 'First Half' | 'Second Half';
+export type GamePeriod = 'First Half' | 'Second Half' | 'First Overtime' | 'Second Overtime';
 export type AppTab = 'logger' | 'courtAnalysis' | 'statistics' | 'faq';
 export type HeatmapFilter = 'all' | 'goles' | 'misses';
 export type MapPeriodFilter = GamePeriod | 'all';
@@ -59,7 +59,7 @@ export interface TallyStatsPeriod {
   faltasPersonales: number;
 }
 
-// Holds stats for both periods
+// Holds stats for all periods
 export type TallyStats = {
     [key in GamePeriod]: TallyStatsPeriod;
 };

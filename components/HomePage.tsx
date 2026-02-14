@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Shot } from '../types';
+import { Shot, RosterPlayer } from '../types';
 import Court from './Court';
 import HeatmapOverlay from './HeatmapOverlay';
 import PhoneMockup from './PhoneMockup';
@@ -22,6 +22,7 @@ import { ADMIN_EMAILS } from '../constants';
 import FixtureView from './FixtureView';
 import ConfirmationModal from './ConfirmationModal';
 import InstallApp from './InstallApp';
+import TeamSelectorModal from './TeamSelectorModal';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -95,7 +96,7 @@ const TallyMockup = () => (
 );
 
 interface HomePageProps {
-    onStart: () => void;
+    onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
     onLoadGameClick: () => void;
     onManageTeamsClick: () => void;
     user?: User | null;
@@ -107,6 +108,10 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isFixtureOpen, setIsFixtureOpen] = useState(false);
     const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+    
+    // New state for direct team selection flow
+    const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
+
     const { profile } = useProfile();
 
     const handleLogout = async () => {
@@ -121,6 +126,20 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
         } else {
             setIsComingSoonOpen(true);
         }
+    };
+
+    const handleStartClick = () => {
+        setIsTeamSelectorOpen(true);
+    };
+
+    const handleTeamSelected = (name: string, roster?: RosterPlayer[]) => {
+        setIsTeamSelectorOpen(false);
+        onStart(name, roster);
+    };
+
+    const handleCloseTeamSelector = () => {
+        setIsTeamSelectorOpen(false);
+        onStart(); // Proceed to empty setup if they close the modal
     };
 
     // --- ANIMATIONS & STYLES ---
@@ -188,7 +207,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             <div className="grid grid-cols-2 gap-3 sm:gap-4">
                                 {/* Primary Action: New Game (Full Width) */}
                                 <button
-                                    onClick={onStart}
+                                    onClick={handleStartClick}
                                     className="col-span-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold py-5 px-6 rounded-2xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] flex items-center justify-center gap-3 group"
                                 >
                                     <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
@@ -346,6 +365,15 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     onConfirm={() => setIsComingSoonOpen(false)}
                     onClose={() => setIsComingSoonOpen(false)}
                     confirmButtonColor="bg-cyan-600 hover:bg-cyan-700"
+                />
+            )}
+
+            {isTeamSelectorOpen && (
+                <TeamSelectorModal 
+                    isOpen={isTeamSelectorOpen} 
+                    onClose={handleCloseTeamSelector} 
+                    onSelectTeam={handleTeamSelected}
+                    currentTeam=""
                 />
             )}
         </div>

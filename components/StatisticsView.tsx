@@ -44,7 +44,7 @@ const TallyStatisticsView: React.FC<{
   const [sortConfig, setSortConfig] = useState<{ key: TallySortableKey; direction: 'ascending' | 'descending' } | null>({ key: 'playerNumber', direction: 'ascending' });
 
   const getFilterButtonClass = (isActive: boolean) =>
-    `flex-1 font-bold py-2 px-3 rounded-md transition-colors text-sm sm:text-base ${
+    `whitespace-nowrap flex-shrink-0 font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base ${
       isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
     }`;
 
@@ -53,12 +53,11 @@ const TallyStatisticsView: React.FC<{
       let stats: TallyStatsPeriod = { ...initialTallyStatsPeriod };
       
       if (tallyPeriodFilter === 'all') {
-          // Explicitly sum periods to avoid object iteration issues
-          const fh = playerTally['First Half'] || initialTallyStatsPeriod;
-          const sh = playerTally['Second Half'] || initialTallyStatsPeriod;
-          
-          (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach(key => {
-            stats[key] = (fh[key] || 0) + (sh[key] || 0);
+          // Explicitly sum all available periods
+          Object.values(playerTally).forEach((periodStats: TallyStatsPeriod) => {
+              (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach(key => {
+                  stats[key] += periodStats[key] || 0;
+              });
           });
       } else {
         stats = { ...(playerTally[tallyPeriodFilter] || initialTallyStatsPeriod) };
@@ -113,9 +112,7 @@ const TallyStatisticsView: React.FC<{
   
   const teamTotals = useMemo(() => {
      return aggregatedStats.reduce((acc, playerStats) => {
-        if (playerStats.playerNumber !== 'Equipo') { // Exclude 'Equipo' from summation to prevent double counting
-            // Fix: Iterate only over initialTallyStatsPeriod keys to ensure we don't double count points 
-            // because Object.keys(acc) would include 'points' which is updated below.
+        if (playerStats.playerNumber !== 'Equipo') { // Exclude 'Equipo' from summation
             (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).forEach(key => {
                 acc[key] += playerStats[key];
             });
@@ -144,7 +141,12 @@ const TallyStatisticsView: React.FC<{
     );
   }
 
-  const periodTranslations: {[key in GamePeriod]: string} = { 'First Half': 'Primer Tiempo', 'Second Half': 'Segundo Tiempo' };
+  const periodTranslations: {[key in GamePeriod]: string} = { 
+      'First Half': 'Primer Tiempo', 
+      'Second Half': 'Segundo Tiempo',
+      'First Overtime': '1er Suple',
+      'Second Overtime': '2do Suple'
+  };
 
    const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
     { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },
@@ -165,10 +167,14 @@ const TallyStatisticsView: React.FC<{
   return (
     <div className="flex flex-col gap-8">
       {!isSharing && (
-        <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
-          <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>Ambos</button>
-          <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
-          <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+        <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg overflow-x-auto">
+            <div className="flex justify-start sm:justify-center gap-2 min-w-max">
+                <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>Ambos</button>
+                <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+                <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+                <button onClick={() => setTallyPeriodFilter('First Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'First Overtime')}>{periodTranslations['First Overtime']}</button>
+                <button onClick={() => setTallyPeriodFilter('Second Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Overtime')}>{periodTranslations['Second Overtime']}</button>
+            </div>
         </div>
       )}
       
@@ -309,9 +315,6 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
 
   // Handle Export to Excel
   const handleExportExcel = () => {
-      // Use current gameState or the one passed via props if sharing
-      // Note: generateFederationExcel expects GameState, we might need to construct a partial one if externalTallyStats is used
-      // But usually this button is only visible in the main view, not the shared snapshot view.
       if (!isSharing) {
           generateFederationExcel(gameState);
       }

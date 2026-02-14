@@ -26,7 +26,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect })
                         <button
                             key={action}
                             onClick={() => onActionSelect(action)}
-                            className="p-3 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600 flex items-center justify-center h-full"
+                            className="py-6 px-2 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600 flex items-center justify-center h-full shadow-sm active:bg-slate-500"
                         >
                             {label}
                         </button>

@@ -30,9 +30,17 @@ interface PlayerSetupProps {
   initialSelectedPlayers?: string[];
   initialSettings?: Settings;
   initialGameMode?: GameMode | null;
+  initialPlayerNames?: Record<string, string>;
 }
 
-const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, initialSelectedPlayers = [], initialSettings = defaultSettings, initialGameMode = null }) => {
+const PlayerSetup: React.FC<PlayerSetupProps> = ({ 
+    onSetupComplete, 
+    onBack, 
+    initialSelectedPlayers = [], 
+    initialSettings = defaultSettings, 
+    initialGameMode = null,
+    initialPlayerNames = {} 
+}) => {
   // Pre-select all players (1-15) for new games, or use existing selection for corrections
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(() => {
       if (initialSelectedPlayers.length > 0) {
@@ -42,7 +50,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
   });
   
   // Local state to hold player names when a team is loaded
-  const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>({});
+  const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>(initialPlayerNames);
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
@@ -136,6 +144,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
           // Just set the name if it's a generic team
           setSettings(prev => ({ ...prev, myTeam: name }));
       }
+      setIsTeamSelectorOpen(false);
   };
 
   const isCorrection = initialSelectedPlayers.length > 0;
@@ -309,7 +318,10 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({ onSetupComplete, onBack, init
           <TeamSelectorModal 
               isOpen={isRivalSelectorOpen} 
               onClose={() => setIsRivalSelectorOpen(false)} 
-              onSelectTeam={(team) => setSettings(prev => ({ ...prev, gameName: team }))}
+              onSelectTeam={(team) => {
+                  setSettings(prev => ({ ...prev, gameName: team }));
+                  setIsRivalSelectorOpen(false);
+              }}
               currentTeam={settings.gameName || ''}
           />
       )}

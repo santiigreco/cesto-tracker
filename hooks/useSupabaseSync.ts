@@ -65,17 +65,18 @@ export const useSupabaseSync = () => {
                 
                 for (const playerNumber in gameState.tallyStats) {
                     const playerTally = gameState.tallyStats[playerNumber];
-                    statsPayload.push({ 
-                        game_id: newGameId, 
-                        player_number: playerNumber, 
-                        period: 'First Half', 
-                        ...mapTallyPeriodToDb(playerTally['First Half']) 
-                    });
-                    statsPayload.push({ 
-                        game_id: newGameId, 
-                        player_number: playerNumber, 
-                        period: 'Second Half', 
-                        ...mapTallyPeriodToDb(playerTally['Second Half']) 
+                    
+                    // Iterate dynamically over periods to support OTs without hardcoding
+                    Object.keys(playerTally).forEach(periodKey => {
+                        const periodStats = playerTally[periodKey as GamePeriod];
+                        // Skip completely empty periods to save DB space (optional optimization)
+                        // For now, we sync everything to ensure consistency
+                        statsPayload.push({ 
+                            game_id: newGameId, 
+                            player_number: playerNumber, 
+                            period: periodKey, 
+                            ...mapTallyPeriodToDb(periodStats) 
+                        });
                     });
                 }
                 const { error: statsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });

@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { GameState, Shot, TallyStats, TallyStatsPeriod } from '../types';
+import { GameState, Shot, TallyStats, TallyStatsPeriod, GamePeriod } from '../types';
 import { GAME_STATE_STORAGE_KEY } from '../constants';
 
 const initialTallyStatsPeriod: TallyStatsPeriod = {
@@ -19,6 +19,8 @@ const initialTallyStatsPeriod: TallyStatsPeriod = {
 export const initialPlayerTally: TallyStats = {
     'First Half': { ...initialTallyStatsPeriod },
     'Second Half': { ...initialTallyStatsPeriod },
+    'First Overtime': { ...initialTallyStatsPeriod },
+    'Second Overtime': { ...initialTallyStatsPeriod },
 };
 
 export const initialGameState: GameState = {
@@ -49,6 +51,8 @@ export const initialGameState: GameState = {
     teamFouls: {
         'First Half': 0,
         'Second Half': 0,
+        'First Overtime': 0,
+        'Second Overtime': 0,
     },
     gameLog: [],
     tallyRedoLog: [],
@@ -81,24 +85,28 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (!savedState.gameMode) savedState.gameMode = null;
                 if (!savedState.tallyStats) savedState.tallyStats = {};
                 if (!savedState.opponentScore) savedState.opponentScore = 0;
-                if (!savedState.teamFouls) savedState.teamFouls = { 'First Half': 0, 'Second Half': 0 };
+                
+                // Migrate teamFouls to include OTs
+                const defaultFouls = { 'First Half': 0, 'Second Half': 0, 'First Overtime': 0, 'Second Overtime': 0 };
+                savedState.teamFouls = { ...defaultFouls, ...savedState.teamFouls };
+
                 if (!savedState.gameLog) savedState.gameLog = [];
                 if (!savedState.tallyRedoLog) savedState.tallyRedoLog = [];
                 if (savedState.isReadOnly === undefined) savedState.isReadOnly = false;
                 
                 // Legacy Migration: tallyStats structure
                 if (savedState.tallyStats) {
+                    const allPeriods: GamePeriod[] = ['First Half', 'Second Half', 'First Overtime', 'Second Overtime'];
+                    
                     Object.keys(savedState.tallyStats).forEach(playerNum => {
                         const playerTally = savedState.tallyStats[playerNum];
-                        if (playerTally && !playerTally['First Half']) {
-                            savedState.tallyStats[playerNum] = {
-                                'First Half': playerTally,
-                                'Second Half': initialTallyStatsPeriod,
-                            };
-                        }
-                        // Default missing fields
-                        ['First Half', 'Second Half'].forEach(period => {
-                            if (playerTally[period]) {
+                        
+                        // Ensure all periods exist
+                        allPeriods.forEach(period => {
+                            if (!playerTally[period]) {
+                                playerTally[period] = { ...initialTallyStatsPeriod };
+                            } else {
+                                // Default missing fields within a period
                                 if (playerTally[period].faltasPersonales === undefined) playerTally[period].faltasPersonales = 0;
                                 if (playerTally[period].triples === undefined) playerTally[period].triples = 0;
                             }
