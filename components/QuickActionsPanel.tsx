@@ -26,7 +26,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect })
                         <button
                             key={action}
                             onClick={() => onActionSelect(action)}
-                            className="py-6 px-2 rounded-lg text-white font-bold text-xs sm:text-sm transition-colors bg-slate-700 hover:bg-slate-600 flex items-center justify-center h-full shadow-sm active:bg-slate-500"
+                            className="h-24 px-2 rounded-lg text-white font-bold text-sm sm:text-base transition-all bg-slate-700 hover:bg-slate-600 flex items-center justify-center shadow-sm active:bg-slate-500 active:scale-95 transform duration-100 border-b-4 border-slate-900/50 active:border-b-0 active:translate-y-1"
                         >
                             {label}
                         </button>
@@ -37,19 +37,19 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect })
                 <div className="flex flex-col gap-2 w-1/3 min-w-[100px]">
                     <button
                         onClick={() => onActionSelect('triples')}
-                        className="flex-1 p-2 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-blue-600 hover:bg-blue-700 flex items-center justify-center shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
+                        className="flex-1 p-2 rounded-lg text-white font-bold text-sm sm:text-base transition-all bg-blue-600 hover:bg-blue-700 flex items-center justify-center shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 active:scale-95 transform duration-100"
                     >
                         TRIPLE (+3)
                     </button>
                     <button
                         onClick={() => onActionSelect('goles')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1"
+                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-all bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1 active:scale-95 transform duration-100"
                     >
                         GOL
                     </button>
                     <button
                         onClick={() => onActionSelect('fallos')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-colors bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
+                        className="flex-1 p-3 rounded-lg text-white font-bold text-sm sm:text-base transition-all bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg border-b-4 border-red-800 active:border-b-0 active:translate-y-1 active:scale-95 transform duration-100"
                     >
                         FALLO
                     </button>

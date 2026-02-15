@@ -3,6 +3,21 @@ import { useCallback, useState } from 'react';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
 import { Shot, ShotPosition, GameMode, Settings, StatAction, GameEvent } from '../types';
 
+// Helper function moved outside the hook to ensure stability and avoid closure issues
+const modifyStatValue = (tallyStats: any, player: string, period: string, action: StatAction, delta: number) => {
+    if (!tallyStats[player]) {
+        tallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
+    }
+    
+    // Safety check for period existence
+    if (!tallyStats[player][period]) {
+        tallyStats[player][period] = JSON.parse(JSON.stringify(initialPlayerTally['First Half']));
+    }
+
+    const periodStats = tallyStats[player][period];
+    periodStats[action] = Math.max(0, (periodStats[action] || 0) + delta);
+};
+
 export const useGameLogic = () => {
     const { gameState, setGameState, redoStack, setRedoStack, resetGame } = useGameContext();
     const [notificationPopup, setNotificationPopup] = useState<{ type: 'caliente' | 'fria'; playerNumber: string } | null>(null);
@@ -13,21 +28,14 @@ export const useGameLogic = () => {
         
         setGameState(prev => {
             const isCorrection = prev.availablePlayers.length > 0 && prev.gameMode === gameMode;
-            
-            // If we are loading a team (initialPlayerNames provided), use that. 
-            // Otherwise, if it's a correction, keep existing names. 
-            // Otherwise, start empty.
             const playerNames = initialPlayerNames || (isCorrection ? prev.playerNames : {});
-            
             const playerStreaks = isCorrection ? prev.playerStreaks : {};
             const tallyStats = isCorrection ? prev.tallyStats : {};
 
-            // Ensure Equipo entry exists
             if (!tallyStats['Equipo']) {
                 tallyStats['Equipo'] = JSON.parse(JSON.stringify(initialPlayerTally));
             }
 
-            // Ensure all players have tally entries
             sortedRoster.forEach(p => {
                 if (!tallyStats[p]) {
                     tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
@@ -48,7 +56,7 @@ export const useGameLogic = () => {
                 currentPlayer: '',
                 gameMode: gameMode,
                 isReadOnly: false,
-                tallyStats, // Ensure updated tallyStats are set
+                tallyStats,
             };
         });
     }, [setGameState]);
@@ -96,13 +104,11 @@ export const useGameLogic = () => {
             };
             const newGameLog = [newLogEntry, ...prev.gameLog];
             
-            // Ensure deep copy to avoid mutation issues
             const playerTallyStats = prev.tallyStats[playerNumber] ? 
                 JSON.parse(JSON.stringify(prev.tallyStats[playerNumber])) : 
                 JSON.parse(JSON.stringify(initialPlayerTally));
                 
             const currentPeriodStats = playerTallyStats[currentPeriod];
-
             const newPeriodStats = { ...currentPeriodStats, [stat]: currentPeriodStats[stat] + change };
             const newPlayerTallyStats = { ...playerTallyStats, [currentPeriod]: newPeriodStats };
 
@@ -119,7 +125,7 @@ export const useGameLogic = () => {
                 newState.teamFouls = newTeamFouls;
             }
             
-            // Streak logic for players (not 'Equipo' generally, but handled same way)
+            // Streak logic (omitted for brevity, assume strictly kept)
             if (change === 1 && (stat === 'goles' || stat === 'triples' || stat === 'fallos')) {
                 const isScoring = stat === 'goles' || stat === 'triples';
                 const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
@@ -147,7 +153,6 @@ export const useGameLogic = () => {
                 if (triggeredNotification) {
                     setTimeout(() => setNotificationPopup(triggeredNotification), 200);
                 }
-
                 newState.playerStreaks = { ...prev.playerStreaks, [playerNumber]: newStreak };
             }
 
@@ -166,7 +171,7 @@ export const useGameLogic = () => {
 
             const { playerNumber, action, period } = eventToUndo;
 
-            const playerTallyStats = prev.tallyStats[playerNumber];
+            const playerTallyStats = JSON.parse(JSON.stringify(prev.tallyStats[playerNumber]));
             const currentPeriodStats = playerTallyStats[period];
             const newPeriodStats = { ...currentPeriodStats, [action]: Math.max(0, currentPeriodStats[action] - 1) };
             const newPlayerTallyStats = { ...playerTallyStats, [period]: newPeriodStats };
@@ -198,7 +203,7 @@ export const useGameLogic = () => {
 
             const { playerNumber, action, period } = eventToRedo;
 
-            const playerTallyStats = prev.tallyStats[playerNumber];
+            const playerTallyStats = JSON.parse(JSON.stringify(prev.tallyStats[playerNumber]));
             const currentPeriodStats = playerTallyStats[period];
             const newPeriodStats = { ...currentPeriodStats, [action]: currentPeriodStats[action] + 1 };
             const newPlayerTallyStats = { ...playerTallyStats, [period]: newPeriodStats };
@@ -219,7 +224,82 @@ export const useGameLogic = () => {
         });
     }, [gameState.isReadOnly, setGameState]);
 
-    // --- SHOT LOGIC ---
+    // --- GRANULAR EDIT LOGIC ---
+
+    const handleDeleteGameEvent = useCallback((eventId: string) => {
+        if (gameState.isReadOnly) return;
+        setGameState(prev => {
+            const eventIndex = prev.gameLog.findIndex(e => e.id === eventId);
+            if (eventIndex === -1) return prev;
+
+            const event = prev.gameLog[eventIndex];
+            const newTallyStats = JSON.parse(JSON.stringify(prev.tallyStats));
+            
+            // Revert the stats effect
+            modifyStatValue(newTallyStats, event.playerNumber, event.period, event.action, -1);
+
+            const newGameLog = [...prev.gameLog];
+            newGameLog.splice(eventIndex, 1);
+
+            const newState = {
+                ...prev,
+                tallyStats: newTallyStats,
+                gameLog: newGameLog
+            };
+
+            // Update Team Fouls if necessary
+            if (event.action === 'faltasPersonales' && event.playerNumber !== 'Equipo') {
+                const newTeamFouls = { ...prev.teamFouls };
+                newTeamFouls[event.period] = Math.max(0, newTeamFouls[event.period] - 1);
+                newState.teamFouls = newTeamFouls;
+            }
+
+            return newState;
+        });
+    }, [gameState.isReadOnly, setGameState]);
+
+    const handleEditGameEvent = useCallback((eventId: string, newPlayer: string, newAction: StatAction) => {
+        if (gameState.isReadOnly) return;
+        setGameState(prev => {
+            const eventIndex = prev.gameLog.findIndex(e => e.id === eventId);
+            if (eventIndex === -1) return prev;
+
+            const oldEvent = prev.gameLog[eventIndex];
+            const newTallyStats = JSON.parse(JSON.stringify(prev.tallyStats));
+
+            // 1. Revert Old
+            modifyStatValue(newTallyStats, oldEvent.playerNumber, oldEvent.period, oldEvent.action, -1);
+            
+            // 2. Apply New
+            modifyStatValue(newTallyStats, newPlayer, oldEvent.period, newAction, 1);
+
+            // 3. Update Log
+            const newGameLog = [...prev.gameLog];
+            newGameLog[eventIndex] = { ...oldEvent, playerNumber: newPlayer, action: newAction };
+
+            const newState = {
+                ...prev,
+                tallyStats: newTallyStats,
+                gameLog: newGameLog
+            };
+
+            // 4. Update Team Fouls Logic
+            const wasPlayerFoul = oldEvent.action === 'faltasPersonales' && oldEvent.playerNumber !== 'Equipo';
+            const isPlayerFoul = newAction === 'faltasPersonales' && newPlayer !== 'Equipo';
+
+            if (wasPlayerFoul !== isPlayerFoul) {
+                const newTeamFouls = { ...prev.teamFouls };
+                if (wasPlayerFoul) newTeamFouls[oldEvent.period] = Math.max(0, newTeamFouls[oldEvent.period] - 1);
+                if (isPlayerFoul) newTeamFouls[oldEvent.period]++;
+                newState.teamFouls = newTeamFouls;
+            }
+
+            return newState;
+        });
+    }, [gameState.isReadOnly, setGameState]);
+
+
+    // --- SHOT LOGIC (Existing) ---
     const handleOutcomeSelection = useCallback((isGol: boolean, shotPosition: ShotPosition) => {
         if (gameState.isReadOnly) return;
 
@@ -327,6 +407,8 @@ export const useGameLogic = () => {
         handleUndoShot,
         handleRedoShot,
         handleClearSheet,
-        handleConfirmNewGame: resetGame
+        handleConfirmNewGame: resetGame,
+        handleDeleteGameEvent,
+        handleEditGameEvent
     };
 };

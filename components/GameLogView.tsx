@@ -1,13 +1,15 @@
 
 import React from 'react';
 import { GameEvent, StatAction } from '../types';
+import PencilIcon from './PencilIcon';
 
 interface GameLogViewProps {
     log: GameEvent[];
     playerNames: Record<string, string>;
+    onEventClick?: (event: GameEvent) => void;
 }
 
-const GameLogView: React.FC<GameLogViewProps> = ({ log, playerNames }) => {
+const GameLogView: React.FC<GameLogViewProps> = ({ log, playerNames, onEventClick }) => {
     const getActionLabel = (action: StatAction) => {
         const labels: Record<StatAction, string> = {
             goles: "GOL",
@@ -30,11 +32,26 @@ const GameLogView: React.FC<GameLogViewProps> = ({ log, playerNames }) => {
             {log.length > 0 ? (
                 <div className="max-h-32 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
                     {log.map(event => (
-                        <div key={event.id} className="flex justify-between items-center bg-slate-700/50 p-1.5 rounded-md text-sm">
-                            <span className="font-bold text-cyan-300">{`[${getActionLabel(event.action)}]`}</span>
-                            <span className="text-white font-semibold">
-                                {playerNames[event.playerNumber] || (event.playerNumber === 'Equipo' ? 'Equipo' : `#${event.playerNumber}`)}
-                            </span>
+                        <div 
+                            key={event.id} 
+                            onClick={() => onEventClick && onEventClick(event)}
+                            className={`flex justify-between items-center bg-slate-700/50 p-2 rounded-md text-sm border border-transparent transition-all group ${onEventClick ? 'cursor-pointer hover:bg-slate-700 hover:border-slate-500' : ''}`}
+                        >
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <span className="font-bold text-cyan-300 whitespace-nowrap text-xs sm:text-sm">{`[${getActionLabel(event.action)}]`}</span>
+                                <span className="text-white font-semibold truncate text-xs sm:text-sm">
+                                    {playerNames[event.playerNumber] || (event.playerNumber === 'Equipo' ? 'Equipo' : `#${event.playerNumber}`)}
+                                </span>
+                            </div>
+                            
+                            {/* Time or Edit Icon */}
+                            <div className="text-slate-500 text-xs ml-2 flex-shrink-0">
+                                {onEventClick ? (
+                                    <PencilIcon className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                ) : (
+                                    <span>{new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

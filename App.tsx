@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, RosterPlayer } from './types';
+import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, RosterPlayer, GameEvent } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -45,6 +45,7 @@ import StatsTallyView from './components/StatsTallyView';
 import ShareModal from './components/ShareModal';
 import BottomNavigation from './components/BottomNavigation';
 import TeamRosterModal from './components/TeamRosterModal';
+import GameEventEditModal from './components/GameEventEditModal';
 
 function App() {
   // --- AUTH STATE ---
@@ -87,7 +88,8 @@ function App() {
       handleSetupComplete, handlePlayerChange, handleSubstitution, updatePlayerName,
       handleUpdateTallyStat, handleUndoTally, handleRedoTally,
       handleOutcomeSelection, handleUndoShot, handleRedoShot, handleClearSheet,
-      handleConfirmNewGame
+      handleConfirmNewGame,
+      handleDeleteGameEvent, handleEditGameEvent
   } = useGameLogic();
   
   const { 
@@ -112,6 +114,7 @@ function App() {
   const [isTeamManagerOpen, setIsTeamManagerOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPlayerSelectionModalOpen, setIsPlayerSelectionModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null);
   
   // Header Player Name Editing (for Logger Mode)
   const [isEditingHeaderPlayer, setIsEditingHeaderPlayer] = useState(false);
@@ -486,7 +489,11 @@ function App() {
                         </div>
                     )}
 
-                    <GameLogView log={gameLog} playerNames={playerNames} />
+                    <GameLogView 
+                        log={gameLog} 
+                        playerNames={playerNames} 
+                        onEventClick={!isReadOnly ? (event) => setEditingEvent(event) : undefined}
+                    />
                     
                     <div className="bg-slate-800 rounded-lg shadow-lg">
                         <button
@@ -723,6 +730,18 @@ function App() {
         {isReselectConfirmOpen && <ConfirmationModal title="Corregir Jugadores" message="Volver a selección de equipo." confirmText="Volver" cancelText="Cancelar" onConfirm={handleConfirmReselectPlayers} onClose={() => setIsReselectConfirmOpen(false)} confirmButtonColor="bg-yellow-600 hover:bg-yellow-700" />}
         
         {notificationPopup && <NotificationPopup type={notificationPopup.type} playerNumber={notificationPopup.playerNumber} playerName={playerNames[notificationPopup.playerNumber] || ''} threshold={notificationPopup.type === 'caliente' ? settings.manoCalienteThreshold : settings.manoFriaThreshold} onClose={() => setNotificationPopup(null)} />}
+
+        {editingEvent && (
+            <GameEventEditModal
+                isOpen={!!editingEvent}
+                onClose={() => setEditingEvent(null)}
+                event={editingEvent}
+                onSave={handleEditGameEvent}
+                onDelete={handleDeleteGameEvent}
+                playerNames={playerNames}
+                availablePlayers={playersForTally}
+            />
+        )}
     </div>
   );
 }
