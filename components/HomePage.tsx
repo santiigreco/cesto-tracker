@@ -23,6 +23,7 @@ import FixtureView from './FixtureView';
 import ConfirmationModal from './ConfirmationModal';
 import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
+import TeamLogo from './TeamLogo';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -139,7 +140,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     const handleCloseTeamSelector = () => {
         setIsTeamSelectorOpen(false);
-        onStart(); // Proceed to empty setup if they close the modal
+        // If the user closes the modal without selecting, default to their favorite club if available.
+        onStart(profile?.favorite_club || undefined); 
     };
 
     // --- ANIMATIONS & STYLES ---
@@ -373,7 +375,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     isOpen={isTeamSelectorOpen} 
                     onClose={handleCloseTeamSelector} 
                     onSelectTeam={handleTeamSelected}
-                    currentTeam=""
+                    currentTeam={profile?.favorite_club || ''}
                 />
             )}
         </div>

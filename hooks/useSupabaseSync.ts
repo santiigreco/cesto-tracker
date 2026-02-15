@@ -92,7 +92,7 @@ export const useSupabaseSync = () => {
         }
     };
 
-    const handleLoadGame = async (gameId: string) => {
+    const handleLoadGame = async (gameId: string, enableEditing: boolean = false) => {
         setIsLoading(true);
         try {
             const [gameRes, shotsRes, tallyRes] = await Promise.all([
@@ -107,12 +107,14 @@ export const useSupabaseSync = () => {
             
             const gameData = gameRes.data;
 
-            // Increment view count in background
-            try {
-                const currentViews = gameData.views || 0;
-                await supabase.from('games').update({ views: currentViews + 1 }).eq('id', gameId);
-            } catch (err) {
-                console.warn('Could not increment view count', err);
+            // Increment view count in background only if reading
+            if (!enableEditing) {
+                try {
+                    const currentViews = gameData.views || 0;
+                    await supabase.from('games').update({ views: currentViews + 1 }).eq('id', gameId);
+                } catch (err) {
+                    console.warn('Could not increment view count', err);
+                }
             }
             
             const loadedShots: Shot[] = (shotsRes.data || []).map(mapShotFromDb);
@@ -147,7 +149,7 @@ export const useSupabaseSync = () => {
                 tallyStats: loadedTallyStats,
                 playerStreaks: {},
                 tutorialStep: 3,
-                isReadOnly: true,
+                isReadOnly: !enableEditing, // Crucial change: allows editing if requested
             };
             
             setGameState(loadedGameState);

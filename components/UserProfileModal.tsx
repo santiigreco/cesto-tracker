@@ -16,6 +16,7 @@ interface UserProfileModalProps {
     onClose: () => void;
     user: User;
     onLogout: () => void;
+    onLoadGame: (gameId: string, asOwner: boolean) => void;
 }
 
 const ROLES: { value: UserRole; label: string; emoji: string }[] = [
@@ -27,7 +28,7 @@ const ROLES: { value: UserRole; label: string; emoji: string }[] = [
     { value: 'otro', label: 'Otro', emoji: '🏐' },
 ];
 
-const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user, onLogout }) => {
+const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user, onLogout, onLoadGame }) => {
     const { profile, loading: profileLoading, updateProfile, uploadAvatar } = useProfile();
     
     // Form State
@@ -47,8 +48,9 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     // File Input Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
     
-    // Hierarchical Permissions
-    const isOwner = user.email ? ADMIN_EMAILS.includes(user.email) : false;
+    // Hierarchical Permissions (Case Insensitive)
+    const normalizedEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const isOwner = ADMIN_EMAILS.map(e => e.toLowerCase().trim()).includes(normalizedEmail);
     const isAdmin = isOwner || profile?.role === 'admin';
 
     useEffect(() => {
@@ -239,7 +241,17 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
             </div>
             
             {/* Render Admin Dashboard on top if active, passing isOwner prop */}
-            <AdminDashboard isOpen={showAdmin} onClose={() => setShowAdmin(false)} isOwner={isOwner} />
+            <AdminDashboard 
+                isOpen={showAdmin} 
+                onClose={() => setShowAdmin(false)} 
+                isOwner={isOwner} 
+                onLoadGame={(id, asOwner) => {
+                    // Close both modals and trigger load
+                    setShowAdmin(false);
+                    onClose();
+                    onLoadGame(id, asOwner);
+                }}
+            />
         </>
     );
 };

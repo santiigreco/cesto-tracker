@@ -12,6 +12,7 @@ import SearchIcon from './SearchIcon';
 import UsersIcon from './UsersIcon';
 import TrophyIcon from './TrophyIcon';
 import CalendarIcon from './CalendarIcon';
+import EyeIcon from './EyeIcon';
 import { UserRole } from '../types';
 import { TEAMS_CONFIG } from '../constants';
 
@@ -19,6 +20,7 @@ interface AdminDashboardProps {
     isOpen: boolean;
     onClose: () => void;
     isOwner: boolean; 
+    onLoadGame: (gameId: string, asOwner: boolean) => void;
 }
 
 type AdminTab = 'dashboard' | 'users' | 'tournaments' | 'games';
@@ -46,7 +48,7 @@ const StatCard: React.FC<{ title: string; value: number | string; icon: React.Re
     </div>
 );
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwner }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwner, onLoadGame }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     
     // Data States
@@ -58,6 +60,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
     // Filters & Search
     const [userSearch, setUserSearch] = useState('');
     const [newItemValue, setNewItemValue] = useState('');
+    const [gameSearch, setGameSearch] = useState('');
 
     // Editing States
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,20 +71,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
         try {
             // Fetch Users (Profiles) - Only if Owner
             if (isOwner) {
-                const { data: userData, error: userError } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
-                if (!userError) setUsers(userData || []);
+                // Fetch up to 5000 profiles (pagination override) and sort client-side to ensure robustness
+                const { data: userData, error: userError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .range(0, 4999);
+                
+                if (userError) {
+                    console.error("Error fetching profiles:", userError);
+                    alert("Error cargando usuarios (Verifica Permisos RLS): " + userError.message);
+                } else if (userData) {
+                    const sortedUsers = userData.sort((a, b) => {
+                        return new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime();
+                    });
+                    setUsers(sortedUsers);
+                }
             }
 
             // Fetch Tournaments
             const { data: tourData, error: tourError } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
             if (!tourError) setTournaments(tourData || []);
 
-            // Fetch Games (Limit 100 for perf)
-            const { data: gameData, error: gameError } = await supabase.from('games').select('*').order('created_at', { ascending: false }).limit(100);
+            // Fetch Games (Limit 100 for perf, join with profiles to get user email)
+            const { data: gameData, error: gameError } = await supabase
+                .from('games')
+                .select('*, profiles(email, full_name)')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
             if (!gameError) setGames(gameData || []);
 
         } catch (error: any) {
             console.error("Admin Fetch Error:", error);
+            alert("Error general en Admin Dashboard: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -103,6 +125,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
             (u.id || '').includes(userSearch)
         );
     }, [users, userSearch]);
+
+    const filteredGames = useMemo(() => {
+        return games.filter(g => 
+            (g.settings?.gameName || '').toLowerCase().includes(gameSearch.toLowerCase()) ||
+            (g.settings?.myTeam || '').toLowerCase().includes(gameSearch.toLowerCase()) ||
+            (g.profiles?.email || '').toLowerCase().includes(gameSearch.toLowerCase())
+        );
+    }, [games, gameSearch]);
 
     const handleUpdateUserRole = async (id: string, newRole: string) => {
         if (!confirm(`¿Cambiar rol de usuario a ${newRole}?`)) return;
@@ -266,8 +296,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
                                             className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-10 pr-4 py-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none"
                                         />
                                     </div>
-                                    <div className="text-slate-400 text-sm">
-                                        {filteredUsers.length} usuarios encontrados
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-slate-400 text-sm">
+                                            {filteredUsers.length} usuarios
+                                        </div>
+                                        {users.length === 1 && (
+                                            <div className="text-xs text-yellow-500 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-700">
+                                                ⚠️ Posible error RLS (Solo te ves a ti mismo)
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -377,34 +414,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
                             </div>
                         )}
 
-                        {/* VIEW: GAMES (Simplified for now) */}
+                        {/* VIEW: GAMES */}
                         {activeTab === 'games' && (
-                            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-700/50 text-slate-300 text-xs uppercase font-bold">
-                                        <tr>
-                                            <th className="p-4">Fecha</th>
-                                            <th className="p-4">Partido</th>
-                                            <th className="p-4 text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-700">
-                                        {games.map(g => (
-                                            <tr key={g.id} className="hover:bg-slate-700/30">
-                                                <td className="p-4 text-slate-400 text-sm">{new Date(g.created_at).toLocaleDateString()}</td>
-                                                <td className="p-4">
-                                                    <div className="font-bold text-white">{g.settings?.gameName || 'Sin Nombre'}</div>
-                                                    <div className="text-xs text-cyan-400">{g.settings?.myTeam}</div>
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    <button onClick={() => handleDelete('games', g.id)} className="text-slate-600 hover:text-red-500">
-                                                        <TrashIcon className="h-5 w-5" />
-                                                    </button>
-                                                </td>
+                            <div className="flex flex-col h-full">
+                                <div className="mb-4">
+                                    <div className="relative w-full max-w-md">
+                                        <SearchIcon className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Buscar por partido, equipo o usuario..." 
+                                            value={gameSearch}
+                                            onChange={(e) => setGameSearch(e.target.value)}
+                                            className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-10 pr-4 py-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-slate-700/50 text-slate-300 text-xs uppercase font-bold">
+                                            <tr>
+                                                <th className="p-4">Fecha</th>
+                                                <th className="p-4">Partido</th>
+                                                <th className="p-4">Usuario (Creador)</th>
+                                                <th className="p-4 text-center">Acciones</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-700">
+                                            {filteredGames.map(g => (
+                                                <tr key={g.id} className="hover:bg-slate-700/30">
+                                                    <td className="p-4 text-slate-400 text-sm whitespace-nowrap">{new Date(g.created_at).toLocaleDateString()}</td>
+                                                    <td className="p-4">
+                                                        <div className="font-bold text-white">{g.settings?.gameName || 'Sin Nombre'}</div>
+                                                        <div className="text-xs text-cyan-400">{g.settings?.myTeam}</div>
+                                                        <div className="text-[10px] text-slate-500 uppercase mt-1">{g.game_mode}</div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {g.profiles ? (
+                                                            <>
+                                                                <div className="text-white text-sm">{g.profiles.full_name || 'Anónimo'}</div>
+                                                                <div className="text-xs text-slate-500">{g.profiles.email}</div>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-slate-500 text-xs italic">Desconocido</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button 
+                                                                onClick={() => onLoadGame(g.id, true)} 
+                                                                className="p-2 hover:bg-cyan-900/30 rounded-full text-slate-500 hover:text-cyan-400 transition-colors"
+                                                                title="Abrir y Editar (Modo Owner)"
+                                                            >
+                                                                <EyeIcon className="h-5 w-5" />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDelete('games', g.id)} 
+                                                                className="p-2 hover:bg-red-900/30 rounded-full text-slate-500 hover:text-red-500 transition-colors"
+                                                                title="Eliminar Partido"
+                                                            >
+                                                                <TrashIcon className="h-5 w-5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
 

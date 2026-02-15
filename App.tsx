@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, RosterPlayer, GameEvent } from './types';
+import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, GameEvent, RosterPlayer } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -46,6 +46,7 @@ import ShareModal from './components/ShareModal';
 import BottomNavigation from './components/BottomNavigation';
 import TeamRosterModal from './components/TeamRosterModal';
 import GameEventEditModal from './components/GameEventEditModal';
+import UserProfileModal from './components/UserProfileModal';
 
 function App() {
   // --- AUTH STATE ---
@@ -373,7 +374,7 @@ function App() {
                     onClose={() => setIsLoadGameModalOpen(false)} 
                     onLoadGame={async (id) => { 
                         setIsLoadGameModalOpen(false); 
-                        await handleLoadGame(id); 
+                        await handleLoadGame(id); // Defaults to read-only for normal users
                         setActiveTab('statistics');
                     }} 
                     user={user}
@@ -740,6 +741,19 @@ function App() {
                 onDelete={handleDeleteGameEvent}
                 playerNames={playerNames}
                 availablePlayers={playersForTally}
+            />
+        )}
+        
+        {user && (
+            <UserProfileModal 
+                isOpen={false} 
+                onClose={() => {}} 
+                user={user}
+                onLogout={handleLogout}
+                onLoadGame={async (id, asOwner) => {
+                    await handleLoadGame(id, asOwner);
+                    setActiveTab('logger');
+                }}
             />
         )}
     </div>
