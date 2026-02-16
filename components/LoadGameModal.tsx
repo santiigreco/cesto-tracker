@@ -88,13 +88,13 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         setLoading(true);
         setError(null);
         try {
-            // Select including profile info to show who created the game
+            // 1. Fetch Games (without direct join to avoid FK relation errors)
             let query = supabase
                 .from('games')
-                .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id, profiles(full_name)')
+                .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id')
                 .order('created_at', { ascending: false });
 
-            // LOGIC CHANGE: 
+            // LOGIC:
             // If specific tournament -> Show ALL games from EVERYONE.
             // If 'all' or 'none' -> Show ONLY current user's games.
             
@@ -107,10 +107,41 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                 query = query.eq('tournament_id', tournamentId);
             }
 
-            const { data, error } = await query;
+            const { data: gamesData, error: gamesError } = await query;
 
-            if (error) throw error;
-            setGames(data || []);
+            if (gamesError) throw gamesError;
+            
+            if (!gamesData || gamesData.length === 0) {
+                setGames([]);
+                return;
+            }
+
+            // 2. Manual Join: Fetch Profiles for the authors of these games
+            // This is safer than a DB join if the foreign key isn't explicitly set up for PostgREST embedding
+            const uniqueUserIds = Array.from(new Set(gamesData.map(g => g.user_id).filter(Boolean)));
+            
+            let profilesMap: Record<string, { full_name: string | null }> = {};
+
+            if (uniqueUserIds.length > 0) {
+                const { data: profilesData, error: profilesError } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', uniqueUserIds);
+                
+                if (!profilesError && profilesData) {
+                    profilesData.forEach(p => {
+                        profilesMap[p.id] = { full_name: p.full_name };
+                    });
+                }
+            }
+
+            // 3. Merge profiles into games
+            const enrichedGames: SavedGame[] = gamesData.map(game => ({
+                ...game,
+                profiles: profilesMap[game.user_id] || null
+            }));
+
+            setGames(enrichedGames);
         } catch (err: any) {
             setError('No se pudieron cargar los partidos.');
             console.error(err);
