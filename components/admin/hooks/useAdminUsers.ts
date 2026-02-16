@@ -37,11 +37,18 @@ export const useAdminUsers = (isOwner: boolean) => {
     // Actualiza el rol autopercibido (Identidad)
     const updateUserIdentity = async (id: string, newRole: IdentityRole) => {
         try {
-            const { error: apiError } = await supabase.from('profiles').update({ role: newRole }).eq('id', id);
+            const { data, error: apiError } = await supabase
+                .from('profiles')
+                .update({ role: newRole })
+                .eq('id', id)
+                .select()
+                .single();
+
             if (apiError) throw apiError;
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
+            setUsers(prev => prev.map(u => u.id === id ? { ...u, role: data.role } : u));
             return true;
         } catch (err: any) {
+            console.error(err);
             alert("Error al actualizar identidad: " + err.message);
             return false;
         }
@@ -50,23 +57,38 @@ export const useAdminUsers = (isOwner: boolean) => {
     // Actualiza el rol de permisos (Sistema)
     const updateUserPermission = async (id: string, newPermission: PermissionRole) => {
         try {
-            const { error: apiError } = await supabase.from('profiles').update({ permission_role: newPermission }).eq('id', id);
+            const { data, error: apiError } = await supabase
+                .from('profiles')
+                .update({ permission_role: newPermission })
+                .eq('id', id)
+                .select()
+                .single();
+
             if (apiError) throw apiError;
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, permission_role: newPermission } : u));
+            
+            setUsers(prev => prev.map(u => u.id === id ? { ...u, permission_role: data.permission_role } : u));
             return true;
         } catch (err: any) {
-            alert("Error al actualizar permisos: " + err.message);
+            console.error(err);
+            alert("Error al actualizar permisos. Verifica que tengas una Política RLS en Supabase que permita al Owner editar otros perfiles.\n\nError: " + err.message);
             return false;
         }
     };
 
     const updateUserClub = async (id: string, newClub: string) => {
         try {
-            const { error: apiError } = await supabase.from('profiles').update({ favorite_club: newClub }).eq('id', id);
+            const { data, error: apiError } = await supabase
+                .from('profiles')
+                .update({ favorite_club: newClub })
+                .eq('id', id)
+                .select()
+                .single();
+
             if (apiError) throw apiError;
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, favorite_club: newClub } : u));
+            setUsers(prev => prev.map(u => u.id === id ? { ...u, favorite_club: data.favorite_club } : u));
             return true;
         } catch (err: any) {
+            console.error(err);
             alert("Error al actualizar club: " + err.message);
             return false;
         }
