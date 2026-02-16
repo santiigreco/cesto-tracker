@@ -5,27 +5,8 @@ import TeamLogo from './TeamLogo';
 import CalendarIcon from './CalendarIcon';
 import PencilIcon from './PencilIcon';
 import CheckIcon from './CheckIcon';
-
-interface Match {
-    id: string;
-    tournament: string;
-    date: string;
-    time: string;
-    homeTeam: string;
-    awayTeam: string;
-    scoreHome?: number | '';
-    scoreAway?: number | '';
-    status: 'scheduled' | 'live' | 'finished';
-}
-
-// Mock Data Initial State
-const initialMatches: Match[] = [
-    { id: '1', tournament: 'Liga Nacional A', date: 'Hoy', time: '20:30', homeTeam: 'Ciudad', awayTeam: 'Vélez', status: 'scheduled', scoreHome: '', scoreAway: '' },
-    { id: '2', tournament: 'Liga Nacional A', date: 'Hoy', time: '21:00', homeTeam: 'Ballester', awayTeam: 'GEVP', status: 'scheduled', scoreHome: '', scoreAway: '' },
-    { id: '3', tournament: 'Torneo Apertura', date: 'Mañana', time: '19:00', homeTeam: 'SITAS', awayTeam: 'Social Parque', status: 'scheduled', scoreHome: '', scoreAway: '' },
-    { id: '4', tournament: 'Torneo Apertura', date: 'Mañana', time: '20:30', homeTeam: 'Hacoaj', awayTeam: 'Avellaneda', status: 'scheduled', scoreHome: '', scoreAway: '' },
-    { id: '5', tournament: 'Amistoso', date: 'Ayer', time: 'Final', homeTeam: 'CEF', awayTeam: 'APV', scoreHome: 86, scoreAway: 92, status: 'finished' },
-];
+import Loader from './Loader';
+import { useFixture, Match } from '../hooks/useFixture';
 
 interface FixtureViewProps {
     isOpen: boolean;
@@ -34,7 +15,7 @@ interface FixtureViewProps {
 }
 
 const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) => {
-    const [matches, setMatches] = useState<Match[]>(initialMatches);
+    const { matches, loading, updateMatch } = useFixture();
     const [isEditMode, setIsEditMode] = useState(false);
 
     if (!isOpen) return null;
@@ -48,12 +29,8 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
     }, {} as Record<string, Match[]>);
 
     const handleUpdateMatch = (id: string, field: keyof Match, value: any) => {
-        setMatches(prev => prev.map(m => {
-            if (m.id === id) {
-                return { ...m, [field]: value };
-            }
-            return m;
-        }));
+        // Llamamos directamente al hook que actualiza en Supabase
+        updateMatch(id, { [field]: value });
     };
 
     return (
@@ -91,114 +68,123 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                 
                 {isEditMode && (
                     <div className="bg-cyan-900/20 border border-cyan-500/30 p-3 rounded-lg text-cyan-200 text-sm text-center mb-4 animate-fade-in">
-                        ✏️ Modo Edición Activo: Puedes modificar horarios, resultados y estados de los partidos.
+                        ✏️ Modo Edición Activo: Los cambios se guardan automáticamente y son visibles para todos al instante.
                     </div>
                 )}
 
-                {Object.entries(groupedMatches).map(([groupTitle, matches]) => (
-                    <div key={groupTitle} className="rounded-lg overflow-hidden border border-slate-700 shadow-lg">
-                        {/* Tournament Header */}
-                        <div className="bg-slate-800 p-2 border-b border-slate-700 flex justify-between items-center">
-                            <span className="font-bold text-cyan-400 text-sm uppercase tracking-wider pl-2">{groupTitle}</span>
-                        </div>
-                        
-                        {/* Matches List */}
-                        <div className="bg-slate-900 divide-y divide-slate-800">
-                            {matches.map(match => (
-                                <div key={match.id} className={`flex items-center justify-between p-3 transition-colors ${isEditMode ? 'bg-slate-800/30' : 'hover:bg-slate-800/50'}`}>
-                                    
-                                    {/* Home Team */}
-                                    <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                                        <span className={`font-semibold ${match.scoreHome !== '' && (match.scoreHome || 0) > (match.scoreAway || 0) ? 'text-white' : 'text-slate-300'} text-sm sm:text-base hidden sm:block`}>
-                                            {match.homeTeam}
-                                        </span>
-                                        <span className="sm:hidden font-bold text-white text-xs">{match.homeTeam.substring(0,3).toUpperCase()}</span>
-                                        <TeamLogo teamName={match.homeTeam} className="h-6 w-6 sm:h-8 sm:w-8" />
-                                    </div>
-
-                                    {/* Score / Time / Inputs */}
-                                    <div className="w-32 sm:w-40 text-center flex flex-col items-center justify-center bg-slate-800/80 rounded py-1 mx-2 border border-slate-700 relative">
-                                        
-                                        {isEditMode ? (
-                                            <div className="flex flex-col gap-1 w-full px-1">
-                                                <div className="flex justify-center items-center gap-1">
-                                                    <input 
-                                                        type="number" 
-                                                        value={match.scoreHome}
-                                                        onChange={(e) => handleUpdateMatch(match.id, 'scoreHome', e.target.value ? parseInt(e.target.value) : '')}
-                                                        placeholder="L"
-                                                        className="w-8 h-8 bg-slate-900 border border-slate-600 text-center text-white font-bold rounded focus:border-cyan-500 outline-none p-0 text-sm"
-                                                    />
-                                                    <span className="text-slate-500">-</span>
-                                                    <input 
-                                                        type="number" 
-                                                        value={match.scoreAway}
-                                                        onChange={(e) => handleUpdateMatch(match.id, 'scoreAway', e.target.value ? parseInt(e.target.value) : '')}
-                                                        placeholder="V"
-                                                        className="w-8 h-8 bg-slate-900 border border-slate-600 text-center text-white font-bold rounded focus:border-cyan-500 outline-none p-0 text-sm"
-                                                    />
-                                                </div>
-                                                <div className="flex gap-1">
-                                                    <input 
-                                                        type="text" 
-                                                        value={match.time}
-                                                        onChange={(e) => handleUpdateMatch(match.id, 'time', e.target.value)}
-                                                        className="w-full bg-slate-900 text-xs text-center text-white border border-slate-600 rounded py-0.5"
-                                                    />
-                                                </div>
-                                                <select 
-                                                    value={match.status}
-                                                    onChange={(e) => handleUpdateMatch(match.id, 'status', e.target.value)}
-                                                    className={`w-full text-[10px] uppercase font-bold text-center rounded py-0.5 cursor-pointer outline-none border border-slate-600 ${
-                                                        match.status === 'live' ? 'bg-red-900 text-red-200' : 
-                                                        match.status === 'finished' ? 'bg-slate-700 text-slate-400' : 'bg-slate-900 text-cyan-400'
-                                                    }`}
-                                                >
-                                                    <option value="scheduled">Programado</option>
-                                                    <option value="live">En Vivo 🔴</option>
-                                                    <option value="finished">Finalizado</option>
-                                                </select>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {match.status === 'scheduled' ? (
-                                                    <span className="text-cyan-400 font-bold text-lg font-mono">{match.time}</span>
-                                                ) : (
-                                                    <div className="font-bold text-lg text-white font-mono leading-none">
-                                                        {match.scoreHome ?? '-'} - {match.scoreAway ?? '-'}
-                                                    </div>
-                                                )}
-                                                
-                                                {match.status === 'live' && (
-                                                    <span className="text-[10px] text-red-500 font-bold uppercase mt-0.5 animate-pulse">En Vivo 🔴</span>
-                                                )}
-                                                {match.status === 'finished' && (
-                                                    <span className="text-[10px] text-slate-500 uppercase mt-0.5">Final</span>
-                                                )}
-                                                {match.status === 'scheduled' && (
-                                                    <span className="text-[10px] text-slate-500 uppercase mt-0.5">Programado</span>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {/* Away Team */}
-                                    <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                                        <TeamLogo teamName={match.awayTeam} className="h-6 w-6 sm:h-8 sm:w-8" />
-                                        <span className={`font-semibold ${match.scoreAway !== '' && (match.scoreAway || 0) > (match.scoreHome || 0) ? 'text-white' : 'text-slate-300'} text-sm sm:text-base hidden sm:block`}>
-                                            {match.awayTeam}
-                                        </span>
-                                        <span className="sm:hidden font-bold text-white text-xs">{match.awayTeam.substring(0,3).toUpperCase()}</span>
-                                    </div>
-
-                                </div>
-                            ))}
-                        </div>
+                {loading ? (
+                    <div className="flex justify-center py-20"><Loader /></div>
+                ) : matches.length === 0 ? (
+                    <div className="text-center text-slate-500 py-10">
+                        <p>No hay partidos programados.</p>
+                        {isAdmin && <p className="text-xs mt-2">Agrega partidos desde tu panel de administrador de base de datos.</p>}
                     </div>
-                ))}
+                ) : (
+                    Object.entries(groupedMatches).map(([groupTitle, groupMatches]) => (
+                        <div key={groupTitle} className="rounded-lg overflow-hidden border border-slate-700 shadow-lg">
+                            {/* Tournament Header */}
+                            <div className="bg-slate-800 p-2 border-b border-slate-700 flex justify-between items-center">
+                                <span className="font-bold text-cyan-400 text-sm uppercase tracking-wider pl-2">{groupTitle}</span>
+                            </div>
+                            
+                            {/* Matches List */}
+                            <div className="bg-slate-900 divide-y divide-slate-800">
+                                {(groupMatches as Match[]).map(match => (
+                                    <div key={match.id} className={`flex items-center justify-between p-3 transition-colors ${isEditMode ? 'bg-slate-800/30' : 'hover:bg-slate-800/50'}`}>
+                                        
+                                        {/* Home Team */}
+                                        <div className="flex-1 flex items-center justify-end gap-2 text-right">
+                                            <span className={`font-semibold ${match.scoreHome !== '' && Number(match.scoreHome) > Number(match.scoreAway) ? 'text-white' : 'text-slate-300'} text-sm sm:text-base hidden sm:block`}>
+                                                {match.homeTeam}
+                                            </span>
+                                            <span className="sm:hidden font-bold text-white text-xs">{match.homeTeam.substring(0,3).toUpperCase()}</span>
+                                            <TeamLogo teamName={match.homeTeam} className="h-6 w-6 sm:h-8 sm:w-8" />
+                                        </div>
+
+                                        {/* Score / Time / Inputs */}
+                                        <div className="w-32 sm:w-40 text-center flex flex-col items-center justify-center bg-slate-800/80 rounded py-1 mx-2 border border-slate-700 relative">
+                                            
+                                            {isEditMode ? (
+                                                <div className="flex flex-col gap-1 w-full px-1">
+                                                    <div className="flex justify-center items-center gap-1">
+                                                        <input 
+                                                            type="number" 
+                                                            value={match.scoreHome === undefined ? '' : match.scoreHome}
+                                                            onChange={(e) => handleUpdateMatch(match.id, 'scoreHome', e.target.value)}
+                                                            placeholder="L"
+                                                            className="w-8 h-8 bg-slate-900 border border-slate-600 text-center text-white font-bold rounded focus:border-cyan-500 outline-none p-0 text-sm"
+                                                        />
+                                                        <span className="text-slate-500">-</span>
+                                                        <input 
+                                                            type="number" 
+                                                            value={match.scoreAway === undefined ? '' : match.scoreAway}
+                                                            onChange={(e) => handleUpdateMatch(match.id, 'scoreAway', e.target.value)}
+                                                            placeholder="V"
+                                                            className="w-8 h-8 bg-slate-900 border border-slate-600 text-center text-white font-bold rounded focus:border-cyan-500 outline-none p-0 text-sm"
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <input 
+                                                            type="text" 
+                                                            value={match.time}
+                                                            onChange={(e) => handleUpdateMatch(match.id, 'time', e.target.value)}
+                                                            className="w-full bg-slate-900 text-xs text-center text-white border border-slate-600 rounded py-0.5"
+                                                        />
+                                                    </div>
+                                                    <select 
+                                                        value={match.status}
+                                                        onChange={(e) => handleUpdateMatch(match.id, 'status', e.target.value)}
+                                                        className={`w-full text-[10px] uppercase font-bold text-center rounded py-0.5 cursor-pointer outline-none border border-slate-600 ${
+                                                            match.status === 'live' ? 'bg-red-900 text-red-200' : 
+                                                            match.status === 'finished' ? 'bg-slate-700 text-slate-400' : 'bg-slate-900 text-cyan-400'
+                                                        }`}
+                                                    >
+                                                        <option value="scheduled">Programado</option>
+                                                        <option value="live">En Vivo 🔴</option>
+                                                        <option value="finished">Finalizado</option>
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {match.status === 'scheduled' ? (
+                                                        <span className="text-cyan-400 font-bold text-lg font-mono">{match.time}</span>
+                                                    ) : (
+                                                        <div className="font-bold text-lg text-white font-mono leading-none">
+                                                            {match.scoreHome ?? '-'} - {match.scoreAway ?? '-'}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {match.status === 'live' && (
+                                                        <span className="text-[10px] text-red-500 font-bold uppercase mt-0.5 animate-pulse">En Vivo 🔴</span>
+                                                    )}
+                                                    {match.status === 'finished' && (
+                                                        <span className="text-[10px] text-slate-500 uppercase mt-0.5">Final</span>
+                                                    )}
+                                                    {match.status === 'scheduled' && (
+                                                        <span className="text-[10px] text-slate-500 uppercase mt-0.5">Programado</span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Away Team */}
+                                        <div className="flex-1 flex items-center justify-start gap-2 text-left">
+                                            <TeamLogo teamName={match.awayTeam} className="h-6 w-6 sm:h-8 sm:w-8" />
+                                            <span className={`font-semibold ${match.scoreAway !== '' && Number(match.scoreAway) > Number(match.scoreHome) ? 'text-white' : 'text-slate-300'} text-sm sm:text-base hidden sm:block`}>
+                                                {match.awayTeam}
+                                            </span>
+                                            <span className="sm:hidden font-bold text-white text-xs">{match.awayTeam.substring(0,3).toUpperCase()}</span>
+                                        </div>
+
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                )}
 
                 <div className="text-center text-slate-500 text-xs py-8">
-                    Datos provistos por Cesto Tracker - Actualizado hace un instante
+                    Datos provistos por Cesto Tracker - Actualizado en tiempo real
                 </div>
             </div>
         </div>

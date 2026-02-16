@@ -1,6 +1,0 @@
-{
-  "name": "Cesto Tracker",
-  "description": "Una aplicación web interactiva para registrar los tiros de Cestoball. Haz clic en la cancha para marcar la posición de un tiro, selecciona el resultado (goal o fallo) y visualiza un registro en tiempo real de todos los tiros.",
-  "requestFramePermissions": [],
-  "prompt": ""
-}
