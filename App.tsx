@@ -433,6 +433,7 @@ function App() {
               onManageTeamsClick={() => setIsTeamManagerOpen(true)}
               user={user}
               onLogin={handleLogin}
+              onLoadGame={handleLoadGame}
             />
             {isLoadGameModalOpen && (
                 <LoadGameModal 

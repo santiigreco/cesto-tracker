@@ -1,15 +1,12 @@
 
 import React, { useState } from 'react';
-import { Shot, RosterPlayer } from '../types';
-import Court from './Court';
-import HeatmapOverlay from './HeatmapOverlay';
+import { RosterPlayer } from '../types';
 import PhoneMockup from './PhoneMockup';
 import FeatureMapIcon from './FeatureMapIcon';
 import FeatureTrophyIcon from './FeatureTrophyIcon';
 import FeatureTapIcon from './FeatureTapIcon';
 import ChevronDownIcon from './ChevronDownIcon';
 import WhatsappIcon from './WhatsappIcon';
-import CheckIcon from './CheckIcon';
 import { faqData } from './faqData';
 import GoogleIcon from './GoogleIcon';
 import { User } from '@supabase/supabase-js';
@@ -49,15 +46,6 @@ const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
     </svg>
 );
-
-// --- Mock Data ---
-const sampleShots: Shot[] = [
-  { id: 's1', playerNumber: '10', position: { x: 10, y: 3 }, isGol: true, golValue: 2, period: 'First Half' },
-  { id: 's2', playerNumber: '10', position: { x: 12, y: 4 }, isGol: true, golValue: 2, period: 'First Half' },
-  { id: 's3', playerNumber: '10', position: { x: 8, y: 4 }, isGol: true, golValue: 2, period: 'First Half' },
-  { id: 's4', playerNumber: '10', position: { x: 5, y: 2 }, isGol: false, golValue: 0, period: 'First Half' },
-  { id: 's5', playerNumber: '10', position: { x: 15, y: 2 }, isGol: false, golValue: 0, period: 'First Half' },
-];
 
 const TallyMockup = () => (
     <PhoneMockup>
@@ -102,9 +90,10 @@ interface HomePageProps {
     onManageTeamsClick: () => void;
     user?: User | null;
     onLogin?: () => void;
+    onLoadGame: (gameId: string, asOwner: boolean) => void;
 }
 
-const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin }) => {
+const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame }) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isFixtureOpen, setIsFixtureOpen] = useState(false);
@@ -115,14 +104,16 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     const { profile } = useProfile();
 
+    // Derived state for Fixture Admin permissions
+    const isFixtureAdmin = user && (ADMIN_EMAILS.includes(user.email || '') || profile?.role === 'admin');
+
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setIsProfileOpen(false);
     };
 
     const handleFixtureClick = () => {
-        const isAdmin = user && (ADMIN_EMAILS.includes(user.email || '') || profile?.role === 'admin');
-        if (isAdmin) {
+        if (isFixtureAdmin) {
             setIsFixtureOpen(true);
         } else {
             setIsComingSoonOpen(true);
@@ -204,6 +195,22 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             </p>
                         </div>
 
+                        {/* How it works steps */}
+                        <div className="flex flex-row justify-between items-start gap-2 pt-4 pb-2 px-1">
+                            {[
+                                { step: 1, text: "Elegí equipo" },
+                                { step: 2, text: "Marcá tiros y estadísticas" },
+                                { step: 3, text: "Analizá y compartí" }
+                            ].map((item) => (
+                                <div key={item.step} className="flex flex-col items-center text-center gap-2 flex-1">
+                                    <div className="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-sm border border-cyan-500/30">
+                                        {item.step}
+                                    </div>
+                                    <p className="text-xs text-slate-400 leading-tight font-medium max-w-[100px]">{item.text}</p>
+                                </div>
+                            ))}
+                        </div>
+
                         {/* --- BENTO GRID ACTION CENTER --- */}
                         <div className="w-full bg-slate-800/30 p-4 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
                             <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -252,7 +259,10 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     <div className={iconContainerClass}>
                                         <CalendarIcon className="h-6 w-6 text-slate-400 group-hover:text-yellow-400" />
                                     </div>
-                                    <span className={labelClass}>Fixture</span>
+                                    <div className="flex flex-col items-center">
+                                        <span className={labelClass}>Fixture</span>
+                                        {!isFixtureAdmin && <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider mt-0.5">Próximamente</span>}
+                                    </div>
                                 </button>
 
                                 <InstallApp variant="card" />
@@ -276,6 +286,12 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     <p className="text-xl font-bold text-white leading-none">+85%</p>
                                 </div>
                             </div>
+                         </div>
+
+                         {/* Mobile PWA Text */}
+                         <div className="lg:hidden mt-8 w-full bg-slate-800/50 border border-slate-700/50 p-6 rounded-2xl text-center backdrop-blur-sm">
+                             <p className="text-slate-200 font-bold text-lg mb-1">Planilla digital y mapa de calor en tu bolsillo.</p>
+                             <p className="text-cyan-400 text-sm font-medium">PWA · Sin instalar desde la tienda.</p>
                          </div>
                     </div>
                 </div>
@@ -347,6 +363,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     onClose={() => setIsProfileOpen(false)} 
                     user={user}
                     onLogout={handleLogout}
+                    onLoadGame={onLoadGame}
                 />
             )}
 
@@ -354,7 +371,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 <FixtureView 
                     isOpen={isFixtureOpen} 
                     onClose={() => setIsFixtureOpen(false)} 
-                    isAdmin={user ? (ADMIN_EMAILS.includes(user.email || '') || profile?.role === 'admin') : false} 
+                    isAdmin={isFixtureAdmin ? true : false} 
                 />
             )}
 
