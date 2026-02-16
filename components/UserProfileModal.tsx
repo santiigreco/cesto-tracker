@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User } from '@supabase/supabase-js';
 import XIcon from './XIcon';
 import CheckIcon from './CheckIcon';
 import Loader from './Loader';
@@ -14,7 +13,7 @@ import AdminDashboard from './AdminDashboard'; // Import AdminDashboard
 interface UserProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
-    user: User;
+    user: any;
     onLogout: () => void;
     onLoadGame: (gameId: string, asOwner: boolean) => void;
 }

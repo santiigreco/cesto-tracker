@@ -9,9 +9,21 @@ import Loader from './Loader';
 import TeamLogo from './TeamLogo';
 import TrophyIcon from './TrophyIcon';
 import ChevronDownIcon from './ChevronDownIcon';
-import UsersIcon from './UsersIcon'; // Added for user indicator
+import UsersIcon from './UsersIcon';
 import { GameMode, Settings } from '../types';
-import { User } from '@supabase/supabase-js';
+
+// Internal Icon for Navigation
+const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+);
+
+const FolderIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+);
 
 interface SavedGame {
     id: string;
@@ -22,7 +34,7 @@ interface SavedGame {
     views: number;
     tournament_id: string | null;
     user_id: string;
-    profiles?: { full_name: string | null } | null; // Joined profile data
+    profiles?: { full_name: string | null } | null;
 }
 
 interface TournamentSummary {
@@ -33,7 +45,7 @@ interface TournamentSummary {
 interface LoadGameModalProps {
     onClose: () => void;
     onLoadGame: (gameId: string) => void;
-    user: User | null;
+    user: any;
 }
 
 const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user }) => {
@@ -66,14 +78,8 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
 
             if (error) throw error;
             
-            // Add static options
-            const allTournaments: TournamentSummary[] = [
-                { id: 'all', name: 'Mis Partidos (Todos)' },
-                ...(data || []),
-                { id: 'none', name: 'Mis Partidos (Sin Torneo)' }
-            ];
-            
-            setTournaments(allTournaments);
+            // Only store actual DB tournaments here
+            setTournaments(data || []);
         } catch (err: any) {
             setError('No se pudieron cargar los torneos.');
             console.error(err);
@@ -88,22 +94,16 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         setLoading(true);
         setError(null);
         try {
-            // 1. Fetch Games (without direct join to avoid FK relation errors)
             let query = supabase
                 .from('games')
                 .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id')
                 .order('created_at', { ascending: false });
 
-            // LOGIC:
-            // If specific tournament -> Show ALL games from EVERYONE.
-            // If 'all' or 'none' -> Show ONLY current user's games.
-            
             if (tournamentId === 'all') {
                 query = query.eq('user_id', user.id);
             } else if (tournamentId === 'none') {
                 query = query.eq('user_id', user.id).is('tournament_id', null);
             } else {
-                // Specific tournament ID: Fetch games from ALL users for this tournament
                 query = query.eq('tournament_id', tournamentId);
             }
 
@@ -116,10 +116,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                 return;
             }
 
-            // 2. Manual Join: Fetch Profiles for the authors of these games
-            // This is safer than a DB join if the foreign key isn't explicitly set up for PostgREST embedding
             const uniqueUserIds = Array.from(new Set(gamesData.map(g => g.user_id).filter(Boolean)));
-            
             let profilesMap: Record<string, { full_name: string | null }> = {};
 
             if (uniqueUserIds.length > 0) {
@@ -135,7 +132,6 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                 }
             }
 
-            // 3. Merge profiles into games
             const enrichedGames: SavedGame[] = gamesData.map(game => ({
                 ...game,
                 profiles: profilesMap[game.user_id] || null
@@ -150,19 +146,16 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         }
     }, [user]);
 
-    // Initial Load
     useEffect(() => {
         if (view === 'tournaments' && user) {
             fetchTournaments();
         }
     }, [view, fetchTournaments, user]);
 
-    // Handle Tournament Selection
     const handleTournamentSelect = (tournament: TournamentSummary) => {
         setSelectedTournament(tournament);
         setView('games');
         fetchGames(tournament.id);
-        // Reset filters when entering a new tournament
         setSearchTerm('');
         setSelectedTeam('Todos');
     };
@@ -173,7 +166,6 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         setGames([]);
     };
 
-    // --- FILTER LOGIC (For Games View) ---
     const uniqueTeams = useMemo(() => {
         const teams = new Set<string>(['Todos']);
         games.forEach(g => {
@@ -190,7 +182,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         return games.filter(game => {
             const matchesSearch = 
                 (game.settings?.gameName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (game.profiles?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()); // Search by author too
+                (game.profiles?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase());
             
             const teamName = game.settings?.myTeam || 'Sin Equipo';
             const matchesTeam = selectedTeam === 'Todos' || teamName === selectedTeam;
@@ -221,7 +213,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-slate-700 overflow-hidden">
+            <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-slate-700 overflow-hidden">
                 
                 {/* --- HEADER --- */}
                 <div className="flex justify-between items-center p-5 border-b border-slate-700 bg-slate-800 flex-shrink-0">
@@ -236,7 +228,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                         )}
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-                                {view === 'tournaments' ? 'Explorar Partidos' : selectedTournament?.name}
+                                {view === 'tournaments' ? 'Historial de Partidos' : selectedTournament?.name}
                             </h2>
                             {view === 'games' && (
                                 <p className="text-slate-400 text-xs">
@@ -250,37 +242,92 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                     </button>
                 </div>
 
-                {/* --- CONTENT: TOURNAMENTS GRID --- */}
+                {/* --- CONTENT: EXPLORER DASHBOARD --- */}
                 {view === 'tournaments' && (
                     <div className="flex-grow overflow-y-auto custom-scrollbar p-6 bg-slate-900">
                         {loading ? (
-                            <div className="flex justify-center py-10"><Loader /></div>
+                            <div className="flex justify-center py-20"><Loader /></div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {tournaments.map((t) => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => handleTournamentSelect(t)}
-                                        className={`group relative p-6 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-cyan-500/50 transition-all text-left shadow-lg ${t.id === 'all' ? 'col-span-1 sm:col-span-2 bg-gradient-to-r from-slate-800 to-slate-800/50' : ''}`}
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            <div className={`p-3 rounded-lg ${t.id === 'all' ? 'bg-cyan-900/30 text-cyan-400' : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'} transition-colors`}>
-                                                {t.id === 'all' ? <UsersIcon className="h-6 w-6" /> : <TrophyIcon rank={1} />}
+                            <div className="space-y-10">
+                                
+                                {/* Section: My Activity */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <UsersIcon className="h-4 w-4"/> Tu Actividad
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        
+                                        {/* Main Card: All My Games */}
+                                        <button
+                                            onClick={() => handleTournamentSelect({ id: 'all', name: 'Todos mis partidos' })}
+                                            className="group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] border border-slate-700 hover:border-cyan-500/50 bg-gradient-to-br from-slate-800 to-slate-900"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                                <FolderIcon className="h-24 w-24 text-cyan-400" />
                                             </div>
-                                            <div>
-                                                <h3 className={`font-bold text-lg ${t.id === 'all' ? 'text-cyan-400' : 'text-white group-hover:text-cyan-300'}`}>
-                                                    {t.name}
-                                                </h3>
-                                                <p className="text-sm text-slate-500 mt-1">
-                                                    {t.id === 'all' || t.id === 'none' ? 'Solo mis partidos' : 'Ver historial global'}
-                                                </p>
+                                            <div className="relative z-10">
+                                                <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-4 text-cyan-400 group-hover:scale-110 transition-transform">
+                                                    <UsersIcon className="h-6 w-6" />
+                                                </div>
+                                                <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">Mis Partidos</h3>
+                                                <p className="text-sm text-slate-400">Ver todo tu historial de juegos guardados.</p>
                                             </div>
+                                            <div className="absolute bottom-6 right-6 text-cyan-500 transform translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all">
+                                                <ChevronRightIcon />
+                                            </div>
+                                        </button>
+
+                                        {/* Secondary Card: Untracked Games */}
+                                        <button
+                                            onClick={() => handleTournamentSelect({ id: 'none', name: 'Partidos sin torneo' })}
+                                            className="group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800"
+                                        >
+                                            <div className="relative z-10">
+                                                <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center mb-4 text-slate-400 group-hover:text-white transition-colors">
+                                                    <CalendarIcon className="h-6 w-6" />
+                                                </div>
+                                                <h3 className="text-xl font-bold text-slate-200 mb-1 group-hover:text-white">Partidos Sueltos</h3>
+                                                <p className="text-sm text-slate-500">Amistosos y juegos sin torneo asignado.</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Section: Global Tournaments */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <TrophyIcon rank={1} /> Torneos y Ligas
+                                    </h3>
+                                    {tournaments.length === 0 ? (
+                                        <div className="text-slate-500 text-sm italic bg-slate-800/30 p-4 rounded-lg border border-slate-800">
+                                            No hay torneos activos en este momento.
                                         </div>
-                                    </button>
-                                ))}
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {tournaments.map((t) => (
+                                                <button
+                                                    key={t.id}
+                                                    onClick={() => handleTournamentSelect(t)}
+                                                    className="group flex items-center justify-between p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-750 transition-all text-left"
+                                                >
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-yellow-500 group-hover:border-yellow-500/50 transition-colors shrink-0">
+                                                            <TrophyIcon rank={3} /> 
+                                                        </div>
+                                                        <span className="font-semibold text-slate-200 group-hover:text-white truncate">
+                                                            {t.name}
+                                                        </span>
+                                                    </div>
+                                                    <ChevronRightIcon className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
                             </div>
                         )}
-                        {error && <div className="text-center text-red-400 mt-4">{error}</div>}
+                        {error && <div className="text-center text-red-400 mt-4 bg-red-900/10 p-2 rounded border border-red-900/20">{error}</div>}
                     </div>
                 )}
 
@@ -295,7 +342,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                 </div>
                                 <input
                                     type="text"
-                                    className="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full pl-10 p-2.5 placeholder-slate-500"
+                                    className="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full pl-10 p-2.5 placeholder-slate-500 transition-colors"
                                     placeholder="Buscar por partido, equipo o creador..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -366,7 +413,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                                         </h3>
                                                     </div>
                                                     
-                                                    {/* User Indicator (Only if global view and not my game) */}
+                                                    {/* User Indicator */}
                                                     {game.profiles && game.user_id !== user.id && (
                                                         <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 whitespace-nowrap">
                                                             por {game.profiles.full_name?.split(' ')[0] || 'Anónimo'}
@@ -404,8 +451,8 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                                     onClick={() => onLoadGame(game.id)}
                                                     className={`font-bold py-2 px-6 rounded-lg shadow-lg transition-all text-sm w-auto ${
                                                         game.user_id === user.id 
-                                                        ? 'bg-cyan-600 hover:bg-cyan-500 text-white hover:shadow-cyan-500/20' // My game: Active color
-                                                        : 'bg-slate-600 hover:bg-slate-500 text-slate-200 border border-slate-500' // Others: Muted color
+                                                        ? 'bg-cyan-600 hover:bg-cyan-500 text-white hover:shadow-cyan-500/20' 
+                                                        : 'bg-slate-600 hover:bg-slate-500 text-slate-200 border border-slate-500' 
                                                     }`}
                                                 >
                                                     {game.user_id === user.id ? 'Cargar' : 'Ver'}

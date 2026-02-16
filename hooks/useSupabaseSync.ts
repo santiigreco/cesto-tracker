@@ -27,7 +27,7 @@ export const useSupabaseSync = () => {
         }
 
         try {
-            // Get current user
+            // Get current user (v2 sync)
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) throw new Error("Usuario no autenticado");

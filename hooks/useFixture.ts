@@ -14,8 +14,14 @@ export interface Match {
     status: 'scheduled' | 'live' | 'finished';
 }
 
+export interface TournamentOption {
+    id: string;
+    name: string;
+}
+
 export const useFixture = () => {
     const [matches, setMatches] = useState<Match[]>([]);
+    const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchMatches = async () => {
@@ -42,6 +48,17 @@ export const useFixture = () => {
             setMatches(mappedMatches);
         }
         setLoading(false);
+    };
+
+    const fetchTournaments = async () => {
+        const { data, error } = await supabase
+            .from('tournaments')
+            .select('id, name')
+            .order('created_at', { ascending: false });
+        
+        if (!error && data) {
+            setTournaments(data);
+        }
     };
 
     const addMatch = async (matchData: Omit<Match, 'id' | 'status' | 'scoreHome' | 'scoreAway'>) => {
@@ -104,6 +121,7 @@ export const useFixture = () => {
 
     useEffect(() => {
         fetchMatches();
+        fetchTournaments();
 
         // SUSCRIPCIÓN REALTIME (Estilo Promiedos)
         const subscription = supabase
@@ -121,6 +139,7 @@ export const useFixture = () => {
 
     return {
         matches,
+        tournaments,
         loading,
         addMatch,
         updateMatch,

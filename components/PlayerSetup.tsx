@@ -151,7 +151,10 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
   const [user, setUser] = useState<any>(null);
 
     React.useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setUser(data.user));
+        // v2 syntax
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setUser(user);
+        });
     }, []);
 
 

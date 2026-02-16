@@ -9,7 +9,6 @@ import ChevronDownIcon from './ChevronDownIcon';
 import WhatsappIcon from './WhatsappIcon';
 import { faqData } from './faqData';
 import GoogleIcon from './GoogleIcon';
-import { User } from '@supabase/supabase-js';
 import UsersIcon from './UsersIcon';
 import CalendarIcon from './CalendarIcon';
 import UserProfileModal from './UserProfileModal';
@@ -88,7 +87,7 @@ interface HomePageProps {
     onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
     onLoadGameClick: () => void;
     onManageTeamsClick: () => void;
-    user?: User | null;
+    user?: any;
     onLogin?: () => void;
     onLoadGame: (gameId: string, asOwner: boolean) => void;
 }
@@ -109,7 +108,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const canAccessFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await (supabase.auth as any).signOut();
         setIsProfileOpen(false);
     };
 

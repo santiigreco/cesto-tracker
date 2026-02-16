@@ -6,7 +6,6 @@ import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
 import { useSupabaseSync } from './hooks/useSupabaseSync';
 import { supabase } from './utils/supabaseClient';
-import { User } from '@supabase/supabase-js';
 
 // Components
 import Court from './components/Court';
@@ -75,22 +74,24 @@ const CloudIndicator: React.FC<{ isSaving: boolean; lastSaved: Date | null; game
 
 function App() {
   // --- AUTH STATE ---
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    // Check active session
+    // Check active session (v2 compatible)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
     });
 
-    // Listen for changes
+    // Listen for changes (v2 compatible)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+        subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async () => {

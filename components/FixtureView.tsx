@@ -18,11 +18,13 @@ interface FixtureViewProps {
 }
 
 const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) => {
-    const { matches, loading, updateMatch, addMatch, deleteMatch } = useFixture();
+    const { matches, tournaments, loading, updateMatch, addMatch, deleteMatch } = useFixture();
     const [isEditMode, setIsEditMode] = useState(false);
     
     // State for New Match Modal
     const [isAddingMatch, setIsAddingMatch] = useState(false);
+    const [isCustomTournament, setIsCustomTournament] = useState(false);
+    
     const [newMatchData, setNewMatchData] = useState({
         tournament: '',
         date: new Date().toISOString().split('T')[0], // Default today
@@ -51,6 +53,17 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
         }
     };
 
+    const handleTournamentSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+        if (value === 'custom') {
+            setIsCustomTournament(true);
+            setNewMatchData(prev => ({ ...prev, tournament: '' }));
+        } else {
+            setIsCustomTournament(false);
+            setNewMatchData(prev => ({ ...prev, tournament: value }));
+        }
+    };
+
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMatchData.tournament || !newMatchData.homeTeam || !newMatchData.awayTeam) {
@@ -58,14 +71,9 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
             return;
         }
         
-        // Format date nicely if user uses the date picker
-        // (YYYY-MM-DD -> DD/MM) or keep as is.
-        // For simplicity, we send the raw value, but you might want to format it.
-        const formattedDate = newMatchData.date; 
-
         await addMatch({
             tournament: newMatchData.tournament,
-            date: formattedDate,
+            date: newMatchData.date,
             time: newMatchData.time,
             homeTeam: newMatchData.homeTeam,
             awayTeam: newMatchData.awayTeam
@@ -259,13 +267,37 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Torneo</label>
-                                <input 
-                                    type="text" 
-                                    value={newMatchData.tournament}
-                                    onChange={e => setNewMatchData({...newMatchData, tournament: e.target.value})}
-                                    placeholder="Ej: Liga Nacional A"
-                                    className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
-                                />
+                                {!isCustomTournament ? (
+                                    <select 
+                                        value={newMatchData.tournament}
+                                        onChange={handleTournamentSelectChange}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                    >
+                                        <option value="">Seleccionar torneo...</option>
+                                        {tournaments.map(t => (
+                                            <option key={t.id} value={t.name}>{t.name}</option>
+                                        ))}
+                                        <option value="custom" className="text-cyan-400 font-bold">+ Otro (Escribir nombre)</option>
+                                    </select>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={newMatchData.tournament}
+                                            onChange={e => setNewMatchData({...newMatchData, tournament: e.target.value})}
+                                            placeholder="Ej: Amistoso de Verano"
+                                            className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                            autoFocus
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={() => { setIsCustomTournament(false); setNewMatchData(prev => ({...prev, tournament: ''})); }}
+                                            className="px-3 bg-slate-700 hover:bg-slate-600 rounded text-slate-300 text-xs"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

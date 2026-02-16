@@ -5,7 +5,6 @@ import { Settings } from '../types';
 import XIcon from './XIcon';
 import ChevronDownIcon from './ChevronDownIcon';
 import TeamSelectorModal from './TeamSelectorModal';
-import { User } from '@supabase/supabase-js';
 import GoogleIcon from './GoogleIcon';
 import { useProfile } from '../hooks/useProfile';
 
@@ -24,7 +23,7 @@ interface SettingsModalProps {
   onRequestReselectPlayers: () => void;
   onRequestChangeMode: () => void;
   onRequestSaveGame: () => void;
-  user: User | null;
+  user: any;
   onLogout: () => void;
   onLogin: () => void;
 }
