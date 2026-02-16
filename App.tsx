@@ -1,76 +1,24 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, GameEvent, RosterPlayer } from './types';
-import { PERIOD_NAMES, STAT_LABELS } from './constants';
+import { STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
 import { useGameLogic } from './hooks/useGameLogic';
 import { useSupabaseSync } from './hooks/useSupabaseSync';
 import { supabase } from './utils/supabaseClient';
 
 // Components
-import Court from './components/Court';
-import ShotLog from './components/ShotLog';
-import PlayerSelector from './components/PlayerSelector';
-import OutcomeModal from './components/OutcomeModal';
-import ConfirmationModal from './components/ConfirmationModal';
-import StatisticsView from './components/StatisticsView';
-import PlayerSetup from './components/PlayerSetup';
-import SettingsModal from './components/SettingsModal';
-import GearIcon from './components/GearIcon';
-import NotificationPopup from './components/NotificationPopup';
-import UndoIcon from './components/UndoIcon';
-import RedoIcon from './components/RedoIcon';
-import TrashIcon from './components/TrashIcon';
-import CheckIcon from './components/CheckIcon';
-import XIcon from './components/XIcon';
-import HamburgerIcon from './components/HamburgerIcon';
-import MobileMenu from './components/MobileMenu';
-import TutorialOverlay from './components/TutorialOverlay';
-import HomePage from './components/HomePage';
-import ZoneChart from './components/ZoneChart';
-import HeatmapOverlay from './components/HeatmapOverlay';
-import Scoreboard from './components/Scoreboard';
-import FaqView from './components/FaqView';
-import SubstitutionModal from './components/SubstitutionModal';
-import SwitchIcon from './components/SwitchIcon';
-import LoadGameModal from './components/LoadGameModal';
 import Loader from './components/Loader';
-import SaveGameModal from './components/SaveGameModal';
-import PlayerSelectionModal from './components/PlayerSelectionModal';
-import ChevronDownIcon from './components/ChevronDownIcon';
-import GameLogView from './components/GameLogView';
-import QuickActionsPanel from './components/QuickActionsPanel';
-import StatsTallyView from './components/StatsTallyView';
-import ShareModal from './components/ShareModal';
+import PlayerSetup from './components/PlayerSetup';
+import HomePage from './components/HomePage';
 import BottomNavigation from './components/BottomNavigation';
+import LoadGameModal from './components/LoadGameModal';
 import TeamRosterModal from './components/TeamRosterModal';
-import GameEventEditModal from './components/GameEventEditModal';
-import UserProfileModal from './components/UserProfileModal';
 
-// --- SUB-COMPONENT: CLOUD INDICATOR ---
-const CloudIndicator: React.FC<{ isSaving: boolean; lastSaved: Date | null; gameId: string | null }> = ({ isSaving, lastSaved, gameId }) => {
-    if (!gameId) return null; // No showing if never saved
-
-    return (
-        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-slate-800/80 px-2 py-1 rounded-full border border-slate-700 animate-fade-in">
-            {isSaving ? (
-                <>
-                    <div className="w-3 h-3 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-                    <span className="text-cyan-400">Guardando...</span>
-                </>
-            ) : lastSaved ? (
-                <>
-                    <span className="text-green-400">☁️</span>
-                    <span className="text-slate-400">
-                        Guardado {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                </>
-            ) : (
-                <span className="text-slate-500">Sin guardar cambios</span>
-            )}
-        </div>
-    );
-};
+// New Architecture Components
+import AppHeader from './components/AppHeader';
+import AppModals from './components/AppModals';
+import GameMainContent from './components/GameMainContent';
 
 function App() {
   // --- AUTH STATE ---
@@ -78,13 +26,11 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    // Check active session (v2 compatible)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
     });
 
-    // Listen for changes (v2 compatible)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -168,23 +114,14 @@ function App() {
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-      // Requirements for AutoSave:
-      // 1. User Logged In
-      // 2. Game has an ID (was saved manually at least once, or loaded from cloud)
-      // 3. Game is NOT in Read-Only mode
       if (user && gameState.gameId && !gameState.isReadOnly) {
-          
           if (autoSaveTimeoutRef.current) {
               clearTimeout(autoSaveTimeoutRef.current);
           }
-
-          // Debounce: Wait 4 seconds after last change to save
           autoSaveTimeoutRef.current = setTimeout(() => {
-              // Pass true for isAutoSave (Silent Mode)
               handleSyncToSupabase(gameState.settings.gameName || 'Partido sin nombre', true);
           }, 4000);
       }
-
       return () => {
           if (autoSaveTimeoutRef.current) {
               clearTimeout(autoSaveTimeoutRef.current);
@@ -411,7 +348,7 @@ function App() {
     return [];
   }, [gameState.gameMode]);
 
-  const { isSetupComplete, hasSeenHomepage, availablePlayers, activePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, gameLog, tallyRedoLog, isReadOnly } = gameState;
+  const { isSetupComplete, hasSeenHomepage, availablePlayers, playerNames, currentPlayer, currentPeriod, settings, tutorialStep, gameMode, gameLog, tallyRedoLog, isReadOnly } = gameState;
   const showTutorial = isSetupComplete && tutorialStep < 3 && gameMode === 'shot-chart';
   const playersForTally = useMemo(() => ['Equipo', ...availablePlayers], [availablePlayers]);
 
@@ -441,7 +378,7 @@ function App() {
                     onClose={() => setIsLoadGameModalOpen(false)} 
                     onLoadGame={async (id) => { 
                         setIsLoadGameModalOpen(false); 
-                        await handleLoadGame(id); // Defaults to read-only for normal users
+                        await handleLoadGame(id); 
                         setActiveTab('statistics');
                     }} 
                     user={user}
@@ -473,54 +410,19 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops pb-24 md:pb-8">
         <div className="w-full max-w-4xl flex-grow">
-          {/* Read Only Banner */}
-          {isReadOnly && (
-            <div className="w-full bg-amber-600 text-white text-center py-2 px-4 rounded-lg mb-4 font-bold shadow-lg">
-                ⚠️ Modo Lectura: Estás viendo un partido guardado. No se pueden hacer cambios.
-            </div>
-          )}
-
-          <header className="relative flex items-center mb-4">
-              <div className="flex-none w-12 md:w-0">
-                  <button className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
-                      <HamburgerIcon />
-                  </button>
-              </div>
-              <div className="flex-grow text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
-                      <button
-                          onClick={handleRequestReturnHome}
-                          className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
-                          disabled={!isSetupComplete}
-                          title={isSetupComplete ? "Volver a la página de inicio" : ""}
-                      >Cesto Tracker 🏐{'\uFE0F'}</button>
-                  </h1>
-                   {settings.gameName && <p className="text-lg font-semibold text-white -mb-1 mt-1 truncate">{settings.gameName}</p>}
-                  <div className="flex justify-center items-center gap-3 mt-1">
-                      <p className="text-base text-slate-400">
-                        {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}
-                      </p>
-                  </div>
-              </div>
-              <div className="flex-none w-12 flex justify-end items-center gap-2">
-                  {/* Cloud Indicator shown near Gear Icon */}
-                  <div className="hidden sm:block">
-                      <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameState.gameId} />
-                  </div>
-                  <button
-                      onClick={() => setIsSettingsModalOpen(true)}
-                      className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                      aria-label="Abrir configuración"
-                  >
-                      <GearIcon className="h-7 w-7" />
-                  </button>
-              </div>
-          </header>
           
-          {/* Mobile visible Cloud Indicator below header if needed, or integrate better */}
-          <div className="sm:hidden flex justify-center mb-4">
-               <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameState.gameId} />
-          </div>
+          <AppHeader 
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+            onRequestReturnHome={handleRequestReturnHome}
+            isSetupComplete={isSetupComplete}
+            gameName={settings.gameName}
+            gameMode={gameMode}
+            isAutoSaving={isAutoSaving}
+            lastSaved={lastSaved}
+            gameId={gameState.gameId}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            isReadOnly={isReadOnly}
+          />
 
           {/* Tab Switcher - Desktop */}
           <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
@@ -539,301 +441,149 @@ function App() {
               ))}
           </div>
 
-          <main className="flex flex-col gap-6">
-            {gameMode === 'stats-tally' && activeTab === 'logger' && (
-              <>
-                <div className="flex flex-col gap-6">
-                    <Scoreboard />
-                    
-                    {!isReadOnly && <QuickActionsPanel onActionSelect={handleActionSelect} />}
-                    
-                    {!isReadOnly && (
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={handleUndoTally}
-                                disabled={gameLog.length === 0}
-                                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none"
-                            >
-                                <UndoIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Deshacer</span>
-                            </button>
-                            <button
-                                onClick={handleRedoTally}
-                                disabled={tallyRedoLog.length === 0}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none"
-                            >
-                                <RedoIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Rehacer</span>
-                            </button>
-                        </div>
-                    )}
-
-                    <GameLogView 
-                        log={gameLog} 
-                        playerNames={playerNames} 
-                        onEventClick={!isReadOnly ? (event) => setEditingEvent(event) : undefined}
-                    />
-                    
-                    <div className="bg-slate-800 rounded-lg shadow-lg">
-                        <button
-                          onClick={() => setIsCorrectionsVisible(prev => !prev)}
-                          className="w-full flex justify-between items-center text-left p-4 font-bold text-xl text-cyan-400 hover:bg-slate-700/50 transition-colors rounded-lg"
-                        >
-                          <span>Planilla de Jugadores</span>
-                          <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${isCorrectionsVisible ? 'rotate-180' : ''}`} />
-                        </button>
-                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCorrectionsVisible ? 'max-h-[8000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                            <div className="p-4 border-t border-slate-700">
-                                <StatsTallyView />
-                            </div>
-                        </div>
-                    </div>
-                    
-                     <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex-1 text-center sm:text-left">
-                        <h2 className="text-xl font-bold text-cyan-400">Sesión Actual</h2>
-                        <p className="text-sm text-slate-400">Estás viendo el {PERIOD_NAMES[currentPeriod]}</p>
-                      </div>
-                      <select
-                          value={currentPeriod}
-                          onChange={(e) => setGameState(prev => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                          className="w-full sm:w-auto bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
-                      >
-                        {Object.entries(PERIOD_NAMES).map(([key, name]) => (
-                          <option key={key} value={key}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'statistics' && (
-              <div className="flex flex-col gap-8">
-                <StatisticsView onShareClick={() => setIsShareModalOpen(true)} />
-              </div>
-            )}
-
-            {activeTab === 'faq' && (
-              <FaqView />
-            )}
-
-            {gameMode === 'shot-chart' && activeTab === 'logger' && (
-              <>
-                {showTutorial && <TutorialOverlay step={tutorialStep} />}
-                
-                {!isReadOnly && (
-                    <div className={`w-full bg-slate-800 p-4 rounded-lg shadow-lg ${showTutorial && tutorialStep === 1 ? 'relative z-50' : ''}`}>
-                    <div className="flex flex-col items-center">
-                        {/* Header Player Editor UI */}
-                        <div className="flex justify-center items-center gap-2 mb-2" style={{ minHeight: '40px' }}>
-                        {isEditingHeaderPlayer && currentPlayer && currentPlayer !== 'Todos' ? (
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    value={headerPlayerName}
-                                    onChange={(e) => setHeaderPlayerName(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') saveHeaderPlayerName();
-                                        if (e.key === 'Escape') cancelEditingHeader();
-                                    }}
-                                    autoFocus
-                                    className="bg-slate-700 border border-slate-600 text-white text-xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 p-2"
-                                />
-                                <button onClick={saveHeaderPlayerName} className="p-2 rounded-full bg-green-600 hover:bg-green-700 text-white"><CheckIcon className="h-5 w-5" /></button>
-                                <button onClick={cancelEditingHeader} className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white"><XIcon className="h-5 w-5" /></button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={startEditingHeader}
-                                disabled={!currentPlayer || currentPlayer === 'Todos'}
-                                className="group text-2xl font-bold text-cyan-400 text-center disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors"
-                            >
-                                <span className="group-hover:underline decoration-dotted underline-offset-4">
-                                {playerNames[currentPlayer] ? `${playerNames[currentPlayer]} (#${currentPlayer})` : `Jugador #${currentPlayer}`}
-                                </span>
-                            </button>
-                        )}
-                        </div>
-                        <p className="text-xs text-slate-500 text-center mb-3">Tocá en el nombre para personalizarlo.</p>
-                        <PlayerSelector 
-                            currentPlayer={currentPlayer} 
-                            setCurrentPlayer={handlePlayerChange} 
-                            playerNames={playerNames} 
-                            availablePlayers={activePlayers}
-                            isTutorialActive={showTutorial}
-                        />
-                        <div className="mt-4 border-t border-slate-700 w-full pt-4 flex justify-center">
-                            <button
-                                onClick={() => setIsSubstitutionModalOpen(true)}
-                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-transform hover:scale-105"
-                            >
-                                <SwitchIcon className="h-5 w-5" />
-                                <span>Cambio de Jugador</span>
-                            </button>
-                        </div>
-                    </div>
-                    </div>
-                )}
-
-                <div className={`w-full flex flex-col gap-4 ${showTutorial && tutorialStep === 2 ? 'relative z-50' : ''}`}>
-                  <Court
-                    shots={filteredLoggerTabShots}
-                    onCourtClick={isReadOnly ? undefined : handleCourtClick}
-                    showShotMarkers={true}
-                    currentPlayer={currentPlayer}
-                  />
-                  {!isReadOnly && (
-                    <div className="flex justify-center gap-4 mt-2">
-                        <button onClick={handleUndoShot} disabled={gameState.shots.length === 0} className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50">
-                            <UndoIcon className="h-5 w-5" />
-                            <span className="hidden sm:inline">Deshacer</span>
-                        </button>
-                        <button onClick={handleRedoShot} disabled={redoStack.length === 0} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50">
-                            <RedoIcon className="h-5 w-5" />
-                            <span className="hidden sm:inline">Rehacer</span>
-                        </button>
-                        <button onClick={handleRequestClearSheet} disabled={gameState.shots.length === 0} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50">
-                            <TrashIcon className="h-5 w-5" />
-                            <span className="hidden sm:inline">Limpiar</span>
-                        </button>
-                    </div>
-                  )}
-                </div>
-                
-                <Scoreboard />
-                <ShotLog shots={gameState.shots} playerNames={playerNames} />
-              </>
-            )}
+          <GameMainContent 
+            gameMode={gameMode}
+            activeTab={activeTab}
+            isReadOnly={isReadOnly}
             
-            {gameMode === 'shot-chart' && activeTab === 'courtAnalysis' && (
-              <div className="flex flex-col gap-8">
-                  {/* Analysis filters & Chart rendering logic */}
-                   <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg flex justify-center max-w-xl mx-auto">
-                      <button onClick={() => setMapView('shotmap')} className={`flex-1 font-bold py-2 px-3 rounded-md transition-colors ${mapView === 'shotmap' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'}`}>Mapa de Tiros</button>
-                      <button onClick={() => setMapView('heatmap')} className={`flex-1 font-bold py-2 px-3 rounded-md transition-colors ${mapView === 'heatmap' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'}`}>Mapa de Calor</button>
-                      <button onClick={() => setMapView('zonemap')} className={`flex-1 font-bold py-2 px-3 rounded-md transition-colors ${mapView === 'zonemap' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'}`}>Gráfico de Zonas</button>
-                  </div>
-                  
-                  <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-                    <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Seleccionar Jugador</h3>
-                    <PlayerSelector currentPlayer={analysisPlayer} setCurrentPlayer={setAnalysisPlayer} showAllPlayersOption={true} playerNames={playerNames} availablePlayers={playersWithShots} />
-                  </div>
-
-                  <div className="w-full">
-                    <Court
-                      shots={mapView === 'shotmap' ? filteredAnalysisShots : []}
-                      showShotMarkers={mapView === 'shotmap'}
-                    >
-                      {mapView === 'heatmap' && <HeatmapOverlay shots={filteredAnalysisShots} />}
-                      {mapView === 'zonemap' && <ZoneChart shots={filteredAnalysisShots} />}
-                    </Court>
-                  </div>
-
-                  {/* Filter Controls */}
-                  <div className="w-full bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg flex flex-col sm:flex-row gap-8 justify-center">
-                      <div className="flex-1">
-                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar Resultado</h3>
-                          <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                              <button onClick={() => setAnalysisResultFilter('all')} className={`flex-1 py-1 rounded ${analysisResultFilter === 'all' ? 'bg-cyan-600 text-white' : 'text-slate-300'}`}>Todos</button>
-                              <button onClick={() => setAnalysisResultFilter('goles')} className={`flex-1 py-1 rounded ${analysisResultFilter === 'goles' ? 'bg-cyan-600 text-white' : 'text-slate-300'}`}>Goles</button>
-                              <button onClick={() => setAnalysisResultFilter('misses')} className={`flex-1 py-1 rounded ${analysisResultFilter === 'misses' ? 'bg-cyan-600 text-white' : 'text-slate-300'}`}>Fallos</button>
-                          </div>
-                      </div>
-                      <div className="flex-1">
-                          <h3 className="text-xl font-bold mb-4 text-cyan-400 text-center">Filtrar por Período</h3>
-                          <div className="flex justify-center bg-slate-700 p-1 rounded-lg w-full max-w-xs mx-auto">
-                               {['all', 'First Half', 'Second Half'].map(p => (
-                                   <button key={p} onClick={() => setAnalysisPeriodFilter(p as any)} className={`flex-1 py-1 rounded ${analysisPeriodFilter === p ? 'bg-cyan-600 text-white' : 'text-slate-300'}`}>
-                                       {p === 'all' ? 'Ambos' : PERIOD_NAMES[p as GamePeriod]}
-                                   </button>
-                               ))}
-                          </div>
-                      </div>
-                  </div>
-              </div>
-            )}
-          </main>
+            // Tally Props
+            onActionSelect={handleActionSelect}
+            handleUndoTally={handleUndoTally}
+            handleRedoTally={handleRedoTally}
+            gameLog={gameLog}
+            tallyRedoLog={tallyRedoLog}
+            isCorrectionsVisible={isCorrectionsVisible}
+            setIsCorrectionsVisible={setIsCorrectionsVisible}
+            
+            // Common Props
+            playerNames={playerNames}
+            currentPlayer={currentPlayer}
+            currentPeriod={currentPeriod}
+            setGameState={setGameState}
+            setEditingEvent={setEditingEvent}
+            
+            // Statistics Props
+            setIsShareModalOpen={setIsShareModalOpen}
+            
+            // Shot Chart Props
+            showTutorial={showTutorial}
+            tutorialStep={tutorialStep}
+            isEditingHeaderPlayer={isEditingHeaderPlayer}
+            headerPlayerName={headerPlayerName}
+            setHeaderPlayerName={setHeaderPlayerName}
+            saveHeaderPlayerName={saveHeaderPlayerName}
+            cancelEditingHeader={cancelEditingHeader}
+            startEditingHeader={startEditingHeader}
+            handlePlayerChange={handlePlayerChange}
+            activePlayers={gameState.activePlayers}
+            setIsSubstitutionModalOpen={setIsSubstitutionModalOpen}
+            filteredLoggerTabShots={filteredLoggerTabShots}
+            handleCourtClick={handleCourtClick}
+            handleUndoShot={handleUndoShot}
+            handleRedoShot={handleRedoShot}
+            redoStack={redoStack}
+            handleRequestClearSheet={handleRequestClearSheet}
+            shots={gameState.shots}
+            
+            // Analysis Props
+            mapView={mapView}
+            setMapView={setMapView}
+            analysisPlayer={analysisPlayer}
+            setAnalysisPlayer={setAnalysisPlayer}
+            playersWithShots={playersWithShots}
+            filteredAnalysisShots={filteredAnalysisShots}
+            analysisResultFilter={analysisResultFilter}
+            setAnalysisResultFilter={setAnalysisResultFilter}
+            analysisPeriodFilter={analysisPeriodFilter}
+            setAnalysisPeriodFilter={setAnalysisPeriodFilter}
+          />
         </div>
         
         <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">Santiago Greco - Gresolutions © 2026</footer>
 
-        {/* --- MODALS --- */}
         <BottomNavigation activeTab={activeTab} onSelectTab={setActiveTab} gameMode={gameMode} />
         
-        <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} activeTab={activeTab} onSelectTab={(tab) => { setActiveTab(tab); setIsMobileMenuOpen(false); }} onShare={handleShare} tabTranslations={tabTranslations} tabs={tabsForCurrentMode} />
-        
-        {isPlayerSelectionModalOpen && actionToAssign && (
-            <PlayerSelectionModal isOpen={isPlayerSelectionModalOpen} onClose={() => { setIsPlayerSelectionModalOpen(false); setActionToAssign(null); }} onSelectPlayer={handleAssignActionToPlayer} players={playersForTally} playerNames={playerNames} actionLabel={STAT_LABELS[actionToAssign]} />
-        )}
-
-        {isLoadGameModalOpen && (
-            <LoadGameModal 
-                onClose={() => setIsLoadGameModalOpen(false)} 
-                onLoadGame={async (id) => { 
-                    setIsLoadGameModalOpen(false); 
-                    await handleLoadGame(id); 
-                    setActiveTab('statistics');
-                }} 
-                user={user}
-            />
-        )}
-
-        {isSaveGameModalOpen && <SaveGameModal isOpen={isSaveGameModalOpen} onClose={() => setIsSaveGameModalOpen(false)} onSave={handleSyncToSupabase} syncState={syncState} initialGameName={gameState.settings.gameName} />}
-        
-        {isSettingsModalOpen && <SettingsModal 
-            settings={settings} 
-            setSettings={handleSettingsChange} 
-            onClose={() => setIsSettingsModalOpen(false)} 
-            onRequestNewGame={handleRequestNewGame} 
-            onRequestReselectPlayers={handleRequestReselectPlayers} 
-            onRequestChangeMode={handleChangeMode} 
-            onRequestSaveGame={handleRequestSaveGame}
+        <AppModals 
+            activeTab={activeTab}
+            isMobileMenuOpen={isMobileMenuOpen}
+            setIsMobileMenuOpen={setIsMobileMenuOpen}
+            isPlayerSelectionModalOpen={isPlayerSelectionModalOpen}
+            setIsPlayerSelectionModalOpen={setIsPlayerSelectionModalOpen}
+            isLoadGameModalOpen={isLoadGameModalOpen}
+            setIsLoadGameModalOpen={setIsLoadGameModalOpen}
+            isSaveGameModalOpen={isSaveGameModalOpen}
+            setIsSaveGameModalOpen={setIsSaveGameModalOpen}
+            isSettingsModalOpen={isSettingsModalOpen}
+            setIsSettingsModalOpen={setIsSettingsModalOpen}
+            isShareModalOpen={isShareModalOpen}
+            setIsShareModalOpen={setIsShareModalOpen}
+            isSubstitutionModalOpen={isSubstitutionModalOpen}
+            setIsSubstitutionModalOpen={setIsSubstitutionModalOpen}
+            isClearSheetModalOpen={isClearSheetModalOpen}
+            setIsClearSheetModalOpen={setIsClearSheetModalOpen}
+            isNewGameConfirmOpen={isNewGameConfirmOpen}
+            setIsNewGameConfirmOpen={setIsNewGameConfirmOpen}
+            isReturnHomeConfirmOpen={isReturnHomeConfirmOpen}
+            setIsReturnHomeConfirmOpen={setIsReturnHomeConfirmOpen}
+            isReselectConfirmOpen={isReselectConfirmOpen}
+            setIsReselectConfirmOpen={setIsReselectConfirmOpen}
+            isTeamManagerOpen={isTeamManagerOpen}
+            setIsTeamManagerOpen={setIsTeamManagerOpen}
+            
+            onSelectTab={setActiveTab}
+            onShare={handleShare}
+            tabTranslations={tabTranslations}
+            tabs={tabsForCurrentMode}
+            
+            actionToAssign={actionToAssign}
+            setActionToAssign={setActionToAssign}
+            handleAssignActionToPlayer={handleAssignActionToPlayer}
+            playersForTally={playersForTally}
+            playerNames={playerNames}
+            actionLabel={actionToAssign ? STAT_LABELS[actionToAssign] : ''}
+            
+            handleLoadGame={handleLoadGame}
             user={user}
-            onLogout={handleLogout}
-            onLogin={handleLogin}
-        />}
-        
-        <ShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} gameState={gameState} playerStats={[]} />
-
-        {isSubstitutionModalOpen && <SubstitutionModal isOpen={isSubstitutionModalOpen} onClose={() => setIsSubstitutionModalOpen(false)} onSubstitute={handleSubstitution} activePlayers={activePlayers} availablePlayers={availablePlayers} playerNames={playerNames} />}
-
-        {pendingShotPosition && <OutcomeModal onOutcomeSelect={onOutcomeSelect} onClose={() => setPendingShotPosition(null)} />}
-        
-        {isClearSheetModalOpen && <ConfirmationModal title="Limpiar Planilla" message="¿Borrar todos los tiros?" confirmText="Sí, borrar" cancelText="Cancelar" onConfirm={handleConfirmClearSheet} onClose={() => setIsClearSheetModalOpen(false)} />}
-
-        {isNewGameConfirmOpen && <ConfirmationModal title="Nuevo Partido" message="Se perderán los datos actuales." confirmText="Sí, nuevo partido" cancelText="Cancelar" onConfirm={handleConfirmNewGameWrapper} onClose={() => setIsNewGameConfirmOpen(false)} />}
-
-        {isReturnHomeConfirmOpen && <ConfirmationModal title="Volver al Inicio" message="Se perderán los datos no guardados." confirmText="Volver" cancelText="Cancelar" onConfirm={handleConfirmReturnHome} onClose={() => setIsReturnHomeConfirmOpen(false)} />}
-
-        {isReselectConfirmOpen && <ConfirmationModal title="Corregir Jugadores" message="Volver a selección de equipo." confirmText="Volver" cancelText="Cancelar" onConfirm={handleConfirmReselectPlayers} onClose={() => setIsReselectConfirmOpen(false)} confirmButtonColor="bg-yellow-600 hover:bg-yellow-700" />}
-        
-        {notificationPopup && <NotificationPopup type={notificationPopup.type} playerNumber={notificationPopup.playerNumber} playerName={playerNames[notificationPopup.playerNumber] || ''} threshold={notificationPopup.type === 'caliente' ? settings.manoCalienteThreshold : settings.manoFriaThreshold} onClose={() => setNotificationPopup(null)} />}
-
-        {editingEvent && (
-            <GameEventEditModal
-                isOpen={!!editingEvent}
-                onClose={() => setEditingEvent(null)}
-                event={editingEvent}
-                onSave={handleEditGameEvent}
-                onDelete={handleDeleteGameEvent}
-                playerNames={playerNames}
-                availablePlayers={playersForTally}
-            />
-        )}
-        
-        {user && (
-            <UserProfileModal 
-                isOpen={false} 
-                onClose={() => {}} 
-                user={user}
-                onLogout={handleLogout}
-                onLoadGame={async (id, asOwner) => {
-                    await handleLoadGame(id, asOwner);
-                    setActiveTab('logger');
-                }}
-            />
-        )}
+            
+            handleSyncToSupabase={handleSyncToSupabase}
+            syncState={syncState}
+            gameName={gameState.settings.gameName}
+            
+            settings={settings}
+            handleSettingsChange={handleSettingsChange}
+            handleRequestNewGame={handleRequestNewGame}
+            handleRequestReselectPlayers={handleRequestReselectPlayers}
+            handleChangeMode={handleChangeMode}
+            handleRequestSaveGame={handleRequestSaveGame}
+            handleLogout={handleLogout}
+            handleLogin={handleLogin}
+            
+            gameState={gameState}
+            
+            handleSubstitution={handleSubstitution}
+            activePlayers={gameState.activePlayers}
+            availablePlayers={availablePlayers}
+            
+            pendingShotPosition={pendingShotPosition}
+            setPendingShotPosition={setPendingShotPosition}
+            onOutcomeSelect={onOutcomeSelect}
+            
+            handleConfirmClearSheet={handleConfirmClearSheet}
+            handleConfirmNewGameWrapper={handleConfirmNewGameWrapper}
+            handleConfirmReturnHome={handleConfirmReturnHome}
+            handleConfirmReselectPlayers={handleConfirmReselectPlayers}
+            
+            notificationPopup={notificationPopup}
+            setNotificationPopup={setNotificationPopup}
+            
+            editingEvent={editingEvent}
+            setEditingEvent={setEditingEvent}
+            handleEditGameEvent={handleEditGameEvent}
+            handleDeleteGameEvent={handleDeleteGameEvent}
+            
+            handleTeamLoadedFromHome={handleTeamLoadedFromHome}
+            setActiveTab={setActiveTab}
+        />
     </div>
   );
 }
