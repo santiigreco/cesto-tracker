@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { UserRole } from '../../types';
+import { IdentityRole, PermissionRole } from '../../types';
 
 export type AdminTab = 'dashboard' | 'users' | 'tournaments' | 'games';
 
@@ -8,7 +8,8 @@ export interface AdminProfile {
     id: string;
     email?: string; // Puede venir de auth o joined query
     full_name: string | null;
-    role: UserRole | null;
+    role: IdentityRole | null;
+    permission_role: PermissionRole;
     favorite_club: string | null;
     created_at: string;
     updated_at: string;

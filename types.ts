@@ -110,13 +110,21 @@ export interface SavedTeam {
     created_at?: string;
 }
 
-export type UserRole = 'jugador' | 'entrenador' | 'hincha' | 'dirigente' | 'periodista' | 'admin' | 'fixture_manager' | 'otro';
+// Roles de identidad (visibles y elegibles por el usuario)
+export type IdentityRole = 'jugador' | 'entrenador' | 'hincha' | 'dirigente' | 'periodista' | 'otro';
+
+// Alias para compatibilidad con código existente que usa UserRole para visualización
+export type UserRole = IdentityRole;
+
+// Roles de permisos (Solo asignables por el Owner desde el panel)
+export type PermissionRole = 'admin' | 'fixture_manager' | null;
 
 export interface UserProfile {
     id: string;
     full_name: string | null;
     favorite_club: string | null;
-    role: UserRole | null;
+    role: IdentityRole | null; // Rol autopercibido
+    permission_role: PermissionRole; // Rol de sistema
     avatar_url: string | null;
     updated_at?: string;
 }

@@ -1,8 +1,8 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
 import { AdminProfile } from '../types';
-import { UserRole } from '../../../types';
+import { IdentityRole, PermissionRole } from '../../../types';
 
 export const useAdminUsers = (isOwner: boolean) => {
     const [users, setUsers] = useState<AdminProfile[]>([]);
@@ -14,7 +14,6 @@ export const useAdminUsers = (isOwner: boolean) => {
         setLoading(true);
         setError(null);
         try {
-            // Nota: .range(0, 4999) es un override manual de paginación para traer "todos"
             const { data, error: apiError } = await supabase
                 .from('profiles')
                 .select('*')
@@ -35,14 +34,28 @@ export const useAdminUsers = (isOwner: boolean) => {
         }
     }, [isOwner]);
 
-    const updateUserRole = async (id: string, newRole: UserRole) => {
+    // Actualiza el rol autopercibido (Identidad)
+    const updateUserIdentity = async (id: string, newRole: IdentityRole) => {
         try {
             const { error: apiError } = await supabase.from('profiles').update({ role: newRole }).eq('id', id);
             if (apiError) throw apiError;
             setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
             return true;
         } catch (err: any) {
-            alert("Error al actualizar rol: " + err.message);
+            alert("Error al actualizar identidad: " + err.message);
+            return false;
+        }
+    };
+
+    // Actualiza el rol de permisos (Sistema)
+    const updateUserPermission = async (id: string, newPermission: PermissionRole) => {
+        try {
+            const { error: apiError } = await supabase.from('profiles').update({ permission_role: newPermission }).eq('id', id);
+            if (apiError) throw apiError;
+            setUsers(prev => prev.map(u => u.id === id ? { ...u, permission_role: newPermission } : u));
+            return true;
+        } catch (err: any) {
+            alert("Error al actualizar permisos: " + err.message);
             return false;
         }
     };
@@ -75,7 +88,8 @@ export const useAdminUsers = (isOwner: boolean) => {
         loading,
         error,
         fetchUsers,
-        updateUserRole,
+        updateUserIdentity,
+        updateUserPermission,
         updateUserClub,
         deleteUser
     };

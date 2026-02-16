@@ -8,7 +8,7 @@ import TeamLogo from './TeamLogo';
 import CameraIcon from './CameraIcon';
 import { useProfile } from '../hooks/useProfile';
 import { TEAMS_CONFIG, ADMIN_EMAILS } from '../constants';
-import { UserRole } from '../types';
+import { IdentityRole } from '../types';
 import AdminDashboard from './AdminDashboard'; // Import AdminDashboard
 
 interface UserProfileModalProps {
@@ -19,13 +19,13 @@ interface UserProfileModalProps {
     onLoadGame: (gameId: string, asOwner: boolean) => void;
 }
 
-const ROLES: { value: UserRole; label: string; emoji: string }[] = [
+// Solo mostramos roles de identidad al usuario
+const IDENTITY_ROLES: { value: IdentityRole; label: string; emoji: string }[] = [
     { value: 'jugador', label: 'Jugador/a', emoji: '🏃' },
     { value: 'entrenador', label: 'Entrenador/a', emoji: '📋' },
     { value: 'dirigente', label: 'Delegado / Mesa', emoji: '⏱️' },
     { value: 'hincha', label: 'Hincha / Familiar', emoji: '🥁' },
     { value: 'periodista', label: 'Prensa', emoji: '🎙️' },
-    { value: 'fixture_manager', label: 'Gestor Fixture', emoji: '📅' },
     { value: 'otro', label: 'Otro', emoji: '🏐' },
 ];
 
@@ -35,7 +35,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     // Form State
     const [fullName, setFullName] = useState('');
     const [favoriteClub, setFavoriteClub] = useState<string>('');
-    const [role, setRole] = useState<UserRole | ''>('');
+    const [role, setRole] = useState<IdentityRole | ''>('');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     
     // UI State
@@ -49,11 +49,11 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     // File Input Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
     
-    // Hierarchical Permissions (Case Insensitive)
+    // Check Permissions
     const normalizedEmail = user.email ? user.email.toLowerCase().trim() : '';
     const isOwner = ADMIN_EMAILS.map(e => e.toLowerCase().trim()).includes(normalizedEmail);
-    // Only Owners and Admins can access the main Dashboard. Fixture Managers handle only the Fixture view.
-    const canAccessAdminPanel = isOwner || profile?.role === 'admin';
+    // Access to full Admin Dashboard: Owner OR Permission='admin' (Fixture Manager excluded here)
+    const canAccessAdminPanel = isOwner || profile?.permission_role === 'admin';
 
     useEffect(() => {
         if (profile) {
@@ -69,7 +69,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
         const success = await updateProfile({
             full_name: fullName,
             favorite_club: favoriteClub,
-            role: role as UserRole
+            role: role as IdentityRole
         });
         
         setIsSaving(false);
@@ -154,7 +154,13 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                         
                         {role && (
                             <span className="mt-2 px-3 py-1 rounded-full bg-cyan-900/30 text-cyan-400 text-xs font-bold border border-cyan-500/30 uppercase tracking-wide flex items-center gap-1">
-                                {ROLES.find(r => r.value === role)?.emoji} {ROLES.find(r => r.value === role)?.label || role}
+                                {IDENTITY_ROLES.find(r => r.value === role)?.emoji} {IDENTITY_ROLES.find(r => r.value === role)?.label || role}
+                            </span>
+                        )}
+                        {/* Internal Permission Badge (only visible to self if special) */}
+                        {profile?.permission_role && (
+                            <span className="mt-1 text-[10px] text-slate-500 uppercase tracking-widest border border-slate-700 px-2 rounded">
+                                {profile.permission_role.replace('_', ' ')}
                             </span>
                         )}
                     </div>
@@ -194,11 +200,11 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Rol</label>
                                 <select
                                     value={role}
-                                    onChange={e => setRole(e.target.value as UserRole)}
+                                    onChange={e => setRole(e.target.value as IdentityRole)}
                                     className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 outline-none transition-colors appearance-none"
                                 >
                                     <option value="">Seleccionar...</option>
-                                    {ROLES.map(r => (
+                                    {IDENTITY_ROLES.map(r => (
                                         <option key={r.value} value={r.value}>{r.emoji} {r.label}</option>
                                     ))}
                                 </select>

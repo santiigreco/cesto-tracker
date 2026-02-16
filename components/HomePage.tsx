@@ -104,12 +104,9 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     const { profile } = useProfile();
 
-    // Permissions Logic: Owner OR Admin OR Fixture Manager can access and edit fixture
-    const canAccessFixture = user && (
-        ADMIN_EMAILS.includes(user.email || '') || 
-        profile?.role === 'admin' || 
-        profile?.role === 'fixture_manager'
-    );
+    // Permissions Logic: Owner OR Permission='admin' OR Permission='fixture_manager'
+    const isOwner = user && ADMIN_EMAILS.map(e => e.toLowerCase()).includes((user.email || '').toLowerCase());
+    const canAccessFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

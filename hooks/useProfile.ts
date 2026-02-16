@@ -33,7 +33,8 @@ export const useProfile = () => {
                     id: user.id,
                     full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
                     favorite_club: null,
-                    role: 'jugador', // Default role
+                    role: 'jugador', // Default identity role
+                    permission_role: null, // Default permission (none)
                     avatar_url: user.user_metadata?.avatar_url || null,
                     updated_at: new Date().toISOString()
                 };

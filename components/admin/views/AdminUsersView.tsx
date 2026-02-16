@@ -8,20 +8,24 @@ import CheckIcon from '../../CheckIcon';
 import XIcon from '../../XIcon';
 import Loader from '../../Loader';
 import { TEAMS_CONFIG } from '../../../constants';
-import { UserRole } from '../../../types';
+import { IdentityRole, PermissionRole } from '../../../types';
 
-const ROLES: { value: UserRole; label: string; color: string }[] = [
+const IDENTITY_OPTIONS: { value: IdentityRole; label: string; color: string }[] = [
     { value: 'jugador', label: 'Jugador', color: 'bg-slate-700 text-slate-300' },
     { value: 'entrenador', label: 'Entrenador', color: 'bg-indigo-900/50 text-indigo-300 border-indigo-700' },
     { value: 'dirigente', label: 'Dirigente', color: 'bg-purple-900/50 text-purple-300 border-purple-700' },
     { value: 'periodista', label: 'Prensa', color: 'bg-pink-900/50 text-pink-300 border-pink-700' },
-    { value: 'admin', label: 'Admin', color: 'bg-red-900/50 text-red-300 border-red-500 font-bold' },
-    { value: 'fixture_manager', label: 'Gestor Fixture', color: 'bg-yellow-900/50 text-yellow-300 border-yellow-600 font-bold' },
     { value: 'otro', label: 'Otro', color: 'bg-slate-700 text-slate-400' },
 ];
 
+const PERMISSION_OPTIONS: { value: PermissionRole | 'user'; label: string; color: string }[] = [
+    { value: 'user', label: 'Usuario', color: 'bg-slate-800 text-slate-500 border-slate-700' }, // Represents null
+    { value: 'fixture_manager', label: 'Gestor Fixture', color: 'bg-yellow-900/50 text-yellow-300 border-yellow-600 font-bold' },
+    { value: 'admin', label: 'Admin', color: 'bg-red-900/50 text-red-300 border-red-500 font-bold' },
+];
+
 export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
-    const { users, fetchUsers, loading, error, deleteUser, updateUserRole, updateUserClub } = useAdminUsers(isOwner);
+    const { users, fetchUsers, loading, error, deleteUser, updateUserIdentity, updateUserPermission, updateUserClub } = useAdminUsers(isOwner);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [tempClub, setTempClub] = useState('');
@@ -75,7 +79,8 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
                     <thead className="bg-slate-700/50 text-slate-300 text-xs uppercase tracking-wider font-bold sticky top-0 backdrop-blur-sm">
                         <tr>
                             <th className="p-4">Usuario</th>
-                            <th className="p-4">Rol</th>
+                            <th className="p-4">Identidad</th>
+                            <th className="p-4">Permisos App</th>
                             <th className="p-4">Club Favorito</th>
                             <th className="p-4 text-center">Acciones</th>
                         </tr>
@@ -88,17 +93,36 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
                                     <div className="text-xs text-slate-500 font-mono">{user.id}</div>
                                     {user.email && <div className="text-xs text-cyan-500/80">{user.email}</div>}
                                 </td>
+                                
+                                {/* Selector de Identidad */}
                                 <td className="p-4">
                                     <select 
                                         value={user.role || 'jugador'} 
-                                        onChange={(e) => updateUserRole(user.id, e.target.value as UserRole)}
-                                        className={`bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 focus:ring-cyan-500 outline-none font-bold uppercase tracking-wide cursor-pointer hover:border-slate-400 transition-colors ${ROLES.find(r => r.value === user.role)?.color || 'text-white'}`}
+                                        onChange={(e) => updateUserIdentity(user.id, e.target.value as IdentityRole)}
+                                        className={`bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 focus:ring-cyan-500 outline-none font-bold uppercase tracking-wide cursor-pointer hover:border-slate-400 transition-colors ${IDENTITY_OPTIONS.find(r => r.value === user.role)?.color || 'text-white'}`}
                                     >
-                                        {ROLES.map(r => (
+                                        {IDENTITY_OPTIONS.map(r => (
                                             <option key={r.value} value={r.value}>{r.label}</option>
                                         ))}
                                     </select>
                                 </td>
+
+                                {/* Selector de Permisos */}
+                                <td className="p-4">
+                                    <select 
+                                        value={user.permission_role || 'user'} 
+                                        onChange={(e) => {
+                                            const val = e.target.value === 'user' ? null : e.target.value as PermissionRole;
+                                            updateUserPermission(user.id, val);
+                                        }}
+                                        className={`bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 focus:ring-cyan-500 outline-none font-bold uppercase tracking-wide cursor-pointer hover:border-slate-400 transition-colors ${PERMISSION_OPTIONS.find(r => r.value === (user.permission_role || 'user'))?.color || 'text-white'}`}
+                                    >
+                                        {PERMISSION_OPTIONS.map(r => (
+                                            <option key={r.value} value={r.value}>{r.label}</option>
+                                        ))}
+                                    </select>
+                                </td>
+
                                 <td className="p-4">
                                     {editingId === user.id ? (
                                         <div className="flex gap-2">
