@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { ShotPosition, GamePeriod, AppTab, HeatmapFilter, MapPeriodFilter, Settings, StatAction, SavedTeam, GameEvent, RosterPlayer } from './types';
 import { PERIOD_NAMES, STAT_LABELS } from './constants';
 import { useGameContext, initialGameState } from './context/GameContext';
@@ -48,6 +48,31 @@ import TeamRosterModal from './components/TeamRosterModal';
 import GameEventEditModal from './components/GameEventEditModal';
 import UserProfileModal from './components/UserProfileModal';
 
+// --- SUB-COMPONENT: CLOUD INDICATOR ---
+const CloudIndicator: React.FC<{ isSaving: boolean; lastSaved: Date | null; gameId: string | null }> = ({ isSaving, lastSaved, gameId }) => {
+    if (!gameId) return null; // No showing if never saved
+
+    return (
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-slate-800/80 px-2 py-1 rounded-full border border-slate-700 animate-fade-in">
+            {isSaving ? (
+                <>
+                    <div className="w-3 h-3 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+                    <span className="text-cyan-400">Guardando...</span>
+                </>
+            ) : lastSaved ? (
+                <>
+                    <span className="text-green-400">☁️</span>
+                    <span className="text-slate-400">
+                        Guardado {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                </>
+            ) : (
+                <span className="text-slate-500">Sin guardar cambios</span>
+            )}
+        </div>
+    );
+};
+
 function App() {
   // --- AUTH STATE ---
   const [user, setUser] = useState<User | null>(null);
@@ -95,7 +120,8 @@ function App() {
   
   const { 
       syncState, setSyncState, isLoading: isAppLoading, 
-      handleSyncToSupabase, handleLoadGame 
+      handleSyncToSupabase, handleLoadGame,
+      isAutoSaving, lastSaved
   } = useSupabaseSync();
 
   // --- LOCAL UI STATE ---
@@ -136,6 +162,45 @@ function App() {
       selectedPlayers?: string[];
       playerNames?: Record<string, string>;
   } | null>(null);
+
+  // --- AUTO-SAVE LOGIC ---
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+      // Requirements for AutoSave:
+      // 1. User Logged In
+      // 2. Game has an ID (was saved manually at least once, or loaded from cloud)
+      // 3. Game is NOT in Read-Only mode
+      if (user && gameState.gameId && !gameState.isReadOnly) {
+          
+          if (autoSaveTimeoutRef.current) {
+              clearTimeout(autoSaveTimeoutRef.current);
+          }
+
+          // Debounce: Wait 4 seconds after last change to save
+          autoSaveTimeoutRef.current = setTimeout(() => {
+              // Pass true for isAutoSave (Silent Mode)
+              handleSyncToSupabase(gameState.settings.gameName || 'Partido sin nombre', true);
+          }, 4000);
+      }
+
+      return () => {
+          if (autoSaveTimeoutRef.current) {
+              clearTimeout(autoSaveTimeoutRef.current);
+          }
+      };
+  }, [
+      gameState.shots, 
+      gameState.tallyStats, 
+      gameState.settings, 
+      gameState.playerNames, 
+      gameState.activePlayers, 
+      user, 
+      gameState.gameId, 
+      gameState.isReadOnly,
+      handleSyncToSupabase
+  ]);
+
 
   // --- HANDLERS (UI Specific) ---
   const handleStartApp = useCallback((teamName?: string, roster?: RosterPlayer[]) => {
@@ -333,10 +398,10 @@ function App() {
   }, [gameState.shots, analysisPlayer, analysisResultFilter, analysisPeriodFilter]);
 
   const tabTranslations: {[key in AppTab]: string} = { 
-    logger: gameState.gameMode === 'stats-tally' ? 'Anotador' : 'Registro de tiros',
-    courtAnalysis: 'Análisis de Cancha', 
+    logger: 'Anotador',
+    courtAnalysis: 'Análisis', 
     statistics: 'Estadísticas', 
-    faq: 'Preguntas Frecuentes',
+    faq: 'Ayuda',
   };
 
   const tabsForCurrentMode: AppTab[] = useMemo(() => {
@@ -429,11 +494,17 @@ function App() {
                       >Cesto Tracker 🏐{'\uFE0F'}</button>
                   </h1>
                    {settings.gameName && <p className="text-lg font-semibold text-white -mb-1 mt-1 truncate">{settings.gameName}</p>}
-                  <p className="text-base text-slate-400 mt-1">
-                    {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}
-                  </p>
+                  <div className="flex justify-center items-center gap-3 mt-1">
+                      <p className="text-base text-slate-400">
+                        {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}
+                      </p>
+                  </div>
               </div>
-              <div className="flex-none w-12 flex justify-end">
+              <div className="flex-none w-12 flex justify-end items-center gap-2">
+                  {/* Cloud Indicator shown near Gear Icon */}
+                  <div className="hidden sm:block">
+                      <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameState.gameId} />
+                  </div>
                   <button
                       onClick={() => setIsSettingsModalOpen(true)}
                       className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
@@ -443,6 +514,11 @@ function App() {
                   </button>
               </div>
           </header>
+          
+          {/* Mobile visible Cloud Indicator below header if needed, or integrate better */}
+          <div className="sm:hidden flex justify-center mb-4">
+               <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameState.gameId} />
+          </div>
 
           {/* Tab Switcher - Desktop */}
           <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">

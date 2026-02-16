@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
 import { mapShotToDb, mapShotFromDb, mapTallyPeriodToDb, mapTallyPeriodFromDb } from '../utils/dbAdapters';
@@ -15,12 +15,22 @@ export const useSupabaseSync = () => {
     const { gameState, setGameState } = useGameContext();
     const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' });
     const [isLoading, setIsLoading] = useState(false);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
 
-    const handleSyncToSupabase = async (gameName: string) => {
-        setSyncState({ status: 'syncing', message: 'Sincronizando con la nube...' });
+    // Modified to support auto-save (silent mode)
+    const handleSyncToSupabase = useCallback(async (gameName: string, isAutoSave: boolean = false) => {
+        if (isAutoSave) {
+            setIsAutoSaving(true);
+        } else {
+            setSyncState({ status: 'syncing', message: 'Sincronizando con la nube...' });
+        }
+
         try {
             // Get current user
             const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) throw new Error("Usuario no autenticado");
 
             // 1. Prepare and Upsert Game data
             const gamePayload = {
@@ -33,7 +43,7 @@ export const useSupabaseSync = () => {
                 tournament_id: gameState.settings.tournamentId || null,
                 my_team_name: gameState.settings.myTeam || null,
                 opponent_name: gameName.trim(), 
-                user_id: user?.id || null, // Associate with user
+                user_id: user.id, // Associate with user
             };
 
             const { data: gameData, error: gameError } = await supabase
@@ -49,6 +59,8 @@ export const useSupabaseSync = () => {
     
             // 2. Sync Shots if in shot-chart mode
             if (gameState.gameMode === 'shot-chart') {
+                // Delete existing shots to replace with current state (simple sync strategy)
+                // In a more complex app, we would diff this, but for this scale, delete-insert is safer for consistency
                 const { error: deleteError } = await supabase.from('shots').delete().eq('game_id', newGameId);
                 if (deleteError) throw deleteError;
     
@@ -69,8 +81,7 @@ export const useSupabaseSync = () => {
                     // Iterate dynamically over periods to support OTs without hardcoding
                     Object.keys(playerTally).forEach(periodKey => {
                         const periodStats = playerTally[periodKey as GamePeriod];
-                        // Skip completely empty periods to save DB space (optional optimization)
-                        // For now, we sync everything to ensure consistency
+                        // Sync everything to ensure consistency
                         statsPayload.push({ 
                             game_id: newGameId, 
                             player_number: playerNumber, 
@@ -83,14 +94,28 @@ export const useSupabaseSync = () => {
                 if (statsError) throw statsError;
             }
     
-            setGameState(prev => ({ ...prev, gameId: newGameId, settings: { ...prev.settings, gameName: gameName.trim() } }));
-            setSyncState({ status: 'success', message: '¡Partido guardado en la nube!' });
+            // Update local state only if needed (e.g. first save generated an ID)
+            if (gameState.gameId !== newGameId) {
+                setGameState(prev => ({ ...prev, gameId: newGameId, settings: { ...prev.settings, gameName: gameName.trim() } }));
+            }
+            
+            setLastSaved(new Date());
+
+            if (!isAutoSave) {
+                setSyncState({ status: 'success', message: '¡Partido guardado en la nube!' });
+            }
     
         } catch (error: any) {
             console.error('Error syncing with Supabase:', error);
-            setSyncState({ status: 'error', message: `Error: ${error.message}` });
+            if (!isAutoSave) {
+                setSyncState({ status: 'error', message: `Error: ${error.message}` });
+            }
+        } finally {
+            if (isAutoSave) {
+                setIsAutoSaving(false);
+            }
         }
-    };
+    }, [gameState, setGameState]);
 
     const handleLoadGame = async (gameId: string, enableEditing: boolean = false) => {
         setIsLoading(true);
@@ -153,6 +178,8 @@ export const useSupabaseSync = () => {
             };
             
             setGameState(loadedGameState);
+            // If loaded for editing, set lastSaved to now to start clean
+            if (enableEditing) setLastSaved(new Date());
 
         } catch (error: any) {
             console.error('Error loading game:', error);
@@ -166,6 +193,8 @@ export const useSupabaseSync = () => {
         syncState,
         setSyncState,
         isLoading,
+        isAutoSaving,
+        lastSaved,
         handleSyncToSupabase,
         handleLoadGame
     };

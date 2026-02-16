@@ -9,6 +9,7 @@ import Loader from './Loader';
 import TeamLogo from './TeamLogo';
 import TrophyIcon from './TrophyIcon';
 import ChevronDownIcon from './ChevronDownIcon';
+import UsersIcon from './UsersIcon'; // Added for user indicator
 import { GameMode, Settings } from '../types';
 import { User } from '@supabase/supabase-js';
 
@@ -20,6 +21,8 @@ interface SavedGame {
     settings: Settings;
     views: number;
     tournament_id: string | null;
+    user_id: string;
+    profiles?: { full_name: string | null } | null; // Joined profile data
 }
 
 interface TournamentSummary {
@@ -56,9 +59,6 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         setLoading(true);
         setError(null);
         try {
-            // Fetch tournaments that have games belonging to this user
-            // Or fetch all public tournaments? For now, let's just fetch all tournaments for simplicity
-            // ideally we would filter this too, but let's focus on filtering games.
             const { data, error } = await supabase
                 .from('tournaments')
                 .select('id, name')
@@ -68,9 +68,9 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
             
             // Add static options
             const allTournaments: TournamentSummary[] = [
-                { id: 'all', name: 'Todos mis Partidos' },
+                { id: 'all', name: 'Mis Partidos (Todos)' },
                 ...(data || []),
-                { id: 'none', name: 'Partidos Sin Torneo' }
+                { id: 'none', name: 'Mis Partidos (Sin Torneo)' }
             ];
             
             setTournaments(allTournaments);
@@ -88,16 +88,22 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
         setLoading(true);
         setError(null);
         try {
+            // Select including profile info to show who created the game
             let query = supabase
                 .from('games')
-                .select('id, created_at, game_mode, player_names, settings, views, tournament_id')
-                .eq('user_id', user.id) // Filter by current user
+                .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id, profiles(full_name)')
                 .order('created_at', { ascending: false });
 
-            // Apply filters based on tournament selection
-            if (tournamentId === 'none') {
-                query = query.is('tournament_id', null);
-            } else if (tournamentId !== 'all') {
+            // LOGIC CHANGE: 
+            // If specific tournament -> Show ALL games from EVERYONE.
+            // If 'all' or 'none' -> Show ONLY current user's games.
+            
+            if (tournamentId === 'all') {
+                query = query.eq('user_id', user.id);
+            } else if (tournamentId === 'none') {
+                query = query.eq('user_id', user.id).is('tournament_id', null);
+            } else {
+                // Specific tournament ID: Fetch games from ALL users for this tournament
                 query = query.eq('tournament_id', tournamentId);
             }
 
@@ -151,7 +157,10 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
 
     const filteredGames = useMemo(() => {
         return games.filter(game => {
-            const matchesSearch = (game.settings?.gameName || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch = 
+                (game.settings?.gameName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (game.profiles?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()); // Search by author too
+            
             const teamName = game.settings?.myTeam || 'Sin Equipo';
             const matchesTeam = selectedTeam === 'Todos' || teamName === selectedTeam;
             
@@ -170,7 +179,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
             <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
                 <div className="bg-slate-900 rounded-xl shadow-2xl p-8 max-w-sm w-full text-center border border-slate-700">
                     <h2 className="text-2xl font-bold text-white mb-4">Iniciar Sesión</h2>
-                    <p className="text-slate-400 mb-6">Necesitas ingresar con tu cuenta para ver y guardar tus partidos en la nube.</p>
+                    <p className="text-slate-400 mb-6">Necesitas ingresar con tu cuenta para ver el historial de partidos.</p>
                     <button onClick={onClose} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
                         Cerrar
                     </button>
@@ -196,9 +205,13 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                         )}
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-                                {view === 'tournaments' ? 'Mis Partidos' : selectedTournament?.name}
+                                {view === 'tournaments' ? 'Explorar Partidos' : selectedTournament?.name}
                             </h2>
-                            {view === 'games' && <p className="text-slate-400 text-xs">Historial personal</p>}
+                            {view === 'games' && (
+                                <p className="text-slate-400 text-xs">
+                                    {selectedTournament?.id === 'all' || selectedTournament?.id === 'none' ? 'Historial personal' : 'Historial global del torneo'}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white" aria-label="Cerrar">
@@ -221,14 +234,14 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                     >
                                         <div className="flex items-start gap-4">
                                             <div className={`p-3 rounded-lg ${t.id === 'all' ? 'bg-cyan-900/30 text-cyan-400' : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'} transition-colors`}>
-                                                {t.id === 'all' ? <SearchIcon className="h-6 w-6" /> : <TrophyIcon rank={1} />}
+                                                {t.id === 'all' ? <UsersIcon className="h-6 w-6" /> : <TrophyIcon rank={1} />}
                                             </div>
                                             <div>
                                                 <h3 className={`font-bold text-lg ${t.id === 'all' ? 'text-cyan-400' : 'text-white group-hover:text-cyan-300'}`}>
                                                     {t.name}
                                                 </h3>
                                                 <p className="text-sm text-slate-500 mt-1">
-                                                    {t.id === 'all' ? 'Ver todo mi historial' : t.id === 'none' ? 'Partidos sueltos' : 'Ver partidos'}
+                                                    {t.id === 'all' || t.id === 'none' ? 'Solo mis partidos' : 'Ver historial global'}
                                                 </p>
                                             </div>
                                         </div>
@@ -252,7 +265,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                 <input
                                     type="text"
                                     className="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full pl-10 p-2.5 placeholder-slate-500"
-                                    placeholder="Buscar partido..."
+                                    placeholder="Buscar por partido, equipo o creador..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -311,14 +324,23 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                                 />
                                             </div>
 
-                                            <div className="flex-grow min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <div className="sm:hidden">
-                                                         <TeamLogo teamName={game.settings?.myTeam || ''} className="h-6 w-6" />
+                                            <div className="flex-grow min-w-0 w-full">
+                                                <div className="flex items-center justify-between sm:justify-start gap-2 mb-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="sm:hidden">
+                                                             <TeamLogo teamName={game.settings?.myTeam || ''} className="h-6 w-6" />
+                                                        </div>
+                                                        <h3 className="font-bold text-white text-lg truncate group-hover:text-cyan-400 transition-colors">
+                                                            {game.settings?.gameName || 'Partido sin nombre'}
+                                                        </h3>
                                                     </div>
-                                                    <h3 className="font-bold text-white text-lg truncate group-hover:text-cyan-400 transition-colors">
-                                                        {game.settings?.gameName || 'Partido sin nombre'}
-                                                    </h3>
+                                                    
+                                                    {/* User Indicator (Only if global view and not my game) */}
+                                                    {game.profiles && game.user_id !== user.id && (
+                                                        <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 whitespace-nowrap">
+                                                            por {game.profiles.full_name?.split(' ')[0] || 'Anónimo'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 
                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
@@ -349,9 +371,13 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                                 </div>
                                                 <button
                                                     onClick={() => onLoadGame(game.id)}
-                                                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:shadow-cyan-500/20 transition-all text-sm w-auto"
+                                                    className={`font-bold py-2 px-6 rounded-lg shadow-lg transition-all text-sm w-auto ${
+                                                        game.user_id === user.id 
+                                                        ? 'bg-cyan-600 hover:bg-cyan-500 text-white hover:shadow-cyan-500/20' // My game: Active color
+                                                        : 'bg-slate-600 hover:bg-slate-500 text-slate-200 border border-slate-500' // Others: Muted color
+                                                    }`}
                                                 >
-                                                    Cargar
+                                                    {game.user_id === user.id ? 'Cargar' : 'Ver'}
                                                 </button>
                                             </div>
                                         </div>
