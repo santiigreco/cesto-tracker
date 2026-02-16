@@ -16,6 +16,7 @@ const ROLES: { value: UserRole; label: string; color: string }[] = [
     { value: 'dirigente', label: 'Dirigente', color: 'bg-purple-900/50 text-purple-300 border-purple-700' },
     { value: 'periodista', label: 'Prensa', color: 'bg-pink-900/50 text-pink-300 border-pink-700' },
     { value: 'admin', label: 'Admin', color: 'bg-red-900/50 text-red-300 border-red-500 font-bold' },
+    { value: 'fixture_manager', label: 'Gestor Fixture', color: 'bg-yellow-900/50 text-yellow-300 border-yellow-600 font-bold' },
     { value: 'otro', label: 'Otro', color: 'bg-slate-700 text-slate-400' },
 ];
 

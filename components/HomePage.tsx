@@ -104,8 +104,12 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     const { profile } = useProfile();
 
-    // Derived state for Fixture Admin permissions
-    const isFixtureAdmin = user && (ADMIN_EMAILS.includes(user.email || '') || profile?.role === 'admin');
+    // Permissions Logic: Owner OR Admin OR Fixture Manager can access and edit fixture
+    const canAccessFixture = user && (
+        ADMIN_EMAILS.includes(user.email || '') || 
+        profile?.role === 'admin' || 
+        profile?.role === 'fixture_manager'
+    );
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -113,7 +117,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     };
 
     const handleFixtureClick = () => {
-        if (isFixtureAdmin) {
+        if (canAccessFixture) {
             setIsFixtureOpen(true);
         } else {
             setIsComingSoonOpen(true);
@@ -261,7 +265,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Fixture</span>
-                                        {!isFixtureAdmin && <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider mt-0.5">Próximamente</span>}
+                                        {!canAccessFixture && <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider mt-0.5">Próximamente</span>}
                                     </div>
                                 </button>
 
@@ -371,7 +375,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 <FixtureView 
                     isOpen={isFixtureOpen} 
                     onClose={() => setIsFixtureOpen(false)} 
-                    isAdmin={isFixtureAdmin ? true : false} 
+                    isAdmin={canAccessFixture ? true : false} 
                 />
             )}
 

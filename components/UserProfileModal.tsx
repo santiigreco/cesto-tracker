@@ -25,6 +25,7 @@ const ROLES: { value: UserRole; label: string; emoji: string }[] = [
     { value: 'dirigente', label: 'Delegado / Mesa', emoji: '⏱️' },
     { value: 'hincha', label: 'Hincha / Familiar', emoji: '🥁' },
     { value: 'periodista', label: 'Prensa', emoji: '🎙️' },
+    { value: 'fixture_manager', label: 'Gestor Fixture', emoji: '📅' },
     { value: 'otro', label: 'Otro', emoji: '🏐' },
 ];
 
@@ -51,7 +52,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     // Hierarchical Permissions (Case Insensitive)
     const normalizedEmail = user.email ? user.email.toLowerCase().trim() : '';
     const isOwner = ADMIN_EMAILS.map(e => e.toLowerCase().trim()).includes(normalizedEmail);
-    const isAdmin = isOwner || profile?.role === 'admin';
+    // Only Owners and Admins can access the main Dashboard. Fixture Managers handle only the Fixture view.
+    const canAccessAdminPanel = isOwner || profile?.role === 'admin';
 
     useEffect(() => {
         if (profile) {
@@ -219,7 +221,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                         </button>
 
                         {/* Admin Button (Secret - Visible for Owner and Admins) */}
-                        {isAdmin && (
+                        {canAccessAdminPanel && (
                             <button
                                 onClick={() => setShowAdmin(true)}
                                 className="w-full py-2 bg-red-900/20 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
