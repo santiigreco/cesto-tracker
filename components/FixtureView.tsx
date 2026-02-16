@@ -5,8 +5,11 @@ import TeamLogo from './TeamLogo';
 import CalendarIcon from './CalendarIcon';
 import PencilIcon from './PencilIcon';
 import CheckIcon from './CheckIcon';
+import PlusIcon from './PlusIcon';
+import TrashIcon from './TrashIcon';
 import Loader from './Loader';
 import { useFixture, Match } from '../hooks/useFixture';
+import { TEAMS_CONFIG } from '../constants';
 
 interface FixtureViewProps {
     isOpen: boolean;
@@ -15,8 +18,18 @@ interface FixtureViewProps {
 }
 
 const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) => {
-    const { matches, loading, updateMatch } = useFixture();
+    const { matches, loading, updateMatch, addMatch, deleteMatch } = useFixture();
     const [isEditMode, setIsEditMode] = useState(false);
+    
+    // State for New Match Modal
+    const [isAddingMatch, setIsAddingMatch] = useState(false);
+    const [newMatchData, setNewMatchData] = useState({
+        tournament: '',
+        date: new Date().toISOString().split('T')[0], // Default today
+        time: '20:30',
+        homeTeam: '',
+        awayTeam: ''
+    });
 
     if (!isOpen) return null;
 
@@ -29,8 +42,38 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
     }, {} as Record<string, Match[]>);
 
     const handleUpdateMatch = (id: string, field: keyof Match, value: any) => {
-        // Llamamos directamente al hook que actualiza en Supabase
         updateMatch(id, { [field]: value });
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm("¿Estás seguro de eliminar este partido?")) {
+            await deleteMatch(id);
+        }
+    };
+
+    const handleCreateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMatchData.tournament || !newMatchData.homeTeam || !newMatchData.awayTeam) {
+            alert("Completa todos los campos obligatorios");
+            return;
+        }
+        
+        // Format date nicely if user uses the date picker
+        // (YYYY-MM-DD -> DD/MM) or keep as is.
+        // For simplicity, we send the raw value, but you might want to format it.
+        const formattedDate = newMatchData.date; 
+
+        await addMatch({
+            tournament: newMatchData.tournament,
+            date: formattedDate,
+            time: newMatchData.time,
+            homeTeam: newMatchData.homeTeam,
+            awayTeam: newMatchData.awayTeam
+        });
+        
+        setIsAddingMatch(false);
+        // Reset form slightly but keep tournament for convenience
+        setNewMatchData(prev => ({ ...prev, homeTeam: '', awayTeam: '' }));
     };
 
     return (
@@ -43,16 +86,24 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                 </div>
                 <div className="flex items-center gap-3">
                     {isAdmin && (
-                        <button
-                            onClick={() => setIsEditMode(!isEditMode)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                                isEditMode 
-                                ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg' 
-                                : 'bg-slate-700 text-cyan-400 hover:bg-slate-600 border border-cyan-900/50'
-                            }`}
-                        >
-                            {isEditMode ? <><CheckIcon className="h-4 w-4" /> Listo</> : <><PencilIcon className="h-4 w-4" /> Editar</>}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setIsAddingMatch(true)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm transition-colors shadow-lg"
+                            >
+                                <PlusIcon className="h-4 w-4" /> <span className="hidden sm:inline">Nuevo</span>
+                            </button>
+                            <button
+                                onClick={() => setIsEditMode(!isEditMode)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                                    isEditMode 
+                                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg' 
+                                    : 'bg-slate-700 text-cyan-400 hover:bg-slate-600 border border-cyan-900/50'
+                                }`}
+                            >
+                                {isEditMode ? <><CheckIcon className="h-4 w-4" /> Listo</> : <><PencilIcon className="h-4 w-4" /> Editar</>}
+                            </button>
+                        </>
                     )}
                     <button 
                         onClick={onClose}
@@ -77,7 +128,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                 ) : matches.length === 0 ? (
                     <div className="text-center text-slate-500 py-10">
                         <p>No hay partidos programados.</p>
-                        {isAdmin && <p className="text-xs mt-2">Agrega partidos desde tu panel de administrador de base de datos.</p>}
+                        {isAdmin && <p className="text-xs mt-2 text-cyan-400">¡Usa el botón "+ Nuevo" para crear uno!</p>}
                     </div>
                 ) : (
                     Object.entries(groupedMatches).map(([groupTitle, groupMatches]) => (
@@ -102,8 +153,17 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                         </div>
 
                                         {/* Score / Time / Inputs */}
-                                        <div className="w-32 sm:w-40 text-center flex flex-col items-center justify-center bg-slate-800/80 rounded py-1 mx-2 border border-slate-700 relative">
-                                            
+                                        <div className="w-32 sm:w-40 text-center flex flex-col items-center justify-center bg-slate-800/80 rounded py-1 mx-2 border border-slate-700 relative group">
+                                            {isEditMode && (
+                                                <button 
+                                                    onClick={() => handleDelete(match.id)}
+                                                    className="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 text-white shadow-md hover:bg-red-700 z-10"
+                                                    title="Eliminar partido"
+                                                >
+                                                    <TrashIcon className="h-3 w-3" />
+                                                </button>
+                                            )}
+
                                             {isEditMode ? (
                                                 <div className="flex flex-col gap-1 w-full px-1">
                                                     <div className="flex justify-center items-center gap-1">
@@ -187,6 +247,80 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                     Datos provistos por Cesto Tracker - Actualizado en tiempo real
                 </div>
             </div>
+
+            {/* Add Match Modal */}
+            {isAddingMatch && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4">
+                    <div className="bg-slate-800 rounded-xl w-full max-w-md p-6 border border-slate-700 shadow-2xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-white">Nuevo Partido</h2>
+                            <button onClick={() => setIsAddingMatch(false)} className="text-slate-400 hover:text-white"><XIcon /></button>
+                        </div>
+                        <form onSubmit={handleCreateSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Torneo</label>
+                                <input 
+                                    type="text" 
+                                    value={newMatchData.tournament}
+                                    onChange={e => setNewMatchData({...newMatchData, tournament: e.target.value})}
+                                    placeholder="Ej: Liga Nacional A"
+                                    className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha</label>
+                                    <input 
+                                        type="date" 
+                                        value={newMatchData.date}
+                                        onChange={e => setNewMatchData({...newMatchData, date: e.target.value})}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hora</label>
+                                    <input 
+                                        type="time" 
+                                        value={newMatchData.time}
+                                        onChange={e => setNewMatchData({...newMatchData, time: e.target.value})}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Local</label>
+                                    <select 
+                                        value={newMatchData.homeTeam}
+                                        onChange={e => setNewMatchData({...newMatchData, homeTeam: e.target.value})}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                    >
+                                        <option value="">Elegir...</option>
+                                        {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                                    </select>
+                                    {/* Fallback input if needed, but TEAMS_CONFIG is safer for now */}
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Visitante</label>
+                                    <select 
+                                        value={newMatchData.awayTeam}
+                                        onChange={e => setNewMatchData({...newMatchData, awayTeam: e.target.value})}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-cyan-500"
+                                    >
+                                        <option value="">Elegir...</option>
+                                        {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 rounded-lg shadow-lg transition-colors mt-2">
+                                Crear Partido
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

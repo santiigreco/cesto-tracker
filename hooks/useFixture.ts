@@ -44,6 +44,41 @@ export const useFixture = () => {
         setLoading(false);
     };
 
+    const addMatch = async (matchData: Omit<Match, 'id' | 'status' | 'scoreHome' | 'scoreAway'>) => {
+        const { error } = await supabase
+            .from('fixture')
+            .insert([{
+                tournament: matchData.tournament,
+                date: matchData.date,
+                time: matchData.time,
+                home_team: matchData.homeTeam,
+                away_team: matchData.awayTeam,
+                status: 'scheduled'
+            }]);
+
+        if (error) {
+            console.error("Error creating match:", error);
+            alert("Error al crear partido: " + error.message);
+        } else {
+            fetchMatches(); // Recargar inmediatamente
+        }
+    };
+
+    const deleteMatch = async (id: string) => {
+        const { error } = await supabase
+            .from('fixture')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error("Error deleting match:", error);
+            alert("Error al eliminar partido");
+        } else {
+            // Optimistic update
+            setMatches(prev => prev.filter(m => m.id !== id));
+        }
+    };
+
     // Actualizar un partido en la DB
     const updateMatch = async (id: string, updates: Partial<Match>) => {
         // Optimistic update (actualizar UI antes de que el server responda para que se sienta rápido)
@@ -87,7 +122,9 @@ export const useFixture = () => {
     return {
         matches,
         loading,
+        addMatch,
         updateMatch,
+        deleteMatch,
         refresh: fetchMatches
     };
 };
