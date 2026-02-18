@@ -17,6 +17,7 @@ export interface Match {
 export interface TournamentOption {
     id: string;
     name: string;
+    status: 'active' | 'finished';
 }
 
 export const useFixture = () => {
@@ -53,11 +54,17 @@ export const useFixture = () => {
     const fetchTournaments = async () => {
         const { data, error } = await supabase
             .from('tournaments')
-            .select('id, name')
+            .select('id, name, status')
             .order('created_at', { ascending: false });
         
         if (!error && data) {
-            setTournaments(data);
+            // Default status to active if column is missing/null in legacy rows
+            const mappedTournaments: TournamentOption[] = data.map((t: any) => ({
+                id: t.id,
+                name: t.name,
+                status: t.status || 'active'
+            }));
+            setTournaments(mappedTournaments);
         }
     };
 

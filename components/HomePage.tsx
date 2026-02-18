@@ -16,7 +16,6 @@ import { supabase } from '../utils/supabaseClient';
 import { useProfile } from '../hooks/useProfile';
 import { ADMIN_EMAILS } from '../constants';
 import FixtureView from './FixtureView';
-import ConfirmationModal from './ConfirmationModal';
 import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
@@ -96,7 +95,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isFixtureOpen, setIsFixtureOpen] = useState(false);
-    const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
     
     // New state for direct team selection flow
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
@@ -104,8 +102,9 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const { profile } = useProfile();
 
     // Permissions Logic: Owner OR Permission='admin' OR Permission='fixture_manager'
+    // This is now used only for EDITING privileges, not viewing
     const isOwner = user && ADMIN_EMAILS.map(e => e.toLowerCase()).includes((user.email || '').toLowerCase());
-    const canAccessFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
+    const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {
         await (supabase.auth as any).signOut();
@@ -113,11 +112,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     };
 
     const handleFixtureClick = () => {
-        if (canAccessFixture) {
-            setIsFixtureOpen(true);
-        } else {
-            setIsComingSoonOpen(true);
-        }
+        setIsFixtureOpen(true);
     };
 
     const handleStartClick = () => {
@@ -261,7 +256,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Fixture</span>
-                                        {!canAccessFixture && <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider mt-0.5">Próximamente</span>}
                                     </div>
                                 </button>
 
@@ -371,19 +365,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 <FixtureView 
                     isOpen={isFixtureOpen} 
                     onClose={() => setIsFixtureOpen(false)} 
-                    isAdmin={canAccessFixture ? true : false} 
-                />
-            )}
-
-            {isComingSoonOpen && (
-                <ConfirmationModal 
-                    title="Fixture 📅" 
-                    message="Próximamente: Calendario completo, resultados en vivo y tabla de posiciones."
-                    confirmText="Entendido"
-                    cancelText="Cerrar"
-                    onConfirm={() => setIsComingSoonOpen(false)}
-                    onClose={() => setIsComingSoonOpen(false)}
-                    confirmButtonColor="bg-cyan-600 hover:bg-cyan-700"
+                    isAdmin={canEditFixture ? true : false} 
                 />
             )}
 
