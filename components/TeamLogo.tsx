@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ShieldIcon from './ShieldIcon';
 
@@ -99,7 +100,8 @@ const Logos: Record<string, React.FC> = {
 
 const TeamLogo: React.FC<TeamLogoProps> = ({ teamName, className = "h-12 w-12", fallbackClassName }) => {
     // Normalize string slightly for matching (case insensitive, trim)
-    const normalizedName = Object.keys(Logos).find(key => key.toLowerCase() === teamName.trim().toLowerCase());
+    const safeTeamName = teamName || '';
+    const normalizedName = Object.keys(Logos).find(key => key.toLowerCase() === safeTeamName.trim().toLowerCase());
     
     const LogoComponent = normalizedName ? Logos[normalizedName] : null;
 

@@ -182,7 +182,7 @@ function App() {
         return;
     }
 
-    if (!gameState.currentPlayer.trim() || gameState.currentPlayer === 'Todos') {
+    if (!gameState.currentPlayer || !gameState.currentPlayer.trim() || gameState.currentPlayer === 'Todos') {
       alert('Por favor, selecciona un jugador antes de marcar un tiro.');
       return;
     }
