@@ -18,6 +18,7 @@ import { useProfile } from '../hooks/useProfile';
 import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
+import { useNextMatch } from '../hooks/useNextMatch';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -80,6 +81,124 @@ const TallyMockup = () => (
         </div>
     </PhoneMockup>
 );
+
+
+// ── Next Match / Last Game Widget ──────────────────────────────────────
+const NextMatchWidget: React.FC<{
+    user: HomePageProps['user'];
+    onFixtureClick: () => void;
+    onLoadGameClick: () => void;
+    onLoadGame: (id: string) => void;
+}> = ({ user, onFixtureClick, onLoadGameClick, onLoadGame }) => {
+    const { nextMatch, lastGame, loading } = useNextMatch(user?.id);
+
+    if (loading) {
+        return (
+            <div className="h-20 rounded-2xl bg-slate-800/50 border border-slate-700/50 animate-pulse" />
+        );
+    }
+
+    // ── Próximo partido del fixture ──
+    if (nextMatch) {
+        const matchDate = new Date(`${nextMatch.date}T00:00:00`);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((matchDate.getTime() - today.getTime()) / 86_400_000);
+
+        const hasScore = nextMatch.scoreHome !== '' && nextMatch.scoreAway !== '';
+        const isFinished = hasScore || nextMatch.status === 'finished';
+        const isToday = diffDays === 0;
+        const isTomorrow = diffDays === 1;
+
+        const dayLabel = isToday ? '🔴 Hoy'
+            : isTomorrow ? '📅 Mañana'
+                : `📅 ${matchDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+
+        return (
+            <button
+                onClick={onFixtureClick}
+                className="group w-full text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 rounded-2xl p-4 transition-all duration-200"
+            >
+                <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-red-400' : 'text-slate-500'
+                        }`}>
+                        {isFinished ? '✅ Último resultado' : `${dayLabel} · ${nextMatch.time}hs`}
+                    </span>
+                    {nextMatch.round && (
+                        <span className="text-[10px] text-slate-600 font-bold">{nextMatch.round}</span>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                    {/* Local */}
+                    <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+                        <span className="text-sm font-bold text-slate-200 truncate text-right">
+                            {nextMatch.homeTeam}
+                        </span>
+                        <TeamLogo teamName={nextMatch.homeTeam} className="h-8 w-8 flex-shrink-0" />
+                    </div>
+
+                    {/* Score / vs */}
+                    <div className="flex-shrink-0 text-center min-w-[52px]">
+                        {isFinished ? (
+                            <span className="text-xl font-black text-white tabular-nums">
+                                {nextMatch.scoreHome} : {nextMatch.scoreAway}
+                            </span>
+                        ) : (
+                            <span className="text-xs font-black text-slate-500 tracking-widest">VS</span>
+                        )}
+                    </div>
+
+                    {/* Visitante */}
+                    <div className="flex items-center gap-2 flex-1 justify-start min-w-0">
+                        <TeamLogo teamName={nextMatch.awayTeam} className="h-8 w-8 flex-shrink-0" />
+                        <span className="text-sm font-bold text-slate-200 truncate">
+                            {nextMatch.awayTeam}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-600 truncate">{nextMatch.tournament}</span>
+                    <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">
+                        Ver fixture →
+                    </span>
+                </div>
+            </button>
+        );
+    }
+
+    // ── Último partido guardado del usuario (fallback) ──
+    if (lastGame && user) {
+        const relDate = new Date(lastGame.createdAt).toLocaleDateString('es-AR', {
+            day: 'numeric', month: 'short'
+        });
+        return (
+            <button
+                onClick={() => onLoadGame(lastGame.id)}
+                className="group w-full text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-2xl p-4 transition-all duration-200"
+            >
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                        🕐 Último partido guardado
+                    </span>
+                    <span className="text-[10px] text-slate-600">{relDate}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <TeamLogo teamName={lastGame.myTeam} className="h-8 w-8 flex-shrink-0" />
+                    <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{lastGame.gameName}</p>
+                        <p className="text-xs text-slate-500">{lastGame.myTeam || 'Sin equipo'}</p>
+                    </div>
+                    <span className="ml-auto text-[10px] text-emerald-400 font-bold group-hover:text-emerald-300">
+                        Retomar →
+                    </span>
+                </div>
+            </button>
+        );
+    }
+
+    return null; // No data yet
+};
 
 interface HomePageProps {
     onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
@@ -188,21 +307,13 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             </p>
                         </div>
 
-                        {/* How it works steps */}
-                        <div className="flex flex-row justify-between items-start gap-2 pt-4 pb-2 px-1">
-                            {[
-                                { step: 1, text: "Elegí equipo" },
-                                { step: 2, text: "Marcá tiros y estadísticas" },
-                                { step: 3, text: "Analizá y compartí" }
-                            ].map((item) => (
-                                <div key={item.step} className="flex flex-col items-center text-center gap-2 flex-1">
-                                    <div className="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-sm border border-cyan-500/30">
-                                        {item.step}
-                                    </div>
-                                    <p className="text-xs text-slate-400 leading-tight font-medium max-w-[100px]">{item.text}</p>
-                                </div>
-                            ))}
-                        </div>
+                        {/* ── Next Match / Last Game Widget ── */}
+                        <NextMatchWidget
+                            user={user}
+                            onFixtureClick={handleFixtureClick}
+                            onLoadGameClick={onLoadGameClick}
+                            onLoadGame={(id) => onLoadGame(id, true)}
+                        />
 
                         {/* --- BENTO GRID ACTION CENTER --- */}
                         <div className="w-full bg-slate-800/30 p-4 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
