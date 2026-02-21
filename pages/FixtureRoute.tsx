@@ -2,15 +2,18 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { SUPER_ADMIN_EMAILS } from '../constants';
 import FixtureView from '../components/FixtureView';
 
 export default function FixtureRoute() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { profile } = useProfile();
+    const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
 
     const canEditFixture =
         profile?.is_admin === true ||
+        isSuperAdmin ||
         profile?.permission_role === 'admin' ||
         profile?.permission_role === 'fixture_manager';
 
@@ -29,6 +32,14 @@ export default function FixtureRoute() {
                 </button>
                 <span className="text-slate-700">|</span>
                 <span className="text-white font-black text-sm tracking-widest uppercase">🏐 Cesto Tracker</span>
+                {canEditFixture && (
+                    <button
+                        onClick={() => navigate('/admin')}
+                        className="ml-auto bg-red-900/20 border border-red-900/50 text-red-500 hover:text-white hover:bg-red-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest transition-all"
+                    >
+                        🛡️ Panel Admin
+                    </button>
+                )}
             </div>
 
             <div className="max-w-3xl mx-auto px-4 pb-8">

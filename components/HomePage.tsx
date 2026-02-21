@@ -19,6 +19,7 @@ import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
 import { useNextMatch } from '../hooks/useNextMatch';
+import { SUPER_ADMIN_EMAILS } from '../constants';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -227,9 +228,10 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const { profile } = useProfile();
+    const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
 
-    // Permissions: use DB-sourced is_admin, not client-side email list
-    const isOwner = user && profile?.is_admin === true;
+    // Permissions: use DB-sourced is_admin, supplemented by SuperAdmin list
+    const isOwner = user && (profile?.is_admin === true || isSuperAdmin);
     const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {
@@ -277,7 +279,15 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     <span className="text-2xl">🏐</span>
                     <h1 className="font-extrabold text-lg tracking-tight text-white">Cesto Tracker</h1>
                 </div>
-                <div>
+                <div className="flex items-center gap-3">
+                    {canEditFixture && (
+                        <button
+                            onClick={() => navigate('/admin')}
+                            className="hidden sm:flex items-center gap-2 bg-red-900/20 border border-red-900/50 text-red-500 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all"
+                        >
+                            <span>🛡️ Panel Admin</span>
+                        </button>
+                    )}
                     {user ? (
                         <div
                             onClick={() => setIsProfileOpen(true)}

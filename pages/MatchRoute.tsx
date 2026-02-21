@@ -12,7 +12,8 @@ import AppModals from '../components/AppModals';
 import Loader from '../components/Loader';
 import Scoreboard from '../components/Scoreboard';
 import { ShotPosition, GameEvent, StatAction, AppTab, SavedTeam } from '../types';
-import { STAT_LABELS } from '../constants';
+import { STAT_LABELS, SUPER_ADMIN_EMAILS } from '../constants';
+import { useProfile } from '../hooks/useProfile';
 
 export default function MatchRoute() {
     const { id } = useParams();
@@ -23,6 +24,8 @@ export default function MatchRoute() {
         activeTab, setActiveTab, openModal, closeModal,
         actionToAssign, setActionToAssign
     } = useUI();
+    const { profile } = useProfile();
+    const isAdmin = profile?.is_admin || (user?.email && SUPER_ADMIN_EMAILS.includes(user.email));
 
     const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving } = useSupabaseSync();
 
@@ -116,6 +119,7 @@ export default function MatchRoute() {
                     gameId={gameState.gameId}
                     onOpenSettings={() => openModal('settings')}
                     isReadOnly={gameState.isReadOnly}
+                    isAdmin={isAdmin}
                     currentPeriod={gameState.currentPeriod}
                     onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
                 />

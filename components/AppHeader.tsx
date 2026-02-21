@@ -17,6 +17,7 @@ interface AppHeaderProps {
     gameId: string | null;
     onOpenSettings: () => void;
     isReadOnly: boolean;
+    isAdmin?: boolean;
     currentPeriod?: GamePeriod;
     onPeriodChange?: (period: GamePeriod) => void;
 }
@@ -32,6 +33,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     gameId,
     onOpenSettings,
     isReadOnly,
+    isAdmin,
     currentPeriod,
     onPeriodChange
 }) => {
@@ -86,7 +88,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                         </div>
                     )}
                 </div>
-                <div className="flex-none w-12 flex justify-end items-center gap-2">
+                <div className="flex-none w-24 flex justify-end items-center gap-2">
+                    {isAdmin && (
+                        <button
+                            onClick={() => window.location.href = '/admin'}
+                            className="p-2 rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
+                            title="Panel de Administración"
+                        >
+                            <span className="text-xl">🛡️</span>
+                        </button>
+                    )}
                     <div className="hidden sm:block">
                         <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameId} />
                     </div>
