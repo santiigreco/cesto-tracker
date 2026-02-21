@@ -52,14 +52,17 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const gamePayload = {
                 id: gameState.gameId || undefined,
                 game_mode: gameState.gameMode,
-                settings: { ...gameState.settings, gameName: gameName.trim() },
+                settings: {
+                    ...gameState.settings,
+                    gameName: gameName.trim(),
+                    teamFouls: gameState.teamFouls // Move into settings to avoid schema error
+                },
                 player_names: gameState.playerNames,
                 available_players: gameState.availablePlayers,
                 tournament_id: gameState.settings.tournamentId || null,
                 my_team_name: gameState.settings.myTeam || null,
                 opponent_name: gameName.trim(),
                 user_id: user.id,
-                team_fouls: gameState.teamFouls,
             };
 
             const { data: gameData, error: gameError } = await supabase
@@ -206,7 +209,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 activePlayers: gameData.available_players.slice(0, 6),
                 shots: loadedShots,
                 tallyStats: loadedTallyStats,
-                teamFouls: gameData.team_fouls || initialGameState.teamFouls,
+                teamFouls: gameData.settings?.teamFouls || gameData.team_fouls || initialGameState.teamFouls,
                 isReadOnly: !enableEditing,
             };
 
