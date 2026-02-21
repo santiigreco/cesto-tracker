@@ -5,6 +5,7 @@ import App from './App';
 import { GameProvider } from './context/GameContext';
 import { AuthProvider } from './context/AuthContext';
 import { UIProvider } from './context/UIContext';
+import { SyncProvider } from './context/SyncContext';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -18,9 +19,11 @@ root.render(
     <BrowserRouter>
       <AuthProvider>
         <GameProvider>
-          <UIProvider>
-            <App />
-          </UIProvider>
+          <SyncProvider>
+            <UIProvider>
+              <App />
+            </UIProvider>
+          </SyncProvider>
         </GameProvider>
       </AuthProvider>
     </BrowserRouter>

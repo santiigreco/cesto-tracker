@@ -3,7 +3,6 @@ import { AppTab, Settings, GameState, StatAction, GameEvent, ShotPosition, Saved
 import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext, initialGameState } from '../context/GameContext';
-import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import { useGameLogic } from '../hooks/useGameLogic';
 
 import MobileMenu from './MobileMenu';
@@ -19,6 +18,7 @@ import NotificationPopup from './NotificationPopup';
 import GameEventEditModal from './GameEventEditModal';
 import UserProfileModal from './UserProfileModal';
 import TeamRosterModal from './TeamRosterModal';
+import Toast from './Toast';
 
 interface AppModalsProps {
     tabTranslations: { [key in AppTab]: string };
@@ -36,18 +36,21 @@ interface AppModalsProps {
     handleTeamLoadedFromHome: (team: SavedTeam) => void;
 }
 
+import { useSync } from '../context/SyncContext';
+
 const AppModals: React.FC<AppModalsProps> = (props) => {
     const {
         activeTab, setActiveTab,
         modals, closeModal,
         actionToAssign, setActionToAssign,
         notificationPopup, setNotificationPopup,
+        toast,
         handleShare
     } = useUI();
 
     const { user, handleLogout, handleLogin } = useAuth();
     const { gameState, setGameState } = useGameContext();
-    const { syncState, setSyncState, handleSyncToSupabase, handleLoadGame } = useSupabaseSync();
+    const { syncState, setSyncState, handleSyncToSupabase, handleLoadGame } = useSync();
 
     const {
         handleSubstitution,
@@ -286,6 +289,8 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     currentSelection={{ name: '', players: [] }}
                 />
             )}
+
+            {toast && <Toast message={toast.message} type={toast.type} />}
         </>
     );
 };

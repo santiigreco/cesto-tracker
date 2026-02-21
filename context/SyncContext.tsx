@@ -1,9 +1,9 @@
 
-import { useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
-import { mapShotToDb, mapShotFromDb, mapTallyPeriodToDb, mapTallyPeriodFromDb } from '../utils/dbAdapters';
-import { Shot, GameState, TallyStats, GamePeriod, PlayerStreak } from '../types';
+import { useGameContext } from './GameContext';
+import { useUI } from './UIContext';
+import { GamePeriod } from '../types';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 export interface SyncState {
@@ -11,17 +11,29 @@ export interface SyncState {
     message: string;
 }
 
-export const useSupabaseSync = () => {
-    const { gameState, setGameState } = useGameContext();
+interface SyncContextType {
+    syncState: SyncState;
+    setSyncState: (state: SyncState) => void;
+    isAutoSaving: boolean;
+    isLoading: boolean;
+    lastSaved: Date | null;
+    handleSyncToSupabase: (gameNameInput?: any, isAutoSaveInput?: boolean) => Promise<void>;
+    handleLoadGame: (gameId: string, enableEditing: boolean) => Promise<void>;
+}
+
+const SyncContext = createContext<SyncContextType | undefined>(undefined);
+
+export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { gameState, setGameState, initialPlayerTally, initialGameState } = useGameContext();
+    const { showToast } = useUI();
     const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' });
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [isAutoSaving, setIsAutoSaving] = useState(false);
 
-    // Modified to support auto-save (silent mode)
     const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean) => {
-        // Handle event-triggered calls (where gameNameInput is a React Event)
-        const gameName = (typeof gameNameInput === 'string')
+        // Handle event-triggered calls (where gameNameInput is a React Event) or parameter-based
+        const gameName = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
             ? gameNameInput
             : (gameState.settings.gameName || `Partido del ${new Date().toLocaleDateString()}`);
 
@@ -34,23 +46,19 @@ export const useSupabaseSync = () => {
         }
 
         try {
-            // Get current user (v2 sync)
             const { data: { user } } = await supabase.auth.getUser();
-
             if (!user) throw new Error("Usuario no autenticado");
 
-            // 1. Prepare and Upsert Game data
             const gamePayload = {
-                id: gameState.gameId || undefined, // Let Supabase generate UUID on first sync
+                id: gameState.gameId || undefined,
                 game_mode: gameState.gameMode,
                 settings: { ...gameState.settings, gameName: gameName.trim() },
                 player_names: gameState.playerNames,
                 available_players: gameState.availablePlayers,
-                // New Fields for Database Relation
                 tournament_id: gameState.settings.tournamentId || null,
                 my_team_name: gameState.settings.myTeam || null,
                 opponent_name: gameName.trim(),
-                user_id: user.id, // Associate with user
+                user_id: user.id,
                 team_fouls: gameState.teamFouls,
             };
 
@@ -65,67 +73,71 @@ export const useSupabaseSync = () => {
 
             const newGameId = gameData.id;
 
-            // 2. Sync Shots if in shot-chart mode
+            // Sync Shots
             if (gameState.gameMode === 'shot-chart') {
-                // Delete existing shots to replace with current state (simple sync strategy)
-                // In a more complex app, we would diff this, but for this scale, delete-insert is safer for consistency
-                const { error: deleteError } = await supabase.from('shots').delete().eq('game_id', newGameId);
-                if (deleteError) throw deleteError;
-
+                await supabase.from('shots').delete().eq('game_id', newGameId);
                 if (gameState.shots.length > 0) {
-                    const shotsPayload = gameState.shots.map(shot => mapShotToDb(shot, newGameId));
-                    const { error: shotsError } = await supabase.from('shots').insert(shotsPayload);
-                    if (shotsError) throw shotsError;
+                    const shotsPayload = gameState.shots.map(shot => ({
+                        game_id: newGameId,
+                        player_number: shot.playerNumber,
+                        x: shot.position.x,
+                        y: shot.position.y,
+                        is_gol: shot.isGol,
+                        gol_value: shot.golValue,
+                        period: shot.period
+                    }));
+                    await supabase.from('shots').insert(shotsPayload);
                 }
             }
 
-            // 3. Sync Tally Stats if in stats-tally mode
+            // Sync Tally Stats
             if (gameState.gameMode === 'stats-tally' && Object.keys(gameState.tallyStats).length > 0) {
                 const statsPayload: any[] = [];
-
                 for (const playerNumber in gameState.tallyStats) {
                     const playerTally = gameState.tallyStats[playerNumber];
-
-                    // Iterate dynamically over periods to support OTs without hardcoding
                     Object.keys(playerTally).forEach(periodKey => {
                         const periodStats = playerTally[periodKey as GamePeriod];
-                        // Sync everything to ensure consistency
                         statsPayload.push({
                             game_id: newGameId,
                             player_number: playerNumber,
                             period: periodKey,
-                            ...mapTallyPeriodToDb(periodStats)
+                            goles: periodStats.goles,
+                            triples: periodStats.triples,
+                            fallos: periodStats.fallos,
+                            recuperos: periodStats.recuperos,
+                            perdidas: periodStats.perdidas,
+                            rebote_ofensivo: periodStats.reboteOfensivo,
+                            rebote_defensivo: periodStats.reboteDefensivo,
+                            asistencias: periodStats.asistencias,
+                            goles_contra: periodStats.golesContra,
+                            faltas_personales: periodStats.faltasPersonales
                         });
                     });
                 }
-                const { error: statsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
-                if (statsError) throw statsError;
+                await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
             }
 
-            // Update local state only if needed (e.g. first save generated an ID)
             if (gameState.gameId !== newGameId) {
                 setGameState(prev => ({ ...prev, gameId: newGameId, settings: { ...prev.settings, gameName: gameName.trim() } }));
             }
 
             setLastSaved(new Date());
-
             if (!isAutoSave) {
-                setSyncState({ status: 'success', message: '¡Partido guardado en la nube!' });
+                setSyncState({ status: 'success', message: '¡Partido guardado con éxito!' });
             }
-
+            showToast('¡Partido guardado en la nube!', 'success');
         } catch (error: any) {
-            console.error('Error syncing with Supabase:', error);
+            console.error('Sync Error:', error);
             if (!isAutoSave) {
-                setSyncState({ status: 'error', message: `Error: ${error.message}` });
+                setSyncState({ status: 'error', message: error.message });
             }
+            showToast(`Error al guardar: ${error.message}`, 'error');
         } finally {
-            if (isAutoSave) {
-                setIsAutoSaving(false);
-            }
+            setIsAutoSaving(false);
         }
     }, [gameState, setGameState]);
 
-    const handleLoadGame = async (gameId: string, enableEditing: boolean = false) => {
+    const handleLoadGame = useCallback(async (gameId: string, enableEditing: boolean = false) => {
         setIsLoading(true);
         try {
             const [gameRes, shotsRes, tallyRes] = await Promise.all([
@@ -140,7 +152,6 @@ export const useSupabaseSync = () => {
 
             const gameData = gameRes.data;
 
-            // Increment view count in background only if reading
             if (!enableEditing) {
                 try {
                     const currentViews = gameData.views || 0;
@@ -150,62 +161,75 @@ export const useSupabaseSync = () => {
                 }
             }
 
-            const loadedShots: Shot[] = (shotsRes.data || []).map(mapShotFromDb);
+            const loadedShots = (shotsRes.data || []).map((s: any) => ({
+                id: s.id,
+                playerNumber: s.player_number,
+                position: { x: s.x, y: s.y },
+                isGol: s.is_gol,
+                golValue: s.gol_value,
+                period: s.period
+            }));
 
-            const loadedTallyStats: Record<string, TallyStats> = {};
+            const loadedTallyStats: any = {};
             (tallyRes.data || []).forEach((stat: any) => {
                 const player = stat.player_number;
                 if (!loadedTallyStats[player]) {
                     loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
                 }
-                loadedTallyStats[player][stat.period as GamePeriod] = mapTallyPeriodFromDb(stat);
+                loadedTallyStats[player][stat.period] = {
+                    goles: stat.goles,
+                    triples: stat.triples,
+                    fallos: stat.fallos,
+                    recuperos: stat.recuperos,
+                    perdidas: stat.perdidas,
+                    reboteOfensivo: stat.rebote_ofensivo,
+                    reboteDefensivo: stat.rebote_defensivo,
+                    asistencias: stat.asistencias,
+                    golesContra: stat.goles_contra,
+                    faltasPersonales: stat.faltas_personales
+                };
             });
 
-            // Enrich settings with DB data if missing in JSON
-            const enrichedSettings = {
-                ...gameData.settings,
-                tournamentId: gameData.tournament_id || gameData.settings?.tournamentId,
-                tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
-            };
-
-            const loadedGameState: GameState = {
+            const loadedGameState = {
                 ...initialGameState,
                 gameId: gameData.id,
                 gameMode: gameData.game_mode,
                 isSetupComplete: true,
                 hasSeenHomepage: true,
-                settings: enrichedSettings,
+                settings: {
+                    ...gameData.settings,
+                    tournamentId: gameData.tournament_id || gameData.settings?.tournamentId,
+                    tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
+                },
                 availablePlayers: gameData.available_players,
                 playerNames: gameData.player_names,
                 activePlayers: gameData.available_players.slice(0, 6),
                 shots: loadedShots,
                 tallyStats: loadedTallyStats,
-                gameLog: [], // Start with empty log on load
-                teamFouls: gameData.team_fouls || { 'First Half': 0, 'Second Half': 0, 'First Overtime': 0, 'Second Overtime': 0 },
-                playerStreaks: {},
-                tutorialStep: 3,
+                teamFouls: gameData.team_fouls || initialGameState.teamFouls,
                 isReadOnly: !enableEditing,
             };
 
-            setGameState(loadedGameState);
-            // If loaded for editing, set lastSaved to now to start clean
+            setGameState(loadedGameState as any);
             if (enableEditing) setLastSaved(new Date());
 
         } catch (error: any) {
-            console.error('Error loading game:', error);
+            console.error('Load Error:', error);
             alert(`No se pudo cargar el partido: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [setGameState, initialPlayerTally, initialGameState]);
 
-    return {
-        syncState,
-        setSyncState,
-        isLoading,
-        isAutoSaving,
-        lastSaved,
-        handleSyncToSupabase,
-        handleLoadGame
-    };
+    return (
+        <SyncContext.Provider value={{ syncState, setSyncState, isAutoSaving, isLoading, lastSaved, handleSyncToSupabase, handleLoadGame }}>
+            {children}
+        </SyncContext.Provider>
+    );
+};
+
+export const useSync = () => {
+    const context = useContext(SyncContext);
+    if (!context) throw new Error('useSync must be used within SyncProvider');
+    return context;
 };

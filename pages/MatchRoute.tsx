@@ -14,6 +14,7 @@ import Scoreboard from '../components/Scoreboard';
 import { ShotPosition, GameEvent, StatAction, AppTab, SavedTeam } from '../types';
 import { STAT_LABELS } from '../constants';
 import { useProfile } from '../hooks/useProfile';
+import { useSync } from '../context/SyncContext';
 
 export default function MatchRoute() {
     const { id } = useParams();
@@ -27,7 +28,7 @@ export default function MatchRoute() {
     const { profile } = useProfile();
     const isAdmin = profile?.is_admin === true || profile?.permission_role === 'admin';
 
-    const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving } = useSupabaseSync();
+    const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving } = useSync();
 
     const {
         handlePlayerChange, handleSubstitution, updatePlayerName,
@@ -138,7 +139,7 @@ export default function MatchRoute() {
                     onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
                     user={user}
                     onLogin={handleLogin}
-                    onSave={handleSyncToSupabase}
+                    onSave={() => handleSyncToSupabase(true)}
                 />
 
                 <Scoreboard />

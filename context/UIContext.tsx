@@ -36,6 +36,10 @@ interface UIContextType {
     notificationPopup: { type: 'caliente' | 'fria'; playerNumber: string } | null;
     setNotificationPopup: (popup: { type: 'caliente' | 'fria'; playerNumber: string } | null) => void;
 
+    // Toast
+    toast: { message: string; type: 'success' | 'error' | 'info' } | null;
+    showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+
     // General actions
     handleShare: () => Promise<void>;
 }
@@ -46,6 +50,12 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [activeTab, setActiveTab] = useState<AppTab>('logger');
     const [actionToAssign, setActionToAssign] = useState<StatAction | null>(null);
     const [notificationPopup, setNotificationPopup] = useState<{ type: 'caliente' | 'fria'; playerNumber: string } | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
 
     // Modal Manager State
     const [modals, setModals] = useState<Record<ModalName, ModalState>>({
@@ -101,6 +111,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             modals, openModal, closeModal,
             actionToAssign, setActionToAssign,
             notificationPopup, setNotificationPopup,
+            toast, showToast,
             handleShare
         }}>
             {children}
