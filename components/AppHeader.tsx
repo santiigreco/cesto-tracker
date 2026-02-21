@@ -22,8 +22,11 @@ interface AppHeaderProps {
     currentPeriod?: GamePeriod;
     onPeriodChange?: (period: GamePeriod) => void;
     user?: any;
+    userAvatarUrl?: string | null;
+    userInitial?: string;
     onLogin?: () => void;
     onSave?: () => void;
+    onOpenProfile?: () => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -41,8 +44,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     currentPeriod,
     onPeriodChange,
     user,
+    userAvatarUrl,
+    userInitial,
     onLogin,
-    onSave
+    onSave,
+    onOpenProfile
 }) => {
     const navigate = useNavigate();
     return (
@@ -86,22 +92,36 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                     {/* Right: Actions */}
                     <div className="flex-none flex items-center gap-1 sm:gap-2">
                         {user ? (
-                            <button
-                                onClick={onSave}
-                                className={`p-2 rounded-full transition-all duration-300 ${isAutoSaving ? 'text-cyan-400 animate-pulse' : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'}`}
-                                title="Sincronizar ahora"
-                                disabled={isAutoSaving}
-                            >
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                            </button>
+                            <>
+                                {/* Cloud Save */}
+                                <button
+                                    onClick={onSave}
+                                    className={`p-2 rounded-full transition-all duration-300 ${isAutoSaving ? 'text-cyan-400 animate-pulse' : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'}`}
+                                    title="Sincronizar ahora"
+                                    disabled={isAutoSaving}
+                                >
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                </button>
+                                {/* User Avatar — Profile access */}
+                                <button
+                                    onClick={onOpenProfile}
+                                    className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-600 to-emerald-600 flex items-center justify-center text-white font-bold text-sm uppercase shadow-md hover:scale-110 transition-transform overflow-hidden border-2 border-transparent hover:border-cyan-400"
+                                    title="Ver perfil"
+                                >
+                                    {userAvatarUrl
+                                        ? <img src={userAvatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                                        : (userInitial || user.email?.charAt(0) || 'U')
+                                    }
+                                </button>
+                            </>
                         ) : (
                             <button
                                 onClick={onLogin}
                                 className="px-3 py-1 bg-white text-slate-900 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-slate-100 transition-all flex items-center gap-1 shadow-lg"
                             >
-                                <span className="hidden sm:inline">Guardar</span> ☁️
+                                <span className="hidden sm:inline">Ingresar</span> 👤
                             </button>
                         )}
 

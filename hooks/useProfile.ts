@@ -27,7 +27,12 @@ export const useProfile = () => {
             }
 
             if (data) {
-                setProfile(data as UserProfile);
+                // Also fetch games count for gamification
+                const { count } = await supabase
+                    .from('games')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.id);
+                setProfile({ ...data as UserProfile, games_count: count ?? 0 });
             } else {
                 // Initialize empty profile structure if none exists AND save it to DB
                 // This ensures the user appears in the Admin Dashboard immediately
@@ -35,10 +40,11 @@ export const useProfile = () => {
                     id: user.id,
                     full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
                     favorite_club: null,
-                    role: 'jugador', // Default identity role
-                    permission_role: null, // Default permission (none)
-                    is_admin: false, // Default: not admin
+                    role: 'jugador',
+                    permission_role: null,
+                    is_admin: false,
                     avatar_url: user.user_metadata?.avatar_url || null,
+                    player_number: null,
                     updated_at: new Date().toISOString()
                 };
 

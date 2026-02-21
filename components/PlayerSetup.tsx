@@ -11,6 +11,7 @@ import TournamentSelectorModal from './TournamentSelectorModal';
 import TeamRosterModal from './TeamRosterModal';
 import { supabase } from '../utils/supabaseClient';
 
+const LAST_TEAM_STORAGE_KEY = 'cesto_last_team_setup';
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
 
 const defaultSettings: Settings = {
@@ -41,16 +42,37 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
     initialGameMode = null,
     initialPlayerNames = {}
 }) => {
-    // Pre-select all players (1-15) for new games, or use existing selection for corrections
+    // Pre-select players: use last saved team for new games, or existing selection for corrections
     const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(() => {
         if (initialSelectedPlayers.length > 0) {
             return new Set(initialSelectedPlayers);
         }
+        // Try to restore last team from localStorage
+        try {
+            const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.players && Array.isArray(parsed.players) && parsed.players.length > 0) {
+                    return new Set(parsed.players);
+                }
+            }
+        } catch (e) { /* ignore */ }
         return new Set(allPlayers);
     });
 
     // Local state to hold player names when a team is loaded
-    const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>(initialPlayerNames);
+    const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>(() => {
+        if (Object.keys(initialPlayerNames).length > 0) return initialPlayerNames;
+        // Restore from last saved team
+        try {
+            const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.playerNames || {};
+            }
+        } catch (e) { /* ignore */ }
+        return {};
+    });
 
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
@@ -58,7 +80,18 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
     const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
     const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
 
-    const [settings, setSettings] = useState<Settings>(initialSettings);
+    const [settings, setSettings] = useState<Settings>(() => {
+        // Only auto-restore myTeam for fresh games (no initialSettings provided)
+        if (initialSettings.myTeam) return initialSettings;
+        try {
+            const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return { ...initialSettings, myTeam: parsed.myTeam || initialSettings.myTeam || '' };
+            }
+        } catch (e) { /* ignore */ }
+        return initialSettings;
+    });
 
     // Force default tournament if not set (fixing the issue where previous state might have empty tournament)
     useEffect(() => {
@@ -102,6 +135,15 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
             ...settings,
             gameName: settings.gameName?.trim() || `Partido del ${new Date().toLocaleDateString()}`
         };
+
+        // Save this team config for next time
+        try {
+            localStorage.setItem(LAST_TEAM_STORAGE_KEY, JSON.stringify({
+                players: sortedPlayers,
+                playerNames: localPlayerNames,
+                myTeam: settings.myTeam,
+            }));
+        } catch (e) { /* ignore */ }
 
         onSetupComplete(sortedPlayers, finalSettings, selectedMode || 'stats-tally', localPlayerNames);
     };
@@ -184,6 +226,13 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         {isCorrection ? 'Equipo' : 'Partido'}
                     </span>
                 </h1>
+
+                {/* Last team restored hint */}
+                {!isCorrection && settings.myTeam && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4 text-xs font-bold text-emerald-400">
+                        <span>🔄</span> Equipo anterior restaurado: <span className="text-white">{settings.myTeam}</span>
+                    </div>
+                )}
 
                 <div className="mb-6 space-y-4 max-w-sm mx-auto">
                     {/* Tournament Selector */}

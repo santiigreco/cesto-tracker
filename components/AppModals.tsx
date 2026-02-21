@@ -268,14 +268,15 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            {user && (
+            {user && modals.profile?.isOpen && (
                 <UserProfileModal
-                    isOpen={false}
-                    onClose={() => { }}
+                    isOpen={modals.profile.isOpen}
+                    onClose={() => closeModal('profile')}
                     user={user}
                     onLogout={handleLogout}
                     onLoadGame={async (id, asOwner) => {
                         await handleLoadGame(id, asOwner);
+                        closeModal('profile');
                         setActiveTab('logger');
                     }}
                 />

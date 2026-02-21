@@ -127,5 +127,7 @@ export interface UserProfile {
   permission_role: PermissionRole; // Rol de sistema
   is_admin: boolean; // Asignado desde la DB — fuente de verdad para acceso admin
   avatar_url: string | null;
+  player_number: string | null; // Solo relevante para rol 'jugador'
+  games_count?: number; // Contador de partidos registrados (gamificación)
   updated_at?: string;
 }

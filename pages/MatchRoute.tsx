@@ -4,7 +4,6 @@ import { useGameContext } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useGameLogic } from '../hooks/useGameLogic';
-import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import AppHeader from '../components/AppHeader';
 import BottomNavigation from '../components/BottomNavigation';
 import GameMainContent from '../components/GameMainContent';
@@ -138,8 +137,11 @@ export default function MatchRoute() {
                     currentPeriod={gameState.currentPeriod}
                     onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
                     user={user}
+                    userAvatarUrl={profile?.avatar_url}
+                    userInitial={profile?.full_name?.charAt(0) || user?.email?.charAt(0)}
                     onLogin={handleLogin}
                     onSave={() => handleSyncToSupabase(true)}
+                    onOpenProfile={() => openModal('profile')}
                 />
 
                 <Scoreboard />
