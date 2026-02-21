@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import XIcon from './XIcon';
+import { XIcon } from './icons';
 import { TEAMS_CONFIG } from '../constants';
 import TeamLogo from './TeamLogo';
 import { useTeamManager } from '../hooks/useTeamManager';
 import { RosterPlayer } from '../types';
-import UsersIcon from './UsersIcon';
+import { UsersIcon } from './icons';
 import Loader from './Loader';
 
 interface TeamSelectorModalProps {

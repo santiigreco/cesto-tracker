@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import XIcon from './XIcon';
-import RefreshIcon from './RefreshIcon';
+import { XIcon } from './icons';
+import { RefreshIcon } from './icons';
 import { AdminTab } from './admin/types';
 import { AdminSidebar } from './admin/ui/AdminSidebar';
 import { AdminOverview } from './admin/views/AdminOverview';

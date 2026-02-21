@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import XIcon from './XIcon';
-import EyeIcon from './EyeIcon';
-import SearchIcon from './SearchIcon';
-import CalendarIcon from './CalendarIcon';
+import { XIcon } from './icons';
+import { EyeIcon } from './icons';
+import { SearchIcon } from './icons';
+import { CalendarIcon } from './icons';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
-import TrophyIcon from './TrophyIcon';
-import ChevronDownIcon from './ChevronDownIcon';
-import UsersIcon from './UsersIcon';
+import { TrophyIcon } from './icons';
+import { ChevronDownIcon } from './icons';
+import { UsersIcon } from './icons';
 import { GameMode, Settings } from '../types';
 
 // Internal Icon for Navigation

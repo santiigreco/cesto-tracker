@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, Shot, GameMode, TallyStats, GamePeriod, TallyStatsPeriod } from '../types';
-import TrophyIcon from './TrophyIcon';
-import DownloadIcon from './DownloadIcon';
-import ShareIcon from './ShareIcon';
+import { TrophyIcon } from './icons';
+import { DownloadIcon } from './icons';
+import { ShareIcon } from './icons';
 import TemporalChart from './TemporalChart';
 import { useGameContext } from '../context/GameContext';
 import { generateFederationExcel } from '../utils/exportToExcel';

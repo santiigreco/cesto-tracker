@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
-import DownloadIcon from './DownloadIcon';
-import ShareIcon from './ShareIcon';
-import XIcon from './XIcon';
+import { DownloadIcon } from './icons';
+import { ShareIcon } from './icons';
+import { XIcon } from './icons';
 
 interface InstallAppProps {
     className?: string;

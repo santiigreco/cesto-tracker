@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { AppTab } from '../types';
-import ShareIcon from './ShareIcon';
-import XIcon from './XIcon';
-import WhatsappIcon from './WhatsappIcon';
-import ClipboardIcon from './ClipboardIcon';
-import ChartPieIcon from './ChartPieIcon';
-import ChartBarIcon from './ChartBarIcon';
-import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
+import { ShareIcon } from './icons';
+import { XIcon } from './icons';
+import { WhatsappIcon } from './icons';
+import { ClipboardIcon } from './icons';
+import { ChartPieIcon } from './icons';
+import { ChartBarIcon } from './icons';
+import { QuestionMarkCircleIcon } from './icons';
 
 interface MobileMenuProps {
   isOpen: boolean;

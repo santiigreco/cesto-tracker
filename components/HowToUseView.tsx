@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Court from './Court';
-import TapIcon from './TapIcon';
+import { TapIcon } from './icons';
 import { Shot, ShotPosition } from '../types';
 
 const demoText = [

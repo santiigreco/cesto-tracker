@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
-import XIcon from './XIcon';
-import ChevronDownIcon from './ChevronDownIcon';
+import { XIcon } from './icons';
+import { ChevronDownIcon } from './icons';
 import TeamSelectorModal from './TeamSelectorModal';
-import GoogleIcon from './GoogleIcon';
+import { GoogleIcon } from './icons';
 import { useProfile } from '../hooks/useProfile';
 
 // --- ICONS (local to this component) ---

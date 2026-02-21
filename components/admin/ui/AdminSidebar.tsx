@@ -1,9 +1,9 @@
 
 import React from 'react';
-import UsersIcon from '../../UsersIcon';
-import TrophyIcon from '../../TrophyIcon';
-import CalendarIcon from '../../CalendarIcon';
-import ChartBarIcon from '../../ChartBarIcon';
+import { UsersIcon } from '../../icons';
+import { TrophyIcon } from '../../icons';
+import { CalendarIcon } from '../../icons';
+import { ChartBarIcon } from '../../icons';
 import { AdminTab } from '../types';
 
 interface AdminSidebarProps {

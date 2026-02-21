@@ -1,5 +1,5 @@
 import React from 'react';
-import XIcon from './XIcon';
+import { XIcon } from './icons';
 
 interface PlayerSelectionModalProps {
     isOpen: boolean;

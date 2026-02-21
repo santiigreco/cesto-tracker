@@ -2,7 +2,7 @@
 
 
 import React from 'react';
-import JerseyIcon from './JerseyIcon';
+import { JerseyIcon } from './icons';
 
 interface PlayerSelectorProps {
   currentPlayer: string;

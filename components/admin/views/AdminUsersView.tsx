@@ -1,11 +1,11 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAdminUsers } from '../hooks/useAdminUsers';
-import SearchIcon from '../../SearchIcon';
-import TrashIcon from '../../TrashIcon';
-import PencilIcon from '../../PencilIcon';
-import CheckIcon from '../../CheckIcon';
-import XIcon from '../../XIcon';
+import { SearchIcon } from '../../icons';
+import { TrashIcon } from '../../icons';
+import { PencilIcon } from '../../icons';
+import { CheckIcon } from '../../icons';
+import { XIcon } from '../../icons';
 import Loader from '../../Loader';
 import { TEAMS_CONFIG } from '../../../constants';
 import { IdentityRole, PermissionRole } from '../../../types';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import ChevronDownIcon from './ChevronDownIcon';
-import WhatsappIcon from './WhatsappIcon';
+import { ChevronDownIcon } from './icons';
+import { WhatsappIcon } from './icons';
 import { faqData } from './faqData';
 
 const FaqView: React.FC = () => {

@@ -1,6 +1,7 @@
 
 import { useCallback, useState } from 'react';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
+import { useUI } from '../context/UIContext';
 import { Shot, ShotPosition, GameMode, Settings, StatAction, GameEvent } from '../types';
 
 // Helper function moved outside the hook to ensure stability and avoid closure issues
@@ -8,7 +9,7 @@ const modifyStatValue = (tallyStats: any, player: string, period: string, action
     if (!tallyStats[player]) {
         tallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
     }
-    
+
     // Safety check for period existence
     if (!tallyStats[player][period]) {
         tallyStats[player][period] = JSON.parse(JSON.stringify(initialPlayerTally['First Half']));
@@ -20,12 +21,12 @@ const modifyStatValue = (tallyStats: any, player: string, period: string, action
 
 export const useGameLogic = () => {
     const { gameState, setGameState, redoStack, setRedoStack, resetGame } = useGameContext();
-    const [notificationPopup, setNotificationPopup] = useState<{ type: 'caliente' | 'fria'; playerNumber: string } | null>(null);
+    const { notificationPopup, setNotificationPopup } = useUI();
 
     // --- SETUP ---
     const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings, gameMode: GameMode, initialPlayerNames?: Record<string, string>) => {
-        const sortedRoster = participatingPlayers.sort((a,b) => Number(a) - Number(b));
-        
+        const sortedRoster = participatingPlayers.sort((a, b) => Number(a) - Number(b));
+
         setGameState(prev => {
             const isCorrection = prev.availablePlayers.length > 0 && prev.gameMode === gameMode;
             const playerNames = initialPlayerNames || (isCorrection ? prev.playerNames : {});
@@ -63,7 +64,7 @@ export const useGameLogic = () => {
 
     const handlePlayerChange = useCallback((player: string) => {
         setGameState(prev => {
-            const newState = {...prev, currentPlayer: player };
+            const newState = { ...prev, currentPlayer: player };
             if (prev.tutorialStep === 1) {
                 newState.tutorialStep = 2;
             }
@@ -103,16 +104,16 @@ export const useGameLogic = () => {
                 action: stat,
             };
             const newGameLog = [newLogEntry, ...prev.gameLog];
-            
-            const playerTallyStats = prev.tallyStats[playerNumber] ? 
-                JSON.parse(JSON.stringify(prev.tallyStats[playerNumber])) : 
+
+            const playerTallyStats = prev.tallyStats[playerNumber] ?
+                JSON.parse(JSON.stringify(prev.tallyStats[playerNumber])) :
                 JSON.parse(JSON.stringify(initialPlayerTally));
-                
+
             const currentPeriodStats = playerTallyStats[currentPeriod];
             const newPeriodStats = { ...currentPeriodStats, [stat]: currentPeriodStats[stat] + change };
             const newPlayerTallyStats = { ...playerTallyStats, [currentPeriod]: newPeriodStats };
 
-            const newState = { 
+            const newState = {
                 ...prev,
                 tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats },
                 gameLog: newGameLog,
@@ -124,14 +125,14 @@ export const useGameLogic = () => {
                 newTeamFouls[currentPeriod] = newTeamFouls[currentPeriod] + change;
                 newState.teamFouls = newTeamFouls;
             }
-            
+
             // Streak logic (omitted for brevity, assume strictly kept)
             if (change === 1 && (stat === 'goles' || stat === 'triples' || stat === 'fallos')) {
                 const isScoring = stat === 'goles' || stat === 'triples';
                 const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
                 let newStreak = { ...currentStreak };
                 let triggeredNotification: { type: 'caliente' | 'fria', playerNumber: string } | null = null;
-        
+
                 if (isScoring) {
                     newStreak.consecutiveGoles += 1;
                     newStreak.consecutiveMisses = 0;
@@ -149,7 +150,7 @@ export const useGameLogic = () => {
                         newStreak.notifiedFria = true;
                     }
                 }
-                
+
                 if (triggeredNotification) {
                     setTimeout(() => setNotificationPopup(triggeredNotification), 200);
                 }
@@ -176,13 +177,13 @@ export const useGameLogic = () => {
             const newPeriodStats = { ...currentPeriodStats, [action]: Math.max(0, currentPeriodStats[action] - 1) };
             const newPlayerTallyStats = { ...playerTallyStats, [period]: newPeriodStats };
 
-            const newState = { 
+            const newState = {
                 ...prev,
                 tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats },
                 gameLog: newGameLog,
                 tallyRedoLog: [eventToUndo, ...prev.tallyRedoLog],
             };
-            
+
             if (action === 'faltasPersonales' && playerNumber !== 'Equipo') {
                 const newTeamFouls = { ...prev.teamFouls };
                 newTeamFouls[period] = Math.max(0, newTeamFouls[period] - 1);
@@ -196,7 +197,7 @@ export const useGameLogic = () => {
         if (gameState.isReadOnly) return;
         setGameState(prev => {
             if (prev.tallyRedoLog.length === 0) return prev;
-            
+
             const newTallyRedoLog = [...prev.tallyRedoLog];
             const eventToRedo = newTallyRedoLog.shift();
             if (!eventToRedo) return prev;
@@ -208,7 +209,7 @@ export const useGameLogic = () => {
             const newPeriodStats = { ...currentPeriodStats, [action]: currentPeriodStats[action] + 1 };
             const newPlayerTallyStats = { ...playerTallyStats, [period]: newPeriodStats };
 
-            const newState = { 
+            const newState = {
                 ...prev,
                 tallyStats: { ...prev.tallyStats, [playerNumber]: newPlayerTallyStats },
                 gameLog: [eventToRedo, ...prev.gameLog],
@@ -234,7 +235,7 @@ export const useGameLogic = () => {
 
             const event = prev.gameLog[eventIndex];
             const newTallyStats = JSON.parse(JSON.stringify(prev.tallyStats));
-            
+
             // Revert the stats effect
             modifyStatValue(newTallyStats, event.playerNumber, event.period, event.action, -1);
 
@@ -269,7 +270,7 @@ export const useGameLogic = () => {
 
             // 1. Revert Old
             modifyStatValue(newTallyStats, oldEvent.playerNumber, oldEvent.period, oldEvent.action, -1);
-            
+
             // 2. Apply New
             modifyStatValue(newTallyStats, newPlayer, oldEvent.period, newAction, 1);
 
@@ -303,7 +304,7 @@ export const useGameLogic = () => {
     const handleOutcomeSelection = useCallback((isGol: boolean, shotPosition: ShotPosition) => {
         if (gameState.isReadOnly) return;
 
-        const HALF_COURT_LINE_Y = 1; 
+        const HALF_COURT_LINE_Y = 1;
         let golValue = 0;
         if (isGol) {
             golValue = shotPosition.y < HALF_COURT_LINE_Y ? 3 : 2;
@@ -317,17 +318,17 @@ export const useGameLogic = () => {
             golValue,
             period: gameState.currentPeriod,
         };
-        
+
         setGameState(prev => {
             const { playerNumber } = newShot;
             const currentStreak = prev.playerStreaks[playerNumber] || { consecutiveGoles: 0, consecutiveMisses: 0, notifiedCaliente: false, notifiedFria: false };
             let newStreak = { ...currentStreak };
             let triggeredNotification: { type: 'caliente' | 'fria', playerNumber: string } | null = null;
-    
+
             if (isGol) {
                 newStreak.consecutiveGoles += 1;
                 newStreak.consecutiveMisses = 0;
-                newStreak.notifiedFria = false; 
+                newStreak.notifiedFria = false;
                 if (prev.settings.isManoCalienteEnabled && newStreak.consecutiveGoles >= prev.settings.manoCalienteThreshold && !newStreak.notifiedCaliente) {
                     triggeredNotification = { type: 'caliente', playerNumber };
                     newStreak.notifiedCaliente = true;
@@ -341,7 +342,7 @@ export const useGameLogic = () => {
                     newStreak.notifiedFria = true;
                 }
             }
-            
+
             if (triggeredNotification) {
                 setTimeout(() => setNotificationPopup(triggeredNotification), 200);
             }
@@ -358,14 +359,14 @@ export const useGameLogic = () => {
 
             return newState;
         });
-        
+
         setRedoStack([]);
     }, [gameState.currentPlayer, gameState.currentPeriod, gameState.isReadOnly, setGameState, setRedoStack]);
 
     const handleUndoShot = useCallback(() => {
         if (gameState.isReadOnly) return;
         if (gameState.shots.length === 0) return;
-        
+
         const lastShot = gameState.shots[gameState.shots.length - 1];
         setRedoStack(prev => [...prev, lastShot]);
         setGameState(prev => ({
@@ -387,7 +388,7 @@ export const useGameLogic = () => {
     }, [gameState.isReadOnly, redoStack, setGameState, setRedoStack]);
 
     const handleClearSheet = useCallback(() => {
-        setGameState(prev => ({...prev, shots: [], playerStreaks: {}, gameLog: [], tallyStats: {}, tallyRedoLog: []}));
+        setGameState(prev => ({ ...prev, shots: [], playerStreaks: {}, gameLog: [], tallyStats: {}, tallyRedoLog: [] }));
         setRedoStack([]);
     }, [setGameState, setRedoStack]);
 

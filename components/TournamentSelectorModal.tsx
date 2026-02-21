@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import XIcon from './XIcon';
-import TrophyIcon from './TrophyIcon';
+import { XIcon } from './icons';
+import { TrophyIcon } from './icons';
 import Loader from './Loader';
 
 interface Tournament {

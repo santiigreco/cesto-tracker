@@ -4,9 +4,9 @@ import { useAdminUsers } from '../hooks/useAdminUsers';
 import { useAdminTournaments } from '../hooks/useAdminTournaments';
 import { useAdminGames } from '../hooks/useAdminGames';
 import { AdminStatCard } from '../ui/AdminStatCard';
-import UsersIcon from '../../UsersIcon';
-import TrophyIcon from '../../TrophyIcon';
-import CalendarIcon from '../../CalendarIcon';
+import { UsersIcon } from '../../icons';
+import { TrophyIcon } from '../../icons';
+import { CalendarIcon } from '../../icons';
 import Loader from '../../Loader';
 
 interface AdminOverviewProps {

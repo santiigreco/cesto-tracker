@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import XIcon from './XIcon';
+import { XIcon } from './icons';
 import Loader from './Loader';
-import UsersIcon from './UsersIcon';
-import PlusIcon from './PlusIcon';
-import TrashIcon from './TrashIcon';
-import CheckIcon from './CheckIcon';
-import JerseyIcon from './JerseyIcon';
+import { UsersIcon } from './icons';
+import { PlusIcon } from './icons';
+import { TrashIcon } from './icons';
+import { CheckIcon } from './icons';
+import { JerseyIcon } from './icons';
 import { useTeamManager } from '../hooks/useTeamManager';
 import { SavedTeam, RosterPlayer } from '../types';
 
