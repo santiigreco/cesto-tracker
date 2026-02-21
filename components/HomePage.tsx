@@ -368,7 +368,20 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     </div>
                                 </button>
 
+                                <button
+                                    onClick={() => navigate('/standings')}
+                                    className={gridItemClass}
+                                >
+                                    <div className={iconContainerClass}>
+                                        <span className="text-xl group-hover:scale-110 transition-transform inline-block">🏆</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className={labelClass}>Tabla</span>
+                                    </div>
+                                </button>
+
                                 <InstallApp variant="card" />
+
                             </div>
                         </div>
                     </div>

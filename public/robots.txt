@@ -1,0 +1,14 @@
+# robots.txt - Cesto Tracker
+# https://cestotracker.com
+
+# Permitir todos los motores de búsqueda
+User-agent: *
+Allow: /
+
+# Bloquear rutas que no tienen valor SEO
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /dist/
+
+# Sitemap
+Sitemap: https://cestotracker.com/sitemap.xml
