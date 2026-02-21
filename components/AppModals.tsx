@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppTab, Settings, GameState, StatAction, GameEvent } from '../types';
+import { AppTab, Settings, GameState, StatAction, GameEvent, ShotPosition, SavedTeam } from '../types';
 import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext, initialGameState } from '../context/GameContext';
@@ -26,14 +26,14 @@ interface AppModalsProps {
     playersForTally: string[];
     actionLabel?: string;
 
-    pendingShotPosition: any;
-    setPendingShotPosition: (pos: any) => void;
+    pendingShotPosition: ShotPosition | null;
+    setPendingShotPosition: (pos: ShotPosition | null) => void;
     onOutcomeSelect: (isGol: boolean) => void;
 
     editingEvent: GameEvent | null;
     setEditingEvent: (e: GameEvent | null) => void;
 
-    handleTeamLoadedFromHome: (team: any) => void;
+    handleTeamLoadedFromHome: (team: SavedTeam) => void;
 }
 
 const AppModals: React.FC<AppModalsProps> = (props) => {

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import PlayerSetup from '../components/PlayerSetup';
 import { useGameContext } from '../context/GameContext';
 import { useGameLogic } from '../hooks/useGameLogic';
+import { Settings, GameMode, RosterPlayer } from '../types';
 
 export default function SetupRoute() {
     const navigate = useNavigate();
@@ -11,10 +12,10 @@ export default function SetupRoute() {
     const { handleSetupComplete } = useGameLogic();
     const state = location.state as any;
 
-    const initialPlayers = state?.roster ? state.roster.map((p: any) => p.number) : gameState.availablePlayers;
-    const initialNames = state?.roster ? state.roster.reduce((acc: any, p: any) => ({ ...acc, [p.number]: p.name }), {}) : undefined;
+    const initialPlayers = state?.roster ? state.roster.map((p: RosterPlayer) => p.number) : gameState.availablePlayers;
+    const initialNames = state?.roster ? state.roster.reduce((acc: Record<string, string>, p: RosterPlayer) => ({ ...acc, [p.number]: p.name }), {}) : undefined;
 
-    const onSetupCompleteWrapper = (players: string[], settings: any, mode: any, names: any) => {
+    const onSetupCompleteWrapper = (players: string[], settings: Settings, mode: GameMode, names: Record<string, string>) => {
         handleSetupComplete(players, settings, mode, names);
         navigate('/match/new', { replace: true });
     };
