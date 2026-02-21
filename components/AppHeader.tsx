@@ -21,6 +21,9 @@ interface AppHeaderProps {
     isAdmin?: boolean;
     currentPeriod?: GamePeriod;
     onPeriodChange?: (period: GamePeriod) => void;
+    user?: any;
+    onLogin?: () => void;
+    onSave?: () => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -36,46 +39,103 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     isReadOnly,
     isAdmin,
     currentPeriod,
-    onPeriodChange
+    onPeriodChange,
+    user,
+    onLogin,
+    onSave
 }) => {
     const navigate = useNavigate();
     return (
-        <>
+        <div className="w-full relative z-50">
             {isReadOnly && (
                 <div className="w-full bg-amber-600 text-white text-center py-2 px-4 rounded-lg mb-4 font-bold shadow-lg">
                     ⚠️ Modo Lectura: Estás viendo un partido guardado. No se pueden hacer cambios.
                 </div>
             )}
 
-            <header className="relative flex items-center mb-4">
-                <div className="flex-none w-12 md:w-0">
-                    <button
-                        className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden"
-                        onClick={onOpenMobileMenu}
-                        aria-label="Abrir menú"
-                    >
-                        <HamburgerIcon />
-                    </button>
-                </div>
-                <div className="flex-grow text-center">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400 tracking-tight whitespace-nowrap">
+            <header className="flex flex-col gap-4 mb-2">
+                <div className="flex items-center justify-between gap-4">
+                    {/* Left: Hamburger (mobile) or spacer */}
+                    <div className="flex-none w-10 md:hidden">
                         <button
-                            onClick={onRequestReturnHome}
-                            className="transition-opacity hover:opacity-80 disabled:opacity-100 disabled:cursor-default"
-                            disabled={!isSetupComplete}
-                            title={isSetupComplete ? "Volver a la página de inicio" : ""}
+                            className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={onOpenMobileMenu}
+                            aria-label="Abrir menú"
                         >
-                            Cesto Tracker 🏐{'\uFE0F'}
+                            <HamburgerIcon />
                         </button>
-                    </h1>
-                    {gameName && <p className="text-lg font-semibold text-white -mb-1 mt-1 truncate">{gameName}</p>}
-                    <div className="flex justify-center items-center gap-3 mt-1">
-                        <p className="text-base text-slate-400">
+                    </div>
+
+                    {/* Center: Hero Logo */}
+                    <div className="flex-grow flex justify-center">
+                        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tighter whitespace-nowrap">
+                            <button
+                                onClick={onRequestReturnHome}
+                                className="group flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-100 disabled:cursor-default"
+                                disabled={!isSetupComplete}
+                                title={isSetupComplete ? "Volver a la página de inicio" : ""}
+                            >
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-[length:200%_auto] animate-text-shimmer drop-shadow-sm">
+                                    Cesto Tracker
+                                </span>
+                                <span className="text-xl sm:text-2xl group-hover:rotate-12 transition-transform">🏐{'\uFE0F'}</span>
+                            </button>
+                        </h1>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex-none flex items-center gap-1 sm:gap-2">
+                        {user ? (
+                            <button
+                                onClick={onSave}
+                                className={`p-2 rounded-full transition-all duration-300 ${isAutoSaving ? 'text-cyan-400 animate-pulse' : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'}`}
+                                title="Sincronizar ahora"
+                                disabled={isAutoSaving}
+                            >
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={onLogin}
+                                className="px-3 py-1 bg-white text-slate-900 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-slate-100 transition-all flex items-center gap-1 shadow-lg"
+                            >
+                                <span className="hidden sm:inline">Guardar</span> ☁️
+                            </button>
+                        )}
+
+                        {isAdmin && (
+                            <button
+                                onClick={() => navigate('/admin')}
+                                className="p-2 rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
+                                title="Panel de Administración"
+                            >
+                                <span className="text-xl">🛡️</span>
+                            </button>
+                        )}
+
+                        <button
+                            onClick={onOpenSettings}
+                            className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            aria-label="Abrir configuración"
+                        >
+                            <GearIcon className="h-7 w-7" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Subtitle / Period Selector Row */}
+                <div className="flex flex-col items-center gap-1">
+                    {gameName && <p className="text-lg font-bold text-white truncate max-w-[90vw]">{gameName}</p>}
+                    <div className="flex items-center gap-3">
+                        <p className="text-xs sm:text-base text-slate-400 font-medium">
                             {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}
                         </p>
                     </div>
+
                     {currentPeriod && onPeriodChange && (
-                        <div className="mt-3 inline-block">
+                        <div className="mt-2 inline-block">
                             <select
                                 value={currentPeriod}
                                 onChange={(e) => onPeriodChange(e.target.value as GamePeriod)}
@@ -90,34 +150,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                         </div>
                     )}
                 </div>
-                <div className="flex-none w-24 flex justify-end items-center gap-2">
-                    {isAdmin && (
-                        <button
-                            onClick={() => navigate('/admin')}
-                            className="p-2 rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
-                            title="Panel de Administración"
-                        >
-                            <span className="text-xl">🛡️</span>
-                        </button>
-                    )}
-                    <div className="hidden sm:block">
-                        <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameId} />
-                    </div>
-                    <button
-                        onClick={onOpenSettings}
-                        className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-                        aria-label="Abrir configuración"
-                    >
-                        <GearIcon className="h-7 w-7" />
-                    </button>
+
+                {/* Status Row (Cloud Sync Info) */}
+                <div className="flex justify-center">
+                    <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameId} />
                 </div>
             </header>
-
-            {/* Mobile visible Cloud Indicator */}
-            <div className="sm:hidden flex justify-center mb-4">
-                <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameId} />
-            </div>
-        </>
+        </div>
     );
 };
 

@@ -19,7 +19,7 @@ export default function MatchRoute() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { gameState, setGameState, redoStack } = useGameContext();
-    const { user, authLoading } = useAuth();
+    const { user, authLoading, handleLogin } = useAuth();
     const {
         activeTab, setActiveTab, openModal, closeModal,
         actionToAssign, setActionToAssign
@@ -55,13 +55,19 @@ export default function MatchRoute() {
     }, [id, gameState.gameId]);
 
     const tabsForCurrentMode = useMemo(() => {
-        if (!gameState.gameMode) return ['logger', 'tally', 'statistics'];
+        if (!gameState.gameMode) return ['logger', 'tally', 'statistics'] as const;
         return gameState.gameMode === 'shot-chart'
-            ? ['logger', 'statistics'] as const
+            ? ['logger', 'courtAnalysis', 'statistics'] as const
             : ['tally', 'statistics'] as const;
     }, [gameState.gameMode]);
 
-    const tabTranslations: Partial<Record<AppTab, string>> = { logger: 'Cancha', courtAnalysis: 'Mapa', statistics: 'Análisis', faq: 'FAQ' };
+    const tabTranslations: Partial<Record<AppTab, string>> = {
+        logger: 'Cancha',
+        tally: 'Planilla',
+        courtAnalysis: 'Mapa',
+        statistics: 'Estadísticas',
+        faq: 'Ayuda'
+    };
 
     if (authLoading || syncLoading) {
         return (
@@ -106,8 +112,16 @@ export default function MatchRoute() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans bg-pattern-hoops pb-24 md:pb-8">
-            <div className="w-full max-w-4xl flex-grow">
+        <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 pb-24 md:pb-8 relative">
+
+            {/* ── Background Glows ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
+                <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/10 blur-[120px] rounded-full animate-float"></div>
+                <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 blur-[100px] rounded-full"></div>
+            </div>
+
+            <div className="w-full max-w-4xl flex-grow relative z-10">
                 <AppHeader
                     onOpenMobileMenu={() => openModal('mobileMenu')}
                     onRequestReturnHome={() => openModal('returnHome')}
@@ -122,6 +136,9 @@ export default function MatchRoute() {
                     isAdmin={isAdmin}
                     currentPeriod={gameState.currentPeriod}
                     onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
+                    user={user}
+                    onLogin={handleLogin}
+                    onSave={handleSyncToSupabase}
                 />
 
                 <Scoreboard />
