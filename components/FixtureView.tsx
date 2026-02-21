@@ -1,12 +1,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import XIcon from './XIcon';
+import { XIcon } from './icons';
 import TeamLogo from './TeamLogo';
-import CalendarIcon from './CalendarIcon';
-import PencilIcon from './PencilIcon';
-import CheckIcon from './CheckIcon';
-import PlusIcon from './PlusIcon';
-import TrashIcon from './TrashIcon';
+import { CalendarIcon } from './icons';
+import { PencilIcon } from './icons';
+import { CheckIcon } from './icons';
+import { PlusIcon } from './icons';
+import { TrashIcon } from './icons';
 import Loader from './Loader';
 import { useFixture, Match } from '../hooks/useFixture';
 import { TEAMS_CONFIG } from '../constants';
@@ -32,7 +32,7 @@ const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
 const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) => {
     const { matches, tournaments, loading, updateMatch, addMatch, deleteMatch, activeSeason, changeSeason, loadMore, hasMore } = useFixture();
     const [isEditMode, setIsEditMode] = useState(false);
-    
+
     // --- ESTADOS DE FILTROS EN CASCADA ---
     const [filterTournament, setFilterTournament] = useState<string>('Todos');
     const [filterCategory, setFilterCategory] = useState<string>('Primera A'); // Default: Primera A
@@ -50,7 +50,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
 
     const [isAddingMatch, setIsAddingMatch] = useState(false);
     const [isCustomTournament, setIsCustomTournament] = useState(false);
-    
+
     const [newMatchData, setNewMatchData] = useState({
         tournament: '',
         date: new Date().toISOString().split('T')[0],
@@ -96,7 +96,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
 
     const groupedMatches = useMemo(() => {
         return filteredMatches.reduce((acc, match) => {
-            const key = match.date; 
+            const key = match.date;
             if (!acc[key]) acc[key] = [];
             acc[key].push(match);
             return acc;
@@ -107,7 +107,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
         return tournaments.filter(t => t.status === 'active');
     }, [tournaments]);
 
-    if (!isOpen) return null;
+
 
     const handleUpdateMatch = (id: string, field: keyof Match, value: any) => {
         updateMatch(id, { [field]: value });
@@ -140,13 +140,13 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
 
     const formatDateFriendly = (dateString: string) => {
         if (!dateString) return 'Fecha a confirmar';
-        const date = new Date(`${dateString}T00:00:00`); 
+        const date = new Date(`${dateString}T00:00:00`);
         const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
         return date.toLocaleDateString('es-AR', options).replace(/^\w/, (c) => c.toUpperCase());
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900 z-50 overflow-y-auto animate-fade-in flex flex-col">
+        <div className="w-full flex-grow flex flex-col bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mt-8 shadow-2xl">
             {/* Sticky Header */}
             <div className="sticky top-0 bg-slate-800 border-b border-slate-700 shadow-xl z-20">
                 <div className="p-4 pb-2">
@@ -166,9 +166,6 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                     </button>
                                 </>
                             )}
-                            <button onClick={onClose} className="p-2 rounded-full bg-slate-700 text-slate-300 hover:text-white">
-                                <XIcon className="h-6 w-6" />
-                            </button>
                         </div>
                     </div>
 
@@ -176,12 +173,12 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                     <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700 mb-2">
                         <span className="text-[10px] uppercase font-bold text-slate-500 mb-2 block tracking-wider">Filtrar por:</span>
                         <div className="grid grid-cols-3 gap-2">
-                            
+
                             {/* 1. Año / Temporada */}
                             <div className="flex flex-col">
                                 <label className="text-[10px] text-slate-400 mb-1 ml-1">Periodo</label>
-                                <select 
-                                    value={activeSeason} 
+                                <select
+                                    value={activeSeason}
                                     onChange={(e) => changeSeason(e.target.value)}
                                     className="w-full bg-slate-800 text-white text-xs font-bold py-2 px-2 rounded-lg border border-slate-600 focus:border-cyan-500 outline-none"
                                 >
@@ -192,8 +189,8 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                             {/* 2. Torneo */}
                             <div className="flex flex-col">
                                 <label className="text-[10px] text-slate-400 mb-1 ml-1">Torneo</label>
-                                <select 
-                                    value={filterTournament} 
+                                <select
+                                    value={filterTournament}
                                     onChange={(e) => setFilterTournament(e.target.value)}
                                     className="w-full bg-slate-800 text-white text-xs font-bold py-2 px-2 rounded-lg border border-slate-600 focus:border-cyan-500 outline-none truncate"
                                     disabled={availableTournaments.length <= 1 && availableTournaments[0] === 'Todos'}
@@ -205,8 +202,8 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                             {/* 3. Categoría */}
                             <div className="flex flex-col">
                                 <label className="text-[10px] text-slate-400 mb-1 ml-1">Categoría</label>
-                                <select 
-                                    value={filterCategory} 
+                                <select
+                                    value={filterCategory}
                                     onChange={(e) => setFilterCategory(e.target.value)}
                                     className="w-full bg-slate-800 text-white text-xs font-bold py-2 px-2 rounded-lg border border-slate-600 focus:border-cyan-500 outline-none truncate"
                                 >
@@ -242,11 +239,11 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                     {formatDateFriendly(dateKey)}
                                 </span>
                             </div>
-                            
+
                             <div className="divide-y divide-slate-800">
                                 {(groupMatches as Match[]).map(match => (
                                     <div key={match.id} className={`flex flex-col p-3 transition-colors relative ${isEditMode ? 'bg-slate-800/30' : 'hover:bg-slate-800/30'}`}>
-                                        
+
                                         {/* Metadata Row: Category | Round | Location | Time */}
                                         <div className="flex justify-between items-center mb-2 text-[10px] text-slate-500 uppercase font-bold tracking-wide">
                                             <div className="flex gap-2 items-center flex-wrap">
@@ -256,7 +253,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                                 {/* Show tournament name if viewing 'Todos' to clarify context */}
                                                 {filterTournament === 'Todos' && <span className="text-slate-600 border-l border-slate-700 pl-2">{match.tournament}</span>}
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-3">
                                                 {/* Time */}
                                                 <div className="flex items-center gap-1 text-slate-400">
@@ -285,14 +282,14 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                                     </span>
                                                 </div>
                                                 {isEditMode && (
-                                                     <button onClick={() => handleDelete(match.id)} className="absolute right-0 bg-red-900/30 text-red-400 p-2 rounded-lg hover:bg-red-900/50">
+                                                    <button onClick={() => handleDelete(match.id)} className="absolute right-0 bg-red-900/30 text-red-400 p-2 rounded-lg hover:bg-red-900/50">
                                                         <TrashIcon className="h-4 w-4" />
                                                     </button>
                                                 )}
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-between">
-                                                
+
                                                 {/* Home */}
                                                 <div className="flex-1 flex items-center justify-end gap-2 text-right">
                                                     <span className={`font-semibold ${getScoreStyle(match.scoreHome, match.scoreAway, true)} text-xs sm:text-sm leading-tight`}>
@@ -342,7 +339,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                         </div>
                     ))
                 )}
-                
+
                 {/* Load More Button */}
                 {hasMore && !loading && matches.length > 0 && (
                     <div className="flex justify-center pt-4 pb-8">
@@ -354,9 +351,9 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                         </button>
                     </div>
                 )}
-                
+
                 {loading && matches.length > 0 && (
-                     <div className="flex justify-center py-4"><Loader /></div>
+                    <div className="flex justify-center py-4"><Loader /></div>
                 )}
 
                 <div className="h-12"></div>
@@ -374,11 +371,11 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Torneo</label>
                                 {!isCustomTournament ? (
-                                    <select 
+                                    <select
                                         value={newMatchData.tournament}
                                         onChange={(e) => {
-                                            if(e.target.value === 'custom') { setIsCustomTournament(true); setNewMatchData(p => ({...p, tournament: ''})); }
-                                            else { setIsCustomTournament(false); setNewMatchData(p => ({...p, tournament: e.target.value})); }
+                                            if (e.target.value === 'custom') { setIsCustomTournament(true); setNewMatchData(p => ({ ...p, tournament: '' })); }
+                                            else { setIsCustomTournament(false); setNewMatchData(p => ({ ...p, tournament: e.target.value })); }
                                         }}
                                         className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none"
                                     >
@@ -388,7 +385,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                     </select>
                                 ) : (
                                     <div className="flex gap-2">
-                                        <input type="text" value={newMatchData.tournament} onChange={e => setNewMatchData({...newMatchData, tournament: e.target.value})} placeholder="Nombre del torneo" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" autoFocus />
+                                        <input type="text" value={newMatchData.tournament} onChange={e => setNewMatchData({ ...newMatchData, tournament: e.target.value })} placeholder="Nombre del torneo" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" autoFocus />
                                         <button type="button" onClick={() => setIsCustomTournament(false)} className="px-3 bg-slate-700 rounded text-slate-300">Cancelar</button>
                                     </div>
                                 )}
@@ -396,24 +393,24 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha</label>
-                                    <input type="date" value={newMatchData.date} onChange={e => setNewMatchData({...newMatchData, date: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
+                                    <input type="date" value={newMatchData.date} onChange={e => setNewMatchData({ ...newMatchData, date: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hora</label>
-                                    <input type="time" value={newMatchData.time} onChange={e => setNewMatchData({...newMatchData, time: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
+                                    <input type="time" value={newMatchData.time} onChange={e => setNewMatchData({ ...newMatchData, time: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Local</label>
-                                    <select value={newMatchData.homeTeam} onChange={e => setNewMatchData({...newMatchData, homeTeam: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                                    <select value={newMatchData.homeTeam} onChange={e => setNewMatchData({ ...newMatchData, homeTeam: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
                                         <option value="">Elegir...</option>
                                         {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Visitante</label>
-                                    <select value={newMatchData.awayTeam} onChange={e => setNewMatchData({...newMatchData, awayTeam: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                                    <select value={newMatchData.awayTeam} onChange={e => setNewMatchData({ ...newMatchData, awayTeam: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
                                         <option value="">Elegir...</option>
                                         {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                     </select>

@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { GameEvent, StatAction } from '../types';
 import { STAT_LABELS } from '../constants';
-import XIcon from './XIcon';
-import TrashIcon from './TrashIcon';
-import CheckIcon from './CheckIcon';
+import { XIcon } from './icons';
+import { TrashIcon } from './icons';
+import { CheckIcon } from './icons';
 
 interface GameEventEditModalProps {
     isOpen: boolean;

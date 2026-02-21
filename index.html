@@ -1,50 +1,51 @@
-
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    
-    <!-- SEO Meta Tags -->
-    <title>Cesto Tracker 🏐: La primera App de Cestoball</title>
-    <meta name="description" content="La herramienta definitiva para Cestoball. Registra tiros, genera mapas de calor, analiza estadísticas en tiempo real y gestiona tu equipo. Ideal para DTs y Jugadores." />
-    <meta name="keywords" content="cestoball, cesto tracker, planilla cestoball digital, scouting cestoball, estadísticas cesto, software deportivo argentina, mapa de calor deportivo, registro de tiros, confederacion argentina de cestoball, cesto app, planilla de juego" />
-    <meta name="author" content="Santiago Greco - Gresolutions" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <link rel="canonical" href="https://cestotracker.com/" />
-    <meta name="theme-color" content="#0f172a"> <!-- slate-900 -->
 
-    <!-- Favicons -->
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest">
-    
-    <!-- Open Graph / Facebook / WhatsApp -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://cestotracker.com/" /> 
-    <meta property="og:site_name" content="Cesto Tracker" />
-    <meta property="og:locale" content="es_AR" />
-    <meta property="og:title" content="Cesto Tracker 🏐: La primera App de Cestoball" />
-    <meta property="og:description" content="Olvidate del papel. Llevá las estadísticas de tu equipo al siguiente nivel con mapas de calor y reportes en vivo." />
-    <meta property="og:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Dashboard de estadísticas de Cestoball en Cesto Tracker." />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://cestotracker.com/" /> 
-    <meta name="twitter:title" content="Cesto Tracker 🏐: La primera App de Cestoball" />
-    <meta name="twitter:description" content="Analiza el rendimiento de tu equipo con datos reales. Mapas de tiros y estadísticas." />
-    <meta name="twitter:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
+  <!-- SEO Meta Tags -->
+  <title>Cesto Tracker 🏐: La primera App de Cestoball</title>
+  <meta name="description"
+    content="La herramienta definitiva para Cestoball. Registra tiros, genera mapas de calor, analiza estadísticas en tiempo real y gestiona tu equipo. Ideal para DTs y Jugadores." />
+  <meta name="keywords"
+    content="cestoball, cesto tracker, planilla cestoball digital, scouting cestoball, estadísticas cesto, software deportivo argentina, mapa de calor deportivo, registro de tiros, confederacion argentina de cestoball, cesto app, planilla de juego" />
+  <meta name="author" content="Santiago Greco - Gresolutions" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <link rel="canonical" href="https://cestotracker.com/" />
+  <meta name="theme-color" content="#0f172a"> <!-- slate-900 -->
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {}
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script type="importmap">
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cestotracker.com/" />
+  <meta property="og:site_name" content="Cesto Tracker" />
+  <meta property="og:locale" content="es_AR" />
+  <meta property="og:title" content="Cesto Tracker 🏐: La primera App de Cestoball" />
+  <meta property="og:description"
+    content="Olvidate del papel. Llevá las estadísticas de tu equipo al siguiente nivel con mapas de calor y reportes en vivo." />
+  <meta property="og:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Dashboard de estadísticas de Cestoball en Cesto Tracker." />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://cestotracker.com/" />
+  <meta name="twitter:title" content="Cesto Tracker 🏐: La primera App de Cestoball" />
+  <meta name="twitter:description"
+    content="Analiza el rendimiento de tu equipo con datos reales. Mapas de tiros y estadísticas." />
+  <meta name="twitter:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@^19.1.1",
@@ -56,51 +57,10 @@
       }
     }
     </script>
-    <style>
-      /* Custom Scrollbar for Webkit Browsers */
-      .custom-scrollbar::-webkit-scrollbar {
-        height: 8px;
-        width: 8px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #1e293b; /* slate-800 */
-        border-radius: 10px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #334155; /* slate-700 */
-        border-radius: 10px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #475569; /* slate-600 */
-      }
-      .text-gradient {
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
-      }
-       .bg-pattern-hoops {
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'%3e%3cpath d='M40 32.5c4.142 0 7.5 3.358 7.5 7.5s-3.358 7.5-7.5 7.5-7.5-3.358-7.5-7.5 3.358-7.5 7.5-7.5z' fill='none' stroke='%231e293b' stroke-width='1'/%3e%3c/svg%3e");
-        background-size: 40px 40px;
-      }
-      
-      @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-8px); }
-      }
-      @keyframes fade-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      .animate-float {
-        animation: float 3s ease-in-out infinite;
-      }
-      .animate-fade-in {
-        animation: fade-in 0.3s ease-out forwards;
-      }
-    </style>
 
-    <!-- JSON-LD Structured Data: SoftwareApplication (Optimized for App Discovery) -->
-    <script type="application/ld+json">
+
+  <!-- JSON-LD Structured Data: SoftwareApplication (Optimized for App Discovery) -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
@@ -133,8 +93,8 @@
     }
     </script>
 
-    <!-- JSON-LD Structured Data: FAQPage (Optimized for AI/Chatbots Question Answering) -->
-    <script type="application/ld+json">
+  <!-- JSON-LD Structured Data: FAQPage (Optimized for AI/Chatbots Question Answering) -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
@@ -167,21 +127,22 @@
     }
     </script>
 
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          }, function(err) {
-            console.log('ServiceWorker registration failed: ', err);
-          });
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/service-worker.js').then(function (registration) {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, function (err) {
+          console.log('ServiceWorker registration failed: ', err);
         });
-      }
-    </script>
-  <link rel="stylesheet" href="/index.css">
+      });
+    }
+  </script>
 </head>
-  <body class="bg-slate-900 text-slate-200 antialiased">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body class="bg-slate-900 text-slate-200 antialiased">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

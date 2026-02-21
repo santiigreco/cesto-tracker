@@ -1,12 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAdminTournaments } from '../hooks/useAdminTournaments';
-import TrophyIcon from '../../TrophyIcon';
-import TrashIcon from '../../TrashIcon';
-import PlusIcon from '../../PlusIcon';
+import { TrophyIcon } from '../../icons';
+import { TrashIcon } from '../../icons';
+import { PlusIcon } from '../../icons';
 import Loader from '../../Loader';
-import ArchiveIcon from '../../ArchiveIcon'; // We'll create this or reuse logic
-import RedoIcon from '../../RedoIcon'; // For un-archiving
+import { RedoIcon } from '../../icons'; // For un-archiving
 
 // Simple Archive Icon Component
 const BoxDownIcon = ({ className }: { className?: string }) => (
@@ -38,16 +37,16 @@ export const AdminTournamentsView: React.FC = () => {
             <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide mb-3">Nuevo Campeonato</h3>
                 <div className="flex gap-2">
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         value={newTournamentName}
                         onChange={(e) => setNewTournamentName(e.target.value)}
                         placeholder="Ej: Liga Apertura 2026..."
                         className="bg-slate-900 border border-slate-600 text-white rounded-lg px-4 py-2 flex-grow focus:ring-cyan-500 outline-none transition-all focus:border-cyan-500 placeholder-slate-500"
                         onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                     />
-                    <button 
-                        onClick={handleCreate} 
+                    <button
+                        onClick={handleCreate}
                         disabled={!newTournamentName.trim()}
                         className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-colors"
                     >
@@ -62,14 +61,14 @@ export const AdminTournamentsView: React.FC = () => {
                 <div className="flex justify-center py-10"><Loader /></div>
             ) : (
                 <div className="space-y-8">
-                    
+
                     {/* SECTION: ACTIVE TOURNAMENTS */}
                     <div>
                         <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300 mb-4 flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-lg shadow-green-500/50"></span>
                             Torneos en Curso
                         </h2>
-                        
+
                         {activeTournaments.length === 0 ? (
                             <p className="text-slate-500 italic ml-4">No hay torneos activos actualmente.</p>
                         ) : (
@@ -82,15 +81,15 @@ export const AdminTournamentsView: React.FC = () => {
                                             <span className="font-bold text-white text-lg leading-tight">{t.name}</span>
                                         </div>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button 
-                                                onClick={() => toggleStatus(t.id, t.status || 'active')} 
+                                            <button
+                                                onClick={() => toggleStatus(t.id, t.status || 'active')}
                                                 className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-700 rounded transition-colors"
                                                 title="Finalizar / Archivar"
                                             >
                                                 <BoxDownIcon className="h-5 w-5" />
                                             </button>
-                                            <button 
-                                                onClick={() => deleteTournament(t.id)} 
+                                            <button
+                                                onClick={() => deleteTournament(t.id)}
                                                 className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-700 rounded transition-colors"
                                                 title="Eliminar"
                                             >
@@ -109,7 +108,7 @@ export const AdminTournamentsView: React.FC = () => {
                             <BoxDownIcon className="h-5 w-5" />
                             Historial / Finalizados
                         </h2>
-                        
+
                         {finishedTournaments.length === 0 ? (
                             <p className="text-slate-600 italic ml-4 text-sm">No hay torneos finalizados.</p>
                         ) : (
@@ -121,15 +120,15 @@ export const AdminTournamentsView: React.FC = () => {
                                             <span className="font-semibold text-slate-400">{t.name}</span>
                                         </div>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button 
-                                                onClick={() => toggleStatus(t.id, t.status || 'finished')} 
+                                            <button
+                                                onClick={() => toggleStatus(t.id, t.status || 'finished')}
                                                 className="p-2 text-slate-500 hover:text-green-400 hover:bg-slate-700 rounded transition-colors"
                                                 title="Reactivar Torneo"
                                             >
                                                 <RedoIcon className="h-5 w-5" />
                                             </button>
-                                            <button 
-                                                onClick={() => deleteTournament(t.id)} 
+                                            <button
+                                                onClick={() => deleteTournament(t.id)}
                                                 className="p-2 text-slate-500 hover:text-red-500 hover:bg-slate-700 rounded transition-colors"
                                                 title="Eliminar Permanentemente"
                                             >

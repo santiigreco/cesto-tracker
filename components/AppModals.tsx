@@ -1,6 +1,11 @@
-
 import React from 'react';
 import { AppTab, Settings, GameState, StatAction, GameEvent } from '../types';
+import { useUI } from '../context/UIContext';
+import { useAuth } from '../context/AuthContext';
+import { useGameContext, initialGameState } from '../context/GameContext';
+import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useGameLogic } from '../hooks/useGameLogic';
+
 import MobileMenu from './MobileMenu';
 import PlayerSelectionModal from './PlayerSelectionModal';
 import LoadGameModal from './LoadGameModal';
@@ -14,231 +19,237 @@ import NotificationPopup from './NotificationPopup';
 import GameEventEditModal from './GameEventEditModal';
 import UserProfileModal from './UserProfileModal';
 import TeamRosterModal from './TeamRosterModal';
-import { SyncState } from '../hooks/useSupabaseSync';
 
 interface AppModalsProps {
-    // UI States
-    activeTab: AppTab;
-    isMobileMenuOpen: boolean;
-    setIsMobileMenuOpen: (isOpen: boolean) => void;
-    isPlayerSelectionModalOpen: boolean;
-    setIsPlayerSelectionModalOpen: (isOpen: boolean) => void;
-    isLoadGameModalOpen: boolean;
-    setIsLoadGameModalOpen: (isOpen: boolean) => void;
-    isSaveGameModalOpen: boolean;
-    setIsSaveGameModalOpen: (isOpen: boolean) => void;
-    isSettingsModalOpen: boolean;
-    setIsSettingsModalOpen: (isOpen: boolean) => void;
-    isShareModalOpen: boolean;
-    setIsShareModalOpen: (isOpen: boolean) => void;
-    isSubstitutionModalOpen: boolean;
-    setIsSubstitutionModalOpen: (isOpen: boolean) => void;
-    isClearSheetModalOpen: boolean;
-    setIsClearSheetModalOpen: (isOpen: boolean) => void;
-    isNewGameConfirmOpen: boolean;
-    setIsNewGameConfirmOpen: (isOpen: boolean) => void;
-    isReturnHomeConfirmOpen: boolean;
-    setIsReturnHomeConfirmOpen: (isOpen: boolean) => void;
-    isReselectConfirmOpen: boolean;
-    setIsReselectConfirmOpen: (isOpen: boolean) => void;
-    isTeamManagerOpen: boolean;
-    setIsTeamManagerOpen: (isOpen: boolean) => void;
-    
-    // Data & Handlers
-    onSelectTab: (tab: AppTab) => void;
-    onShare: () => void;
     tabTranslations: { [key in AppTab]: string };
     tabs: AppTab[];
-    
-    actionToAssign: StatAction | null;
-    setActionToAssign: (action: StatAction | null) => void;
-    handleAssignActionToPlayer: (playerNumber: string) => void;
     playersForTally: string[];
-    playerNames: Record<string, string>;
     actionLabel?: string;
-    
-    handleLoadGame: (id: string, asOwner: boolean) => Promise<void>;
-    user: any;
-    
-    handleSyncToSupabase: (name: string) => void;
-    syncState: SyncState;
-    gameName?: string;
-    
-    settings: Settings;
-    handleSettingsChange: (s: Settings) => void;
-    handleRequestNewGame: () => void;
-    handleRequestReselectPlayers: () => void;
-    handleChangeMode: () => void;
-    handleRequestSaveGame: () => void;
-    handleLogout: () => void;
-    handleLogin: () => void;
-    
-    gameState: GameState;
-    
-    handleSubstitution: (out: string, inp: string) => void;
-    activePlayers: string[];
-    availablePlayers: string[];
-    
+
     pendingShotPosition: any;
     setPendingShotPosition: (pos: any) => void;
     onOutcomeSelect: (isGol: boolean) => void;
-    
-    handleConfirmClearSheet: () => void;
-    handleConfirmNewGameWrapper: () => void;
-    handleConfirmReturnHome: () => void;
-    handleConfirmReselectPlayers: () => void;
-    
-    notificationPopup: any;
-    setNotificationPopup: (val: any) => void;
-    
+
     editingEvent: GameEvent | null;
     setEditingEvent: (e: GameEvent | null) => void;
-    handleEditGameEvent: (id: string, player: string, action: StatAction) => void;
-    handleDeleteGameEvent: (id: string) => void;
-    
+
     handleTeamLoadedFromHome: (team: any) => void;
-    
-    setActiveTab: (tab: AppTab) => void;
 }
 
 const AppModals: React.FC<AppModalsProps> = (props) => {
+    const {
+        activeTab, setActiveTab,
+        modals, closeModal,
+        actionToAssign, setActionToAssign,
+        notificationPopup, setNotificationPopup,
+        handleShare
+    } = useUI();
+
+    const { user, handleLogout, handleLogin } = useAuth();
+    const { gameState, setGameState } = useGameContext();
+    const { syncState, setSyncState, handleSyncToSupabase, handleLoadGame } = useSupabaseSync();
+
+    const {
+        handleSubstitution,
+        handleUpdateTallyStat,
+        handleClearSheet,
+        handleConfirmNewGame,
+        handleDeleteGameEvent,
+        handleEditGameEvent
+    } = useGameLogic();
+
+    // Reconstruct wrappers from App logic to avoid passing down
+    const handleAssignActionToPlayer = (playerNumber: string) => {
+        if (actionToAssign) {
+            handleUpdateTallyStat(playerNumber, actionToAssign, 1);
+        }
+        closeModal('playerSelection');
+        setActionToAssign(null);
+    };
+
+    const handleConfirmClearSheet = () => {
+        handleClearSheet();
+        closeModal('clearSheet');
+    };
+
+    const handleConfirmNewGameWrapper = () => {
+        handleConfirmNewGame();
+        closeModal('newGame');
+    };
+
+    const handleConfirmReselectPlayers = () => {
+        setGameState(prev => ({ ...prev, isSetupComplete: false }));
+        closeModal('reselect');
+    };
+
+    const handleChangeMode = () => {
+        setGameState(prev => ({ ...prev, isSetupComplete: false, gameMode: null }));
+        closeModal('settings');
+    };
+
+    const handleRequestReturnHome = () => {
+        setGameState({ ...initialGameState, hasSeenHomepage: false, tutorialStep: 1 });
+        closeModal('returnHome');
+    };
+
+    const handleRequestNewGame = () => {
+        closeModal('settings');
+        useUI().openModal('newGame');
+    };
+
+    const handleRequestReselectPlayers = () => {
+        closeModal('settings');
+        useUI().openModal('reselect');
+    };
+
+    const handleRequestSaveGame = () => {
+        closeModal('settings');
+        useUI().openModal('saveGame');
+        setSyncState({ status: 'idle', message: '' });
+    };
+
+    const handleSettingsChange = (newSettings: Settings) => {
+        setGameState(prev => ({ ...prev, settings: newSettings }));
+    };
+
     return (
         <>
-            <MobileMenu 
-                isOpen={props.isMobileMenuOpen} 
-                onClose={() => props.setIsMobileMenuOpen(false)} 
-                activeTab={props.activeTab} 
-                onSelectTab={(tab) => { props.onSelectTab(tab); props.setIsMobileMenuOpen(false); }} 
-                onShare={props.onShare} 
-                tabTranslations={props.tabTranslations} 
-                tabs={props.tabs} 
-            />
-            
-            {props.isPlayerSelectionModalOpen && props.actionToAssign && (
-                <PlayerSelectionModal 
-                    isOpen={props.isPlayerSelectionModalOpen} 
-                    onClose={() => { props.setIsPlayerSelectionModalOpen(false); props.setActionToAssign(null); }} 
-                    onSelectPlayer={props.handleAssignActionToPlayer} 
-                    players={props.playersForTally} 
-                    playerNames={props.playerNames} 
-                    actionLabel={props.actionLabel || ''} 
-                />
-            )}
-
-            {props.isLoadGameModalOpen && (
-                <LoadGameModal 
-                    onClose={() => props.setIsLoadGameModalOpen(false)} 
-                    onLoadGame={async (id) => { 
-                        props.setIsLoadGameModalOpen(false); 
-                        await props.handleLoadGame(id, false); 
-                        props.setActiveTab('statistics');
-                    }} 
-                    user={props.user}
-                />
-            )}
-
-            {props.isSaveGameModalOpen && (
-                <SaveGameModal 
-                    isOpen={props.isSaveGameModalOpen} 
-                    onClose={() => props.setIsSaveGameModalOpen(false)} 
-                    onSave={props.handleSyncToSupabase} 
-                    syncState={props.syncState} 
-                    initialGameName={props.gameName} 
-                />
-            )}
-            
-            {props.isSettingsModalOpen && (
-                <SettingsModal 
-                    settings={props.settings} 
-                    setSettings={props.handleSettingsChange} 
-                    onClose={() => props.setIsSettingsModalOpen(false)} 
-                    onRequestNewGame={props.handleRequestNewGame} 
-                    onRequestReselectPlayers={props.handleRequestReselectPlayers} 
-                    onRequestChangeMode={props.handleChangeMode} 
-                    onRequestSaveGame={props.handleRequestSaveGame}
-                    user={props.user}
-                    onLogout={props.handleLogout}
-                    onLogin={props.handleLogin}
-                />
-            )}
-            
-            <ShareModal 
-                isOpen={props.isShareModalOpen} 
-                onClose={() => props.setIsShareModalOpen(false)} 
-                gameState={props.gameState} 
-                playerStats={[]} 
+            <MobileMenu
+                isOpen={modals.mobileMenu?.isOpen}
+                onClose={() => closeModal('mobileMenu')}
+                activeTab={activeTab}
+                onSelectTab={(tab) => { setActiveTab(tab); closeModal('mobileMenu'); }}
+                onShare={handleShare}
+                tabTranslations={props.tabTranslations}
+                tabs={props.tabs}
             />
 
-            {props.isSubstitutionModalOpen && (
-                <SubstitutionModal 
-                    isOpen={props.isSubstitutionModalOpen} 
-                    onClose={() => props.setIsSubstitutionModalOpen(false)} 
-                    onSubstitute={props.handleSubstitution} 
-                    activePlayers={props.activePlayers} 
-                    availablePlayers={props.availablePlayers} 
-                    playerNames={props.playerNames} 
+            {modals.playerSelection?.isOpen && actionToAssign && (
+                <PlayerSelectionModal
+                    isOpen={modals.playerSelection?.isOpen}
+                    onClose={() => { closeModal('playerSelection'); setActionToAssign(null); }}
+                    onSelectPlayer={handleAssignActionToPlayer}
+                    players={props.playersForTally}
+                    playerNames={gameState.playerNames}
+                    actionLabel={props.actionLabel || ''}
+                />
+            )}
+
+            {modals.loadGame?.isOpen && (
+                <LoadGameModal
+                    isOpen={modals.loadGame?.isOpen}
+                    onClose={() => closeModal('loadGame')}
+                    onLoadGame={async (id) => {
+                        closeModal('loadGame');
+                        await handleLoadGame(id, false);
+                        setActiveTab('statistics');
+                    }}
+                    user={user}
+                />
+            )}
+
+            {modals.saveGame?.isOpen && (
+                <SaveGameModal
+                    isOpen={modals.saveGame?.isOpen}
+                    onClose={() => closeModal('saveGame')}
+                    onSave={handleSyncToSupabase}
+                    syncState={syncState}
+                    initialGameName={gameState.settings.gameName}
+                />
+            )}
+
+            {modals.settings?.isOpen && (
+                <SettingsModal
+                    settings={gameState.settings}
+                    setSettings={handleSettingsChange}
+                    onClose={() => closeModal('settings')}
+                    onRequestNewGame={handleRequestNewGame}
+                    onRequestReselectPlayers={handleRequestReselectPlayers}
+                    onRequestChangeMode={handleChangeMode}
+                    onRequestSaveGame={handleRequestSaveGame}
+                    user={user}
+                    onLogout={handleLogout}
+                    onLogin={handleLogin}
+                />
+            )}
+
+            <ShareModal
+                isOpen={modals.share?.isOpen}
+                onClose={() => closeModal('share')}
+                gameState={gameState}
+                playerStats={[]}
+            />
+
+            {modals.substitution?.isOpen && (
+                <SubstitutionModal
+                    isOpen={modals.substitution?.isOpen}
+                    onClose={() => closeModal('substitution')}
+                    onSubstitute={handleSubstitution}
+                    activePlayers={gameState.activePlayers}
+                    availablePlayers={gameState.availablePlayers}
+                    playerNames={gameState.playerNames}
                 />
             )}
 
             {props.pendingShotPosition && (
-                <OutcomeModal 
-                    onOutcomeSelect={props.onOutcomeSelect} 
-                    onClose={() => props.setPendingShotPosition(null)} 
-                />
-            )}
-            
-            {props.isClearSheetModalOpen && (
-                <ConfirmationModal 
-                    title="Limpiar Planilla" 
-                    message="¿Borrar todos los tiros?" 
-                    confirmText="Sí, borrar" 
-                    cancelText="Cancelar" 
-                    onConfirm={props.handleConfirmClearSheet} 
-                    onClose={() => props.setIsClearSheetModalOpen(false)} 
+                <OutcomeModal
+                    onOutcomeSelect={props.onOutcomeSelect}
+                    onClose={() => props.setPendingShotPosition(null)}
                 />
             )}
 
-            {props.isNewGameConfirmOpen && (
-                <ConfirmationModal 
-                    title="Nuevo Partido" 
-                    message="Se perderán los datos actuales." 
-                    confirmText="Sí, nuevo partido" 
-                    cancelText="Cancelar" 
-                    onConfirm={props.handleConfirmNewGameWrapper} 
-                    onClose={() => props.setIsNewGameConfirmOpen(false)} 
+            {modals.clearSheet?.isOpen && (
+                <ConfirmationModal
+                    title="Limpiar Planilla"
+                    message="¿Borrar todos los tiros?"
+                    confirmText="Sí, borrar"
+                    cancelText="Cancelar"
+                    onConfirm={handleConfirmClearSheet}
+                    onClose={() => closeModal('clearSheet')}
                 />
             )}
 
-            {props.isReturnHomeConfirmOpen && (
-                <ConfirmationModal 
-                    title="Volver al Inicio" 
-                    message="Se perderán los datos no guardados." 
-                    confirmText="Volver" 
-                    cancelText="Cancelar" 
-                    onConfirm={props.handleConfirmReturnHome} 
-                    onClose={() => props.setIsReturnHomeConfirmOpen(false)} 
+            {modals.newGame?.isOpen && (
+                <ConfirmationModal
+                    title="Nuevo Partido"
+                    message="Se perderán los datos actuales."
+                    confirmText="Sí, nuevo partido"
+                    cancelText="Cancelar"
+                    onConfirm={handleConfirmNewGameWrapper}
+                    onClose={() => closeModal('newGame')}
                 />
             )}
 
-            {props.isReselectConfirmOpen && (
-                <ConfirmationModal 
-                    title="Corregir Jugadores" 
-                    message="Volver a selección de equipo." 
-                    confirmText="Volver" 
-                    cancelText="Cancelar" 
-                    onConfirm={props.handleConfirmReselectPlayers} 
-                    onClose={() => props.setIsReselectConfirmOpen(false)} 
-                    confirmButtonColor="bg-yellow-600 hover:bg-yellow-700" 
+            {modals.returnHome?.isOpen && (
+                <ConfirmationModal
+                    title="Volver al Inicio"
+                    message="Se perderán los datos no guardados."
+                    confirmText="Volver"
+                    cancelText="Cancelar"
+                    onConfirm={handleRequestReturnHome}
+                    onClose={() => closeModal('returnHome')}
                 />
             )}
-            
-            {props.notificationPopup && (
-                <NotificationPopup 
-                    type={props.notificationPopup.type} 
-                    playerNumber={props.notificationPopup.playerNumber} 
-                    playerName={props.playerNames[props.notificationPopup.playerNumber] || ''} 
-                    threshold={props.notificationPopup.type === 'caliente' ? props.settings.manoCalienteThreshold : props.settings.manoFriaThreshold} 
-                    onClose={() => props.setNotificationPopup(null)} 
+
+            {modals.reselect?.isOpen && (
+                <ConfirmationModal
+                    title="Corregir Jugadores"
+                    message="Volver a selección de equipo."
+                    confirmText="Volver"
+                    cancelText="Cancelar"
+                    onConfirm={handleConfirmReselectPlayers}
+                    onClose={() => closeModal('reselect')}
+                    confirmButtonColor="bg-yellow-600 hover:bg-yellow-700"
+                />
+            )}
+
+            {notificationPopup && (
+                <NotificationPopup
+                    type={notificationPopup.type}
+                    playerNumber={notificationPopup.playerNumber}
+                    playerName={gameState.playerNames[notificationPopup.playerNumber] || ''}
+                    threshold={notificationPopup.type === 'caliente' ? gameState.settings.manoCalienteThreshold : gameState.settings.manoFriaThreshold}
+                    onClose={() => setNotificationPopup(null)}
                 />
             )}
 
@@ -247,30 +258,30 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     isOpen={!!props.editingEvent}
                     onClose={() => props.setEditingEvent(null)}
                     event={props.editingEvent}
-                    onSave={props.handleEditGameEvent}
-                    onDelete={props.handleDeleteGameEvent}
-                    playerNames={props.playerNames}
+                    onSave={handleEditGameEvent}
+                    onDelete={handleDeleteGameEvent}
+                    playerNames={gameState.playerNames}
                     availablePlayers={props.playersForTally}
                 />
             )}
-            
-            {props.user && (
-                <UserProfileModal 
-                    isOpen={false} 
-                    onClose={() => {}} 
-                    user={props.user}
-                    onLogout={props.handleLogout}
+
+            {user && (
+                <UserProfileModal
+                    isOpen={false}
+                    onClose={() => { }}
+                    user={user}
+                    onLogout={handleLogout}
                     onLoadGame={async (id, asOwner) => {
-                        await props.handleLoadGame(id, asOwner);
-                        props.setActiveTab('logger');
+                        await handleLoadGame(id, asOwner);
+                        setActiveTab('logger');
                     }}
                 />
             )}
 
-            {props.isTeamManagerOpen && (
+            {modals.teamManager?.isOpen && (
                 <TeamRosterModal
-                    isOpen={props.isTeamManagerOpen}
-                    onClose={() => props.setIsTeamManagerOpen(false)}
+                    isOpen={modals.teamManager?.isOpen}
+                    onClose={() => closeModal('teamManager')}
                     onLoadTeam={props.handleTeamLoadedFromHome}
                     currentSelection={{ name: '', players: [] }}
                 />

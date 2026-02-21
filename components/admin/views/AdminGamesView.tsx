@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAdminGames } from '../hooks/useAdminGames';
-import SearchIcon from '../../SearchIcon';
-import TrashIcon from '../../TrashIcon';
-import EyeIcon from '../../EyeIcon';
+import { SearchIcon } from '../../icons';
+import { TrashIcon } from '../../icons';
+import { EyeIcon } from '../../icons';
 import Loader from '../../Loader';
 
 interface AdminGamesViewProps {

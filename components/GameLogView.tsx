@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { GameEvent, StatAction } from '../types';
-import PencilIcon from './PencilIcon';
+import { PencilIcon } from './icons';
 
 interface GameLogViewProps {
     log: GameEvent[];

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import JerseyIcon from './JerseyIcon';
-import SwitchIcon from './SwitchIcon';
-import XIcon from './XIcon';
+import { JerseyIcon } from './icons';
+import { SwitchIcon } from './icons';
+import { XIcon } from './icons';
 
 interface SubstitutionModalProps {
     isOpen: boolean;

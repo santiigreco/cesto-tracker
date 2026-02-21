@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import JerseyIcon from './JerseyIcon';
+import { JerseyIcon } from './icons';
 import { Settings, GameMode, SavedTeam, RosterPlayer } from '../types';
 import ToggleSwitch from './ToggleSwitch';
-import ChevronDownIcon from './ChevronDownIcon';
-import UndoIcon from './UndoIcon';
-import UsersIcon from './UsersIcon';
+import { ChevronDownIcon } from './icons';
+import { UndoIcon } from './icons';
+import { UsersIcon } from './icons';
 import TeamSelectorModal from './TeamSelectorModal';
 import TournamentSelectorModal from './TournamentSelectorModal';
 import TeamRosterModal from './TeamRosterModal';

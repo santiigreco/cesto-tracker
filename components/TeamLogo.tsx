@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ShieldIcon from './ShieldIcon';
+import { ShieldIcon } from './icons';
 
 interface TeamLogoProps {
     teamName: string;

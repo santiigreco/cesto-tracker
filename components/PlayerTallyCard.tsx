@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { TallyStatsPeriod, StatAction } from '../types';
-import CheckIcon from './CheckIcon';
-import XIcon from './XIcon';
+import { CheckIcon } from './icons';
+import { XIcon } from './icons';
 
 // --- Re-added these icons as they are used internally ---
 const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (

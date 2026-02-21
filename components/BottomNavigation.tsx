@@ -1,9 +1,9 @@
 import React from 'react';
 import { AppTab, GameMode } from '../types';
-import ClipboardIcon from './ClipboardIcon';
-import ChartPieIcon from './ChartPieIcon';
-import ChartBarIcon from './ChartBarIcon';
-import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
+import { ClipboardIcon } from './icons';
+import { ChartPieIcon } from './icons';
+import { ChartBarIcon } from './icons';
+import { QuestionMarkCircleIcon } from './icons';
 
 interface BottomNavigationProps {
   activeTab: AppTab;

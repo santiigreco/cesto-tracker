@@ -1,9 +1,10 @@
 
 import React from 'react';
-import HamburgerIcon from './HamburgerIcon';
-import GearIcon from './GearIcon';
+import { HamburgerIcon } from './icons';
+import { GearIcon } from './icons';
 import CloudIndicator from './CloudIndicator';
-import { GameMode } from '../types';
+import { GameMode, GamePeriod } from '../types';
+import { PERIOD_NAMES } from '../constants';
 
 interface AppHeaderProps {
     onOpenMobileMenu: () => void;
@@ -16,6 +17,8 @@ interface AppHeaderProps {
     gameId: string | null;
     onOpenSettings: () => void;
     isReadOnly: boolean;
+    currentPeriod?: GamePeriod;
+    onPeriodChange?: (period: GamePeriod) => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -28,7 +31,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     lastSaved,
     gameId,
     onOpenSettings,
-    isReadOnly
+    isReadOnly,
+    currentPeriod,
+    onPeriodChange
 }) => {
     return (
         <>
@@ -40,9 +45,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
             <header className="relative flex items-center mb-4">
                 <div className="flex-none w-12 md:w-0">
-                    <button 
-                        className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden" 
-                        onClick={onOpenMobileMenu} 
+                    <button
+                        className="p-2 -ml-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors md:hidden"
+                        onClick={onOpenMobileMenu}
                         aria-label="Abrir menú"
                     >
                         <HamburgerIcon />
@@ -65,6 +70,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                             {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}
                         </p>
                     </div>
+                    {currentPeriod && onPeriodChange && (
+                        <div className="mt-3 inline-block">
+                            <select
+                                value={currentPeriod}
+                                onChange={(e) => onPeriodChange(e.target.value as GamePeriod)}
+                                disabled={isReadOnly}
+                                className="bg-slate-800 text-cyan-400 font-bold border border-cyan-700/50 rounded-full px-4 py-1.5 text-sm sm:text-base outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer shadow-lg hover:bg-slate-700 transition-colors appearance-none text-center"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2322d3ee' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                            >
+                                {Object.entries(PERIOD_NAMES).map(([key, label]) => (
+                                    <option key={key} value={key}>{label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
                 <div className="flex-none w-12 flex justify-end items-center gap-2">
                     <div className="hidden sm:block">
@@ -79,7 +99,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                     </button>
                 </div>
             </header>
-            
+
             {/* Mobile visible Cloud Indicator */}
             <div className="sm:hidden flex justify-center mb-4">
                 <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameId} />

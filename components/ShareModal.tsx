@@ -1,9 +1,9 @@
 
 import React, { useRef, useState } from 'react';
 import { GameState, PlayerStats } from '../types';
-import XIcon from './XIcon';
-import ShareIcon from './ShareIcon';
-import ClipboardIcon from './ClipboardIcon';
+import { XIcon } from './icons';
+import { ShareIcon } from './icons';
+import { ClipboardIcon } from './icons';
 import ShareReport from './ShareReport';
 
 // TypeScript declaration for html2canvas global variable

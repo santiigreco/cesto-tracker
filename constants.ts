@@ -2,10 +2,10 @@
 import { TallyStatsPeriod } from './types';
 
 export const PERIOD_NAMES = {
-  'First Half': 'Primer Tiempo',
-  'Second Half': 'Segundo Tiempo',
-  'First Overtime': '1er Suplementario',
-  'Second Overtime': '2do Suplementario',
+    'First Half': 'Primer Tiempo',
+    'Second Half': 'Segundo Tiempo',
+    'First Overtime': '1er Suplementario',
+    'Second Overtime': '2do Suplementario',
 };
 
 export const STAT_LABELS: Record<keyof TallyStatsPeriod, string> = {
@@ -21,14 +21,12 @@ export const STAT_LABELS: Record<keyof TallyStatsPeriod, string> = {
     faltasPersonales: 'Faltas',
 };
 
-export const SUPABASE_URL = 'https://druqnbzzibkrxffftogl.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydXFuYnp6aWJrcnhmZmZ0b2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODAyOTcsImV4cCI6MjA3ODY1NjI5N30.AeFCR_oN71lu0qmS5isdrj4Wu40wSqcr5uM_gjjLzqw';
 
 export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
 // --- ADMIN CONFIGURATION ---
 // Reemplaza esto con tu email real para ver el panel de admin
-export const ADMIN_EMAILS = ['gresolutions.info@gmail.com', 'santiagogreco@gmail.com']; 
+export const ADMIN_EMAILS = ['gresolutions.info@gmail.com', 'santiagogreco@gmail.com'];
 
 // Configuration for Teams
 export interface TeamConfig {

@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import XIcon from './XIcon';
-import CheckIcon from './CheckIcon';
+import { XIcon } from './icons';
+import { CheckIcon } from './icons';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
-import CameraIcon from './CameraIcon';
+import { CameraIcon } from './icons';
 import { useProfile } from '../hooks/useProfile';
 import { TEAMS_CONFIG, ADMIN_EMAILS } from '../constants';
 import { IdentityRole } from '../types';
