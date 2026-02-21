@@ -11,7 +11,7 @@ import GameMainContent from '../components/GameMainContent';
 import AppModals from '../components/AppModals';
 import Loader from '../components/Loader';
 import Scoreboard from '../components/Scoreboard';
-import { ShotPosition, GameEvent } from '../types';
+import { ShotPosition, GameEvent, StatAction, AppTab, SavedTeam } from '../types';
 import { STAT_LABELS } from '../constants';
 
 export default function MatchRoute() {
@@ -58,7 +58,7 @@ export default function MatchRoute() {
             : ['tally', 'statistics'] as const;
     }, [gameState.gameMode]);
 
-    const tabTranslations: any = { logger: 'Cancha', tally: 'Planilla', statistics: 'Análisis' };
+    const tabTranslations: Partial<Record<AppTab, string>> = { logger: 'Cancha', courtAnalysis: 'Mapa', statistics: 'Análisis', faq: 'FAQ' };
 
     if (authLoading || syncLoading) {
         return (
@@ -99,7 +99,7 @@ export default function MatchRoute() {
         onOutcomeSelect,
         editingEvent,
         setEditingEvent,
-        handleTeamLoadedFromHome: (team: any) => { }
+        handleTeamLoadedFromHome: (_team: SavedTeam) => { }
     };
 
     return (
@@ -112,7 +112,7 @@ export default function MatchRoute() {
                     gameName={gameState.settings.gameName}
                     gameMode={gameState.gameMode}
                     isAutoSaving={isAutoSaving}
-                    lastSaved={lastSaved as any}
+                    lastSaved={lastSaved}
                     gameId={gameState.gameId}
                     onOpenSettings={() => openModal('settings')}
                     isReadOnly={gameState.isReadOnly}
@@ -126,7 +126,7 @@ export default function MatchRoute() {
                     {tabsForCurrentMode.map(tab => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab as any)}
+                            onClick={() => setActiveTab(tab)}
                             className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${activeTab === tab ? 'border-b-4 border-cyan-500 text-cyan-400' : 'text-slate-500 hover:text-cyan-400'}`}
                         >
                             {tabTranslations[tab]}
@@ -138,7 +138,7 @@ export default function MatchRoute() {
                     gameMode={gameState.gameMode!}
                     activeTab={activeTab}
                     isReadOnly={gameState.isReadOnly}
-                    onActionSelect={(a: any) => { setActionToAssign(a); openModal('playerSelection'); }}
+                    onActionSelect={(a: StatAction) => { setActionToAssign(a); openModal('playerSelection'); }}
                     handleUndoTally={handleUndoTally}
                     handleRedoTally={handleRedoTally}
                     gameLog={gameState.gameLog}
@@ -149,7 +149,7 @@ export default function MatchRoute() {
                     currentPlayer={gameState.currentPlayer}
                     currentPeriod={gameState.currentPeriod}
                     setGameState={setGameState}
-                    setEditingEvent={setEditingEvent as any}
+                    setEditingEvent={setEditingEvent}
                     setIsShareModalOpen={() => openModal('share')}
                     showTutorial={gameState.hasSeenHomepage && gameState.tutorialStep === 1}
                     tutorialStep={gameState.tutorialStep}
@@ -173,11 +173,11 @@ export default function MatchRoute() {
                     setMapView={setMapView}
                     analysisPlayer={analysisPlayer}
                     setAnalysisPlayer={setAnalysisPlayer}
-                    playersWithShots={Array.from(new Set(gameState.shots.map(s => s.playerNumber))).sort((a: any, b: any) => Number(a) - Number(b))}
+                    playersWithShots={Array.from(new Set(gameState.shots.map(s => s.playerNumber))).sort((a: string, b: string) => Number(a) - Number(b))}
                     filteredAnalysisShots={gameState.shots.filter(s => (analysisPeriodFilter === 'all' || s.period === analysisPeriodFilter) && (analysisPlayer === 'Todos' || s.playerNumber === analysisPlayer))}
-                    analysisResultFilter={analysisResultFilter as any}
+                    analysisResultFilter={analysisResultFilter}
                     setAnalysisResultFilter={setAnalysisResultFilter as any}
-                    analysisPeriodFilter={analysisPeriodFilter as any}
+                    analysisPeriodFilter={analysisPeriodFilter}
                     setAnalysisPeriodFilter={setAnalysisPeriodFilter as any}
                 />
             </div>

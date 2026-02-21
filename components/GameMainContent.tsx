@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AppTab, GameMode, GamePeriod, GameEvent, Shot, HeatmapFilter, MapPeriodFilter } from '../types';
+import { AppTab, GameMode, GamePeriod, GameEvent, Shot, HeatmapFilter, MapPeriodFilter, StatAction, ShotPosition, GameState } from '../types';
 import QuickActionsPanel from './QuickActionsPanel';
 import { UndoIcon } from './icons';
 import { RedoIcon } from './icons';
@@ -27,19 +27,19 @@ interface GameMainContentProps {
     isReadOnly: boolean;
 
     // Tally Props
-    onActionSelect: (action: any) => void;
+    onActionSelect: (action: StatAction) => void;
     handleUndoTally: () => void;
     handleRedoTally: () => void;
     gameLog: GameEvent[];
     tallyRedoLog: GameEvent[];
     isCorrectionsVisible: boolean;
-    setIsCorrectionsVisible: (v: any) => void;
+    setIsCorrectionsVisible: React.Dispatch<React.SetStateAction<boolean>>;
 
     // Common Props
     playerNames: Record<string, string>;
     currentPlayer: string;
     currentPeriod: GamePeriod;
-    setGameState: any; // Using any for simpler refactor of complex state setter
+    setGameState: React.Dispatch<React.SetStateAction<GameState>>;
     setEditingEvent: (e: GameEvent | null) => void;
 
     // Statistics Props
@@ -58,7 +58,7 @@ interface GameMainContentProps {
     activePlayers: string[];
     setIsSubstitutionModalOpen: (v: boolean) => void;
     filteredLoggerTabShots: Shot[];
-    handleCourtClick: (pos: any) => void;
+    handleCourtClick: (pos: ShotPosition) => void;
     handleUndoShot: () => void;
     handleRedoShot: () => void;
     redoStack: Shot[];
@@ -67,7 +67,7 @@ interface GameMainContentProps {
 
     // Analysis Props
     mapView: 'shotmap' | 'heatmap' | 'zonemap';
-    setMapView: (v: any) => void;
+    setMapView: React.Dispatch<React.SetStateAction<'chart' | 'heatmap' | 'zones'>>;
     analysisPlayer: string;
     setAnalysisPlayer: (p: string) => void;
     playersWithShots: string[];
