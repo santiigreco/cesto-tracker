@@ -1,1 +1,6 @@
-/* /index.html 200
+# Archivos estáticos - servir directamente (no pasar por React Router)
+/sitemap.xml  /sitemap.xml  200
+/robots.txt   /robots.txt   200
+
+# SPA fallback - todas las demás rutas van al index.html
+/*  /index.html  200
