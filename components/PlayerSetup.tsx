@@ -191,14 +191,26 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
     const isCorrection = initialSelectedPlayers.length > 0;
     const [user, setUser] = useState<any>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     React.useEffect(() => {
-        // v2 syntax
         supabase.auth.getUser().then(({ data: { user } }) => {
             setUser(user);
+            if (user) {
+                // Check if admin via profile
+                supabase
+                    .from('profiles')
+                    .select('is_admin, permission_role')
+                    .eq('id', user.id)
+                    .single()
+                    .then(({ data }) => {
+                        if (data) {
+                            setIsAdmin(data.is_admin === true || data.permission_role === 'admin');
+                        }
+                    });
+            }
         });
     }, []);
-
 
     return (
         <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center justify-center p-4 sm:p-6 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 relative">
@@ -328,17 +340,30 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
                     <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isAdvancedOpen ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                         <div className="bg-slate-700/30 p-4 rounded-xl text-left space-y-4 border border-slate-600/30">
 
-                            {/* Game Mode Toggle */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-white font-semibold">Modo Mapa de Tiros</h3>
-                                    <p className="text-xs text-slate-400">Registrar posición exacta en cancha (Avanzado)</p>
+                            {/* Game Mode — Premium Lock for non-admins */}
+                            {isAdmin ? (
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-white font-semibold">Modo Mapa de Tiros</h3>
+                                        <p className="text-xs text-slate-400">Registrar posición exacta en cancha (Avanzado)</p>
+                                    </div>
+                                    <ToggleSwitch
+                                        isEnabled={selectedMode === 'shot-chart'}
+                                        onToggle={() => setSelectedMode(prev => prev === 'shot-chart' ? 'stats-tally' : 'shot-chart')}
+                                    />
                                 </div>
-                                <ToggleSwitch
-                                    isEnabled={selectedMode === 'shot-chart'}
-                                    onToggle={() => setSelectedMode(prev => prev === 'shot-chart' ? 'stats-tally' : 'shot-chart')}
-                                />
-                            </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700/50 opacity-75">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-slate-300 font-semibold">Modo Mapa de Tiros</h3>
+                                            <span className="text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full uppercase tracking-widest">Próximamente</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500">Registrar posición exacta en cancha</p>
+                                    </div>
+                                    <span className="text-2xl">🔒</span>
+                                </div>
+                            )}
 
                             <div className="h-px bg-slate-600/50"></div>
 

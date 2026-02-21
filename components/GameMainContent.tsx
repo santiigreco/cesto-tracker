@@ -9,7 +9,6 @@ import { ChevronDownIcon } from './icons';
 import StatsTallyView from './StatsTallyView';
 import { PERIOD_NAMES } from '../constants';
 import StatisticsView from './StatisticsView';
-import FaqView from './FaqView';
 import TutorialOverlay from './TutorialOverlay';
 import { CheckIcon } from './icons';
 import { XIcon } from './icons';
@@ -144,9 +143,6 @@ const GameMainContent: React.FC<GameMainContentProps> = (props) => {
                 </div>
             )}
 
-            {activeTab === 'faq' && (
-                <FaqView />
-            )}
 
             {gameMode === 'shot-chart' && activeTab === 'logger' && (
                 <>

@@ -3,7 +3,6 @@ import { AppTab, GameMode } from '../types';
 import { ClipboardIcon } from './icons';
 import { ChartPieIcon } from './icons';
 import { ChartBarIcon } from './icons';
-import { QuestionMarkCircleIcon } from './icons';
 
 interface BottomNavigationProps {
   activeTab: AppTab;
@@ -19,12 +18,10 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onSelect
       { id: 'logger' as AppTab, label: 'Cancha', Icon: ClipboardIcon },
       { id: 'courtAnalysis' as AppTab, label: 'Análisis', Icon: ChartPieIcon },
       { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
-      { id: 'faq' as AppTab, label: 'Ayuda', Icon: QuestionMarkCircleIcon },
     ]
     : [
       { id: 'tally' as AppTab, label: 'Planilla', Icon: ClipboardIcon },
       { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
-      { id: 'faq' as AppTab, label: 'Ayuda', Icon: QuestionMarkCircleIcon },
     ];
 
   // Calculamos la clase de la grilla dinámicamente según la cantidad de pestañas (3 o 4)

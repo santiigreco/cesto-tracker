@@ -32,12 +32,15 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
     const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean) => {
-        // Handle event-triggered calls (where gameNameInput is a React Event) or parameter-based
-        const gameName = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
-            ? gameNameInput
-            : (gameState.settings.gameName || `Partido del ${new Date().toLocaleDateString()}`);
-
         const isAutoSave = (typeof gameNameInput === 'boolean') ? gameNameInput : (isAutoSaveInput === true);
+
+        // Build a standardized game name: "Equipo vs Rival · DD MMM YYYY"
+        const myTeam = gameState.settings.myTeam?.trim() || 'Mi Equipo';
+        const rival = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
+            ? gameNameInput.trim()
+            : (gameState.settings.gameName?.trim() || 'Rival');
+        const dateStr = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+        const gameName = `${myTeam} vs ${rival} · ${dateStr}`;
 
         if (isAutoSave) {
             setIsAutoSaving(true);
