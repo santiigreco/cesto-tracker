@@ -44,30 +44,29 @@ const TallyStatisticsView: React.FC<{
   const [sortConfig, setSortConfig] = useState<{ key: TallySortableKey; direction: 'ascending' | 'descending' } | null>({ key: 'playerNumber', direction: 'ascending' });
 
   const getFilterButtonClass = (isActive: boolean) =>
-    `whitespace-nowrap flex-shrink-0 font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base ${
-      isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
+    `whitespace-nowrap flex-shrink-0 font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base ${isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
     }`;
 
   const aggregatedStats = useMemo(() => {
     return Object.entries(tallyStats).map(([playerNumber, playerTally]) => {
       let stats: TallyStatsPeriod = { ...initialTallyStatsPeriod };
-      
+
       if (tallyPeriodFilter === 'all') {
-          // Explicitly sum all available periods
-          Object.values(playerTally).forEach((periodStats: TallyStatsPeriod) => {
-              (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach(key => {
-                  stats[key] += periodStats[key] || 0;
-              });
+        // Explicitly sum all available periods
+        Object.values(playerTally).forEach((periodStats: TallyStatsPeriod) => {
+          (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach(key => {
+            stats[key] += periodStats[key] || 0;
           });
+        });
       } else {
         stats = { ...(playerTally[tallyPeriodFilter] || initialTallyStatsPeriod) };
       }
-      
+
       const totalShots = stats.goles + stats.triples + stats.fallos;
       const totalRebounds = stats.reboteOfensivo + stats.reboteDefensivo;
       const golPercentage = totalShots > 0 ? ((stats.goles + stats.triples) / totalShots) * 100 : 0;
       const points = (stats.goles * 2) + (stats.triples * 3);
-      
+
       return { playerNumber, ...stats, totalRebounds, golPercentage, totalShots, points };
     });
   }, [tallyStats, tallyPeriodFilter]);
@@ -84,10 +83,10 @@ const TallyStatisticsView: React.FC<{
           return 0;
         }
         if (a[sortConfig.key] < b[sortConfig.key]) {
-            return sortConfig.direction === 'ascending' ? -1 : 1;
+          return sortConfig.direction === 'ascending' ? -1 : 1;
         }
         if (a[sortConfig.key] > b[sortConfig.key]) {
-            return sortConfig.direction === 'ascending' ? 1 : -1;
+          return sortConfig.direction === 'ascending' ? 1 : -1;
         }
         return 0;
       });
@@ -103,22 +102,22 @@ const TallyStatisticsView: React.FC<{
     }
     setSortConfig({ key, direction });
   };
-  
+
   const getSortIndicator = (key: TallySortableKey) => {
     if (isSharing) return null;
     if (!sortConfig || sortConfig.key !== key) return <span className="text-slate-500 opacity-50">↕</span>;
     return <span className={`text-cyan-400`}>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
   };
-  
+
   const teamTotals = useMemo(() => {
-     return aggregatedStats.reduce((acc, playerStats) => {
-        if (playerStats.playerNumber !== 'Equipo') { // Exclude 'Equipo' from summation
-            (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).forEach(key => {
-                acc[key] += playerStats[key];
-            });
-            acc.points += playerStats.points;
-        }
-        return acc;
+    return aggregatedStats.reduce((acc, playerStats) => {
+      if (playerStats.playerNumber !== 'Equipo') { // Exclude 'Equipo' from summation
+        (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).forEach(key => {
+          acc[key] += playerStats[key];
+        });
+        acc.points += playerStats.points;
+      }
+      return acc;
     }, { ...initialTallyStatsPeriod, points: 0 });
   }, [aggregatedStats]);
 
@@ -129,7 +128,7 @@ const TallyStatisticsView: React.FC<{
     const sortedByAsistencias = [...playersOnly].sort((a, b) => b.asistencias - a.asistencias);
     return { points: sortedByPoints, rebotes: sortedByRebounds, asistencias: sortedByAsistencias };
   }, [aggregatedStats]);
-  
+
   const hasData = aggregatedStats.some(p => p.playerNumber !== 'Equipo' && (p.goles > 0 || p.triples > 0 || p.fallos > 0 || p.recuperos > 0 || p.perdidas > 0));
 
   if (!hasData && !isSharing) {
@@ -141,14 +140,14 @@ const TallyStatisticsView: React.FC<{
     );
   }
 
-  const periodTranslations: {[key in GamePeriod]: string} = { 
-      'First Half': 'Primer Tiempo', 
-      'Second Half': 'Segundo Tiempo',
-      'First Overtime': '1er Suple',
-      'Second Overtime': '2do Suple'
+  const periodTranslations: { [key in GamePeriod]: string } = {
+    'First Half': 'Primer Tiempo',
+    'Second Half': 'Segundo Tiempo',
+    'First Overtime': '1er Suple',
+    'Second Overtime': '2do Suple'
   };
 
-   const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
+  const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
     { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },
     { key: 'points', label: 'Pts', title: 'Puntos Totales' },
     { key: 'goles', label: 'G', title: 'Goles (2 pts)' },
@@ -160,7 +159,7 @@ const TallyStatisticsView: React.FC<{
     { key: 'reboteOfensivo', label: 'RO', title: 'Rebotes Ofensivos' },
     { key: 'reboteDefensivo', label: 'RD', title: 'Rebotes Defensivos' },
     { key: 'asistencias', label: 'Ast', title: 'Asistencias' },
-    { key: 'faltasPersonales', label: 'FP', title: 'Faltas Personales'},
+    { key: 'faltasPersonales', label: 'FP', title: 'Faltas Personales' },
     { key: 'golesContra', label: 'GC', title: 'Goles en Contra' },
   ];
 
@@ -168,43 +167,43 @@ const TallyStatisticsView: React.FC<{
     <div className="flex flex-col gap-8">
       {!isSharing && (
         <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg overflow-x-auto">
-            <div className="flex justify-start sm:justify-center gap-2 min-w-max">
-                <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>Ambos</button>
-                <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
-                <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
-                <button onClick={() => setTallyPeriodFilter('First Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'First Overtime')}>{periodTranslations['First Overtime']}</button>
-                <button onClick={() => setTallyPeriodFilter('Second Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Overtime')}>{periodTranslations['Second Overtime']}</button>
-            </div>
+          <div className="flex justify-start sm:justify-center gap-2 min-w-max">
+            <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>Ambos</button>
+            <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>{periodTranslations['First Half']}</button>
+            <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>{periodTranslations['Second Half']}</button>
+            <button onClick={() => setTallyPeriodFilter('First Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'First Overtime')}>{periodTranslations['First Overtime']}</button>
+            <button onClick={() => setTallyPeriodFilter('Second Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Overtime')}>{periodTranslations['Second Overtime']}</button>
+          </div>
         </div>
       )}
-      
-       {/* Team Statistics Section */}
+
+      {/* Team Statistics Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-center">
-             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg border border-slate-600"><p className="text-3xl sm:text-4xl font-extrabold text-cyan-400">{teamTotals.points}</p><p className="text-xs sm:text-sm text-slate-400 uppercase tracking-wide">Puntos Totales</p></div>
-             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-green-400">{teamTotals.goles}</p><p className="text-xs sm:text-sm text-slate-400">Goles</p></div>
-             <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-blue-400">{teamTotals.triples}</p><p className="text-xs sm:text-sm text-slate-400">Triples</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-red-400">{teamTotals.fallos}</p><p className="text-xs sm:text-sm text-slate-400">Fallos</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.recuperos}</p><p className="text-xs sm:text-sm text-slate-400">Recuperos</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.perdidas}</p><p className="text-xs sm:text-sm text-slate-400">Pérdidas</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}</p><p className="text-xs sm:text-sm text-slate-400">Rebotes</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.asistencias}</p><p className="text-xs sm:text-sm text-slate-400">Asistencias</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.faltasPersonales}</p><p className="text-xs sm:text-sm text-slate-400">Faltas</p></div>
-            <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.golesContra}</p><p className="text-xs sm:text-sm text-slate-400">G. en Contra</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg border border-slate-600"><p className="text-3xl sm:text-4xl font-extrabold text-cyan-400">{teamTotals.points}</p><p className="text-xs sm:text-sm text-slate-400 uppercase tracking-wide">Puntos Totales</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-green-400">{teamTotals.goles}</p><p className="text-xs sm:text-sm text-slate-400">Goles</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-blue-400">{teamTotals.triples}</p><p className="text-xs sm:text-sm text-slate-400">Triples</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-red-400">{teamTotals.fallos}</p><p className="text-xs sm:text-sm text-slate-400">Fallos</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.recuperos}</p><p className="text-xs sm:text-sm text-slate-400">Recuperos</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.perdidas}</p><p className="text-xs sm:text-sm text-slate-400">Pérdidas</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}</p><p className="text-xs sm:text-sm text-slate-400">Rebotes</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.asistencias}</p><p className="text-xs sm:text-sm text-slate-400">Asistencias</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.faltasPersonales}</p><p className="text-xs sm:text-sm text-slate-400">Faltas</p></div>
+          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg"><p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.golesContra}</p><p className="text-xs sm:text-sm text-slate-400">G. en Contra</p></div>
         </div>
       </div>
 
-       {/* Top Performers Section */}
+      {/* Top Performers Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <TopPerformerCategory title="Puntos" performers={topPerformers.points} statKey="points" playerNames={playerNames} />
-            <TopPerformerCategory title="Rebotes" performers={topPerformers.rebotes} statKey="totalRebounds" playerNames={playerNames} />
-            <TopPerformerCategory title="Asistencias" performers={topPerformers.asistencias} statKey="asistencias" playerNames={playerNames} />
+          <TopPerformerCategory title="Puntos" performers={topPerformers.points} statKey="points" playerNames={playerNames} />
+          <TopPerformerCategory title="Rebotes" performers={topPerformers.rebotes} statKey="totalRebounds" playerNames={playerNames} />
+          <TopPerformerCategory title="Asistencias" performers={topPerformers.asistencias} statKey="asistencias" playerNames={playerNames} />
         </div>
       </div>
-      
+
       {/* Performance Table Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-3xl font-bold text-cyan-400 mb-4">Rendimiento por Jugador</h3>
@@ -214,9 +213,9 @@ const TallyStatisticsView: React.FC<{
               <tr className="border-b-2 border-slate-600">
                 {tableHeaders.map(({ key, label, title }) => (
                   <th key={key} title={title} className={`p-2 text-sm tracking-wider font-semibold ${key === 'playerNumber' ? 'text-left' : 'text-center'}`}>
-                     <button onClick={() => requestSort(key)} className={`w-full font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit ${key === 'playerNumber' ? 'justify-start' : 'justify-center'}`} disabled={isSharing}>
-                        {label} {getSortIndicator(key)}
-                     </button>
+                    <button onClick={() => requestSort(key)} className={`w-full font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit ${key === 'playerNumber' ? 'justify-start' : 'justify-center'}`} disabled={isSharing}>
+                      {label} {getSortIndicator(key)}
+                    </button>
                   </th>
                 ))}
               </tr>
@@ -248,24 +247,24 @@ const TallyStatisticsView: React.FC<{
 };
 
 const TopPerformerCategory: React.FC<{
-    title: string;
-    performers: (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, points: number })[];
-    statKey: 'points' | 'totalRebounds' | 'asistencias';
-    playerNames: Record<string, string>;
+  title: string;
+  performers: (TallyStatsPeriod & { playerNumber: string, totalRebounds: number, points: number })[];
+  statKey: 'points' | 'totalRebounds' | 'asistencias';
+  playerNames: Record<string, string>;
 }> = ({ title, performers, statKey, playerNames }) => (
-    <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
-        <h4 className="text-xl font-bold text-center text-cyan-400 mb-3">{title}</h4>
-        <div className="space-y-2">
-            {performers.slice(0, 3).map((player, index) => (
-                <div key={player.playerNumber} className="flex items-center gap-3 bg-slate-800/50 p-2 rounded-md">
-                    <TrophyIcon rank={index + 1} />
-                    <span className="flex-grow font-semibold text-white truncate">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</span>
-                    <span className="font-bold text-lg text-cyan-300">{player[statKey]}</span>
-                </div>
-            ))}
-            {performers.length === 0 && <p className="text-slate-500 text-center text-sm py-2">Sin datos</p>}
+  <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
+    <h4 className="text-xl font-bold text-center text-cyan-400 mb-3">{title}</h4>
+    <div className="space-y-2">
+      {performers.slice(0, 3).map((player, index) => (
+        <div key={player.playerNumber} className="flex items-center gap-3 bg-slate-800/50 p-2 rounded-md">
+          <TrophyIcon rank={index + 1} />
+          <span className="flex-grow font-semibold text-white truncate">{playerNames[player.playerNumber] || `Jugador ${player.playerNumber}`}</span>
+          <span className="font-bold text-lg text-cyan-300">{player[statKey]}</span>
         </div>
+      ))}
+      {performers.length === 0 && <p className="text-slate-500 text-center text-sm py-2">Sin datos</p>}
     </div>
+  </div>
 );
 
 
@@ -295,18 +294,18 @@ const PercentageBar: React.FC<{ percentage: number }> = ({ percentage }) => (
 );
 
 
-const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({ 
-    onShareClick, 
-    isSharing = false, 
-    externalStats,
-    externalPlayerNames,
-    externalShots,
-    externalGameMode,
-    externalTallyStats
+const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
+  onShareClick,
+  isSharing = false,
+  externalStats,
+  externalPlayerNames,
+  externalShots,
+  externalGameMode,
+  externalTallyStats
 }) => {
-  
+
   const { gameState } = useGameContext();
-  
+
   // Use external props if provided (for sharing snapshot), otherwise use context
   const gameMode = externalGameMode || gameState.gameMode;
   const shots = externalShots || gameState.shots;
@@ -315,65 +314,65 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
 
   // Handle Export to Excel
   const handleExportExcel = () => {
-      if (!isSharing) {
-          generateFederationExcel(gameState);
-      }
+    if (!isSharing) {
+      generateFederationExcel(gameState);
+    }
   };
 
   // Compute Shot Chart Stats locally if not provided externally
   const stats: PlayerStats[] = useMemo(() => {
-      if (externalStats) return externalStats;
-      if (gameMode === 'shot-chart') {
-        const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
-        shots.forEach(shot => {
-            const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
-            pStats.totalShots += 1;
-            if (shot.isGol) {
-                pStats.totalGoles += 1;
-                pStats.totalPoints += shot.golValue;
-            }
-            statsMap.set(shot.playerNumber, pStats);
-        });
-        return Array.from(statsMap.entries()).map(([playerNumber, data]) => ({
-            playerNumber,
-            ...data,
-            golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
-        }));
-      }
-      return [];
+    if (externalStats) return externalStats;
+    if (gameMode === 'shot-chart') {
+      const statsMap = new Map<string, { totalShots: number; totalGoles: number; totalPoints: number }>();
+      shots.forEach(shot => {
+        const pStats = statsMap.get(shot.playerNumber) || { totalShots: 0, totalGoles: 0, totalPoints: 0 };
+        pStats.totalShots += 1;
+        if (shot.isGol) {
+          pStats.totalGoles += 1;
+          pStats.totalPoints += shot.golValue;
+        }
+        statsMap.set(shot.playerNumber, pStats);
+      });
+      return Array.from(statsMap.entries()).map(([playerNumber, data]) => ({
+        playerNumber,
+        ...data,
+        golPercentage: data.totalShots > 0 ? (data.totalGoles / data.totalShots) * 100 : 0,
+      }));
+    }
+    return [];
   }, [shots, gameMode, externalStats]);
-  
+
   if (gameMode === 'stats-tally' && tallyStats) {
     return (
       <>
-       {!isSharing && (
-        <div className="flex flex-col sm:flex-row justify-between items-center -mb-4 gap-4">
-          <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
-          <div className="flex gap-2">
-            {onShareClick && typeof navigator.share === 'function' && Object.keys(tallyStats).length > 0 && (
+        {!isSharing && (
+          <div className="flex flex-col sm:flex-row justify-between items-center -mb-4 gap-4">
+            <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
+            <div className="flex gap-2">
+              {onShareClick && typeof navigator.share === 'function' && Object.keys(tallyStats).length > 0 && (
                 <button
-                onClick={onShareClick}
-                className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
-                aria-label="Compartir estadísticas"
+                  onClick={onShareClick}
+                  className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
+                  aria-label="Compartir estadísticas"
                 >
-                <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-                <span className="hidden sm:inline">Compartir</span>
+                  <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline">Compartir</span>
                 </button>
-            )}
-            <button
+              )}
+              <button
                 onClick={handleExportExcel}
                 className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500"
                 aria-label="Exportar Excel Federación"
-            >
-                <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+              >
+                <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="hidden sm:inline">Excel Oficial</span>
-            </button>
+              </button>
+            </div>
           </div>
+        )}
+        <div className="pt-4">
+          <TallyStatisticsView tallyStats={tallyStats} playerNames={playerNames} isSharing={isSharing} />
         </div>
-      )}
-      <div className="pt-4">
-        <TallyStatisticsView tallyStats={tallyStats} playerNames={playerNames} isSharing={isSharing} />
-      </div>
       </>
     );
   }
@@ -385,9 +384,9 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
   const totalPoints = stats.reduce((acc, player) => acc + player.totalPoints, 0);
   const totalMisses = totalShots - totalGoles;
   const teamGolPercentage = totalShots > 0 ? (totalGoles / totalShots) * 100 : 0;
-  
+
   const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerStats; direction: 'ascending' | 'descending' } | null>({ key: 'playerNumber', direction: 'ascending' });
-  
+
   const sortedStats = useMemo(() => {
     let sortableItems = [...stats];
     if (sortConfig !== null) {
@@ -415,7 +414,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
     }
     setSortConfig({ key, direction });
   };
-  
+
   const getSortIndicator = (key: keyof PlayerStats) => {
     if (isSharing) return null;
     if (!sortConfig || sortConfig.key !== key) return <span className="text-slate-500 opacity-50">↕</span>;
@@ -465,27 +464,27 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
           <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
           <div className="flex gap-2">
             {onShareClick && typeof navigator.share === 'function' && hasData && (
-                <button
+              <button
                 onClick={onShareClick}
                 className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
                 aria-label="Compartir estadísticas"
-                >
-                <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
+              >
+                <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="hidden sm:inline">Compartir</span>
-                </button>
+              </button>
             )}
-             <button
-                onClick={handleExportExcel}
-                className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500"
-                aria-label="Exportar Excel Federación"
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500"
+              aria-label="Exportar Excel Federación"
             >
-                <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/>
-                <span className="hidden sm:inline">Excel Oficial</span>
+              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Excel Oficial</span>
             </button>
           </div>
         </div>
       )}
-      
+
       <div className="pt-4 flex flex-col gap-8">
         <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
@@ -516,20 +515,20 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
           </div>
         </div>
       </div>
-      
+
       {canShowAdvancedCharts && (
         <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-            <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Gráfico Temporal</h3>
-            <TemporalChart shots={shots} playerNames={playerNames} stats={stats} />
+          <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Gráfico Temporal</h3>
+          <TemporalChart shots={shots} playerNames={playerNames} stats={stats} />
         </div>
       )}
-      
+
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-3xl font-bold text-cyan-400">Rendimiento por Jugador</h3>
           {canShowAdvancedCharts && (
             <button onClick={handleExportCSV} className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-blue-500" aria-label="Exportar todos los tiros como CSV">
-              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5"/><span className="hidden sm:inline">Exportar Logs</span>
+              <DownloadIcon className="h-4 w-4 sm:h-5 sm:w-5" /><span className="hidden sm:inline">Exportar Logs</span>
             </button>
           )}
         </div>

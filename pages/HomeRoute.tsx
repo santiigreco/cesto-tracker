@@ -9,9 +9,11 @@ export default function HomeRoute() {
     const navigate = useNavigate();
     const { user, handleLogin } = useAuth();
     const { openModal } = useUI();
-    const { setGameState } = useGameContext();
+    const { setGameState, resetGame } = useGameContext();
 
     const handleStartApp = (teamName?: string, roster?: any[]) => {
+        // Clear previous state before starting new game
+        resetGame();
         // Set initial data and navigate to setup
         navigate('/setup', { state: { teamName, roster } });
     };

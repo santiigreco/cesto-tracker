@@ -67,8 +67,8 @@ export const generateFederationExcel = async (gameState: GameState) => {
     const borderStyle: Partial<ExcelJS.Borders> = {
         top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
     };
-    const centerStyle: Partial<ExcelJS.Alignment> = { 
-        vertical: 'middle', horizontal: 'center', wrapText: true 
+    const centerStyle: Partial<ExcelJS.Alignment> = {
+        vertical: 'middle', horizontal: 'center', wrapText: true
     };
     const boldFont = { name: 'Arial', size: 10, bold: true };
     const normalFont = { name: 'Arial', size: 10 };
@@ -105,14 +105,14 @@ export const generateFederationExcel = async (gameState: GameState) => {
     setMeta('H2', 'Torneo:', gameState.settings.tournamentName || '-', 4);
     // N2 -> Value in O2:Q2 (3 cols)
     setMeta('N2', 'Fecha:', new Date().toLocaleDateString(), 3);
-    
+
     // B4 -> Value in C4:F4
     setMeta('B4', 'Rival:', gameState.settings.gameName || '-', 4);
     // H4 -> Value in I4:L4
     setMeta('H4', 'Categoría:', '-', 4);
 
     // --- 2. Grid Headers (Rows 6-8) ---
-    
+
     // Row 6: Time Blocks
     const timeBlocks = [
         { title: "1er tiempo", startCol: 3, endCol: 10 },      // C-J
@@ -232,7 +232,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
 
     players.forEach(playerNum => {
         const row = sheetReport.getRow(currentRow);
-        
+
         // Identity
         const cellNum = row.getCell(1);
         cellNum.value = Number(playerNum);
@@ -260,7 +260,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
                 };
             } else {
                 // Shot chart mode aggregation
-                let g=0, t=0, f=0, ro=0, rd=0, rec=0, per=0, fal=0;
+                let g = 0, t = 0, f = 0, ro = 0, rd = 0, rec = 0, per = 0, fal = 0;
                 gameState.shots.forEach(s => {
                     if (s.playerNumber === playerNum && s.period === period) {
                         if (s.isGol) {
@@ -270,9 +270,9 @@ export const generateFederationExcel = async (gameState: GameState) => {
                         }
                     }
                 });
-                return { 
-                    lanzamientos: g+t+f, goles: g, triples: t, 
-                    reboteOfensivo: 0, reboteDefensivo: 0, recuperos: 0, perdidas: 0, faltas: 0 
+                return {
+                    lanzamientos: g + t + f, goles: g, triples: t,
+                    reboteOfensivo: 0, reboteDefensivo: 0, recuperos: 0, perdidas: 0, faltas: 0
                 };
             }
         };
@@ -369,10 +369,10 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // Apply borders from Row 6 down to the Total Row (currentRow)
     // Sections start columns: 3, 11, 19, 27, 35
     // Sections end columns: 10, 18, 26, 34, 42
-    
+
     for (let r = 6; r <= currentRow; r++) {
         const row = sheetReport.getRow(r);
-        
+
         const applyThickBorder = (col: number, side: 'left' | 'right') => {
             const cell = row.getCell(col);
             const currentBorder = cell.border || {};
@@ -392,14 +392,14 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // ==========================================
     // HOJA 2: CRUDO
     // ==========================================
-    
+
     // Headers
     const rawHeaders = [
-        'Categoría', 'Torneo', 'Fecha', 'Club', 'Rival', 'Tiempo', 
-        '# jugador', 'Nombre jugador', 'Lanzamientos', 'Dobles', 'Triples', 
+        'Categoría', 'Torneo', 'Fecha', 'Club', 'Rival', 'Tiempo',
+        '# jugador', 'Nombre jugador', 'Lanzamientos', 'Dobles', 'Triples',
         'Ofens', 'Defens', 'Recuperos', 'Pérdidas', 'Faltas'
     ];
-    
+
     const rawHeaderRow = sheetRaw.getRow(1);
     rawHeaders.forEach((h, i) => {
         const cell = rawHeaderRow.getCell(i + 1);
@@ -410,19 +410,19 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // Rows
     players.forEach(playerNum => {
         ['First Half', 'Second Half', 'First Overtime', 'Second Overtime'].forEach(periodKey => {
-            const stats = (gameState.gameMode === 'stats-tally') 
+            const stats = (gameState.gameMode === 'stats-tally')
                 ? (gameState.tallyStats[playerNum]?.[periodKey as any] || {})
-                : { goles:0, triples:0, fallos:0, reboteOfensivo:0, reboteDefensivo:0, recuperos:0, perdidas:0, faltasPersonales:0 };
-            
+                : { goles: 0, triples: 0, fallos: 0, reboteOfensivo: 0, reboteDefensivo: 0, recuperos: 0, perdidas: 0, faltasPersonales: 0 };
+
             // Re-calculate basic stats for Shot Chart mode if needed inside the loop
             if (gameState.gameMode === 'shot-chart') {
-                 gameState.shots.forEach(s => {
+                gameState.shots.forEach(s => {
                     if (s.playerNumber === playerNum && s.period === periodKey) {
                         if (s.isGol) {
-                            if (s.golValue === 3) stats.triples = (stats.triples||0)+1; 
-                            else stats.goles = (stats.goles||0)+1;
+                            if (s.golValue === 3) stats.triples = (stats.triples || 0) + 1;
+                            else stats.goles = (stats.goles || 0) + 1;
                         } else {
-                            stats.fallos = (stats.fallos||0)+1;
+                            stats.fallos = (stats.fallos || 0) + 1;
                         }
                     }
                 });
@@ -430,13 +430,13 @@ export const generateFederationExcel = async (gameState: GameState) => {
 
             // Only add row if period has data or is main time
             if (periodKey === 'First Overtime' || periodKey === 'Second Overtime') {
-                const totalActivity = (stats.goles||0) + (stats.triples||0) + (stats.fallos||0) + 
-                                      (stats.recuperos||0) + (stats.perdidas||0) + (stats.faltasPersonales||0);
-                if(totalActivity === 0) return;
+                const totalActivity = (stats.goles || 0) + (stats.triples || 0) + (stats.fallos || 0) +
+                    (stats.recuperos || 0) + (stats.perdidas || 0) + (stats.faltasPersonales || 0);
+                if (totalActivity === 0) return;
             }
 
-            const lanzamientos = (stats.goles||0) + (stats.triples||0) + (stats.fallos||0);
-            
+            const lanzamientos = (stats.goles || 0) + (stats.triples || 0) + (stats.fallos || 0);
+
             let periodLabel = periodKey === 'First Half' ? '1er Tiempo' : '2do Tiempo';
             if (periodKey === 'First Overtime') periodLabel = '1er Suple';
             if (periodKey === 'Second Overtime') periodLabel = '2do Suple';
@@ -469,7 +469,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const fileName = `Reporte_FCCF_${gameState.settings.myTeam || 'Equipo'}_vs_${gameState.settings.gameName || 'Rival'}.xlsx`;
-    
+
     // Handle FileSaver import discrepancy for esm.sh
     const saveAs = (FileSaver as any).saveAs || FileSaver;
     saveAs(blob, fileName);

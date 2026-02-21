@@ -32,7 +32,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect })
                         </button>
                     ))}
                 </div>
-                
+
                 {/* Right Side: Scoring Buttons */}
                 <div className="flex flex-col gap-2 w-1/3 min-w-[100px]">
                     <button

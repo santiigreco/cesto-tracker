@@ -9,7 +9,11 @@ export const faqData = [
   },
   {
     question: "¿Puedo compartir las estadísticas?",
-    answer: "¡Obvio! En la pestaña 'Estadísticas', vas a ver un botón de 'Compartir'. Te genera una imagen re copada con el resumen del partido, lista para que la mandes por WhatsApp al grupo del equipo o la subas a Instagram."
+    answer: "¡Obvio! En la pestaña 'Estadísticas', vas a ver un botón de 'Compartir'. Te genera una imagen con el resumen del partido, lista para que la mandes por WhatsApp al grupo del equipo o la subas a Instagram. También podés descargar el <strong>Excel oficial para la Federación</strong> con un solo clic."
+  },
+  {
+    question: "¿Cómo funciona el reporte para la Federación?",
+    answer: "Cesto Tracker está preparado para ahorrarles tiempo a los delegados. En la pestaña 'Estadísticas' vas a encontrar el botón <strong>'Excel Oficial'</strong>. Esto te descarga un archivo con el formato exacto que pide la Federación, con los datos de todos los jugadores cruzados por los 4 tiempos del partido. ¡Listo para enviar!"
   },
   {
     question: "¿Tengo que pagar para usar la app?",
@@ -26,9 +30,5 @@ export const faqData = [
   {
     question: "¿Me equivoqué al cargar un tiro, ¿lo puedo corregir?",
     answer: "¡Sí, obvio! Abajo de la cancha tenés el botón 'Deshacer' (con una flechita para atrás) que borra el último tiro que cargaste. Si te arrepentís de haberlo borrado, el botón 'Rehacer' (la flecha para adelante) lo vuelve a poner. Y si querés empezar de cero, el botón 'Limpiar Planilla' borra todo."
-  },
-  {
-    question: "¿Cómo funcionan los Mapas de Calor y Gráficos de Zonas?",
-    answer: "En la pestaña 'Análisis de Cancha' tenés estas dos vistas: el <strong>Mapa de Calor</strong> te muestra con colores las zonas 'calientes' desde donde se tiran más seguido. El <strong>Gráfico de Zonas</strong> divide la cancha en áreas y te muestra con colores la efectividad de los tiros en cada una (verde si se meten muchas, rojo si se erran). Podés filtrar por jugador, período y resultado para un análisis más pro."
   }
 ];

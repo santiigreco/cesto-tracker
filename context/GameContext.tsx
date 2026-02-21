@@ -4,16 +4,16 @@ import { GameState, Shot, TallyStats, TallyStatsPeriod, GamePeriod } from '../ty
 import { GAME_STATE_STORAGE_KEY } from '../constants';
 
 const initialTallyStatsPeriod: TallyStatsPeriod = {
-  goles: 0,
-  triples: 0,
-  fallos: 0,
-  recuperos: 0,
-  perdidas: 0,
-  reboteOfensivo: 0,
-  reboteDefensivo: 0,
-  asistencias: 0,
-  golesContra: 0,
-  faltasPersonales: 0,
+    goles: 0,
+    triples: 0,
+    fallos: 0,
+    recuperos: 0,
+    perdidas: 0,
+    reboteOfensivo: 0,
+    reboteDefensivo: 0,
+    asistencias: 0,
+    golesContra: 0,
+    faltasPersonales: 0,
 };
 
 export const initialPlayerTally: TallyStats = {
@@ -79,13 +79,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
             if (savedStateJSON) {
                 let savedState = JSON.parse(savedStateJSON);
-                
+
                 // Migrations and defaults
                 if (!savedState.gameId) savedState.gameId = null;
                 if (!savedState.gameMode) savedState.gameMode = null;
                 if (!savedState.tallyStats) savedState.tallyStats = {};
                 if (!savedState.opponentScore) savedState.opponentScore = 0;
-                
+
                 // Migrate teamFouls to include OTs
                 const defaultFouls = { 'First Half': 0, 'Second Half': 0, 'First Overtime': 0, 'Second Overtime': 0 };
                 savedState.teamFouls = { ...defaultFouls, ...savedState.teamFouls };
@@ -93,14 +93,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (!savedState.gameLog) savedState.gameLog = [];
                 if (!savedState.tallyRedoLog) savedState.tallyRedoLog = [];
                 if (savedState.isReadOnly === undefined) savedState.isReadOnly = false;
-                
+
                 // Legacy Migration: tallyStats structure
                 if (savedState.tallyStats) {
                     const allPeriods: GamePeriod[] = ['First Half', 'Second Half', 'First Overtime', 'Second Overtime'];
-                    
+
                     Object.keys(savedState.tallyStats).forEach(playerNum => {
                         const playerTally = savedState.tallyStats[playerNum];
-                        
+
                         // Ensure all periods exist
                         allPeriods.forEach(period => {
                             if (!playerTally[period]) {
@@ -117,7 +117,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (savedState.availablePlayers && !savedState.activePlayers) {
                     savedState.activePlayers = savedState.availablePlayers.slice(0, 6);
                 }
-                
+
                 // Tutorial state migration
                 if (savedState.hasSeenTutorial === true && savedState.tutorialStep === undefined) {
                     savedState.tutorialStep = 3;
@@ -125,7 +125,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     savedState.tutorialStep = 1;
                 }
                 delete savedState.hasSeenTutorial;
-                
+
                 if (savedState.hasSeenHomepage === undefined) {
                     savedState.hasSeenHomepage = true;
                 }

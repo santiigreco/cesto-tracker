@@ -60,7 +60,7 @@ const PlayerTallyCard: React.FC<{
     const teamStatsToShow: (keyof TallyStatsPeriod)[] = ['recuperos', 'perdidas', 'golesContra'];
 
     return (
-        <div 
+        <div
             className={`bg-slate-800 p-4 rounded-lg shadow-lg transition-all duration-200`}
         >
             <div className="mb-4" style={{ minHeight: '40px' }}>
@@ -87,7 +87,7 @@ const PlayerTallyCard: React.FC<{
                     </div>
                 ) : (
                     <button
-                        onClick={(e) => { e.stopPropagation(); if(!isReadOnly) onStartEdit(playerNumber); }}
+                        onClick={(e) => { e.stopPropagation(); if (!isReadOnly) onStartEdit(playerNumber); }}
                         disabled={isTeamCard || isReadOnly}
                         className="group text-2xl font-bold text-cyan-400 p-2 -m-2 rounded-lg hover:bg-slate-700/50 transition-colors w-full text-left disabled:cursor-default disabled:hover:bg-transparent"
                         title={isTeamCard ? "Estadísticas del Equipo" : (isReadOnly ? "Jugador (Modo Lectura)" : "Editar nombre del jugador")}
@@ -102,8 +102,8 @@ const PlayerTallyCard: React.FC<{
                 <div className="flex items-center gap-1.5 mb-3" title={`${playerTally.faltasPersonales} faltas personales`}>
                     <span className="text-xs font-semibold text-slate-400 mr-1">Faltas:</span>
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div 
-                            key={i} 
+                        <div
+                            key={i}
                             className={`w-4 h-4 rounded-full border border-slate-600 transition-colors ${i < playerTally.faltasPersonales ? 'bg-red-500' : 'bg-slate-700'}`}
                         ></div>
                     ))}

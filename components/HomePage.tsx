@@ -348,6 +348,20 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
                         {/* --- NEW STRIKING ACTION CENTER --- */}
                         <div className="w-full grid grid-cols-6 gap-3 sm:gap-4 mt-4">
+                            <div className="col-span-6 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 mb-2 shadow-sm pointer-events-none">
+                                <div className="flex-shrink-0 w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                    <CloudDownloadIcon className="h-5 w-5 text-emerald-400" />
+                                </div>
+                                <div className="flex-grow">
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest">Reporte para la Federación</h4>
+                                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[8px] font-bold text-emerald-300 uppercase">Oficial</span>
+                                    </div>
+                                    <p className="text-xs text-slate-300 font-medium leading-tight">
+                                        Genera automáticamente la planilla de estadísticas para enviar a la Federación.
+                                    </p>
+                                </div>
+                            </div>
 
                             {/* NEW MATCH CARD (MAIN CTA) */}
                             <div
@@ -367,7 +381,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                             <p className="text-cyan-400/80 text-xs font-bold uppercase tracking-widest">Planilla digital en vivo</p>
                                         </div>
                                     </div>
-                                    <p className="text-slate-400 text-sm max-w-[240px] leading-snug">Registra goles, faltas y mapa de tiro de forma profesional.</p>
+                                    <p className="text-slate-400 text-sm max-w-[240px] leading-snug">Planifica, registra y analiza cada jugada con herramientas profesionales.</p>
                                 </div>
                                 <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500">
                                     <svg className="h-12 w-12 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -486,7 +500,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             <span className="text-3xl">🏆</span>
                         </div>
                         <h3 className="text-xl font-black text-white mb-4 tracking-tight">Reportes de Elite</h3>
-                        <p className="text-slate-400 leading-relaxed">Genera automáticamente resúmenes visuales de impacto listos para compartir.</p>
+                        <p className="text-slate-400 leading-relaxed">Genera automáticamente el <strong>Excel oficial para la Federación</strong> y resúmenes visuales listos para compartir.</p>
                     </div>
 
                     <div className="group bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-800/50 flex flex-col items-center text-center transition-all duration-500 hover:bg-slate-800/40 hover:-translate-y-2">
@@ -502,7 +516,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 <section className="mt-24 max-w-3xl mx-auto w-full">
                     <h2 className="text-2xl font-bold text-white mb-8 text-center">Preguntas Frecuentes</h2>
                     <div className="space-y-3">
-                        {faqData.slice(0, 4).map((faq, index) => (
+                        {faqData.slice(0, 6).map((faq, index) => (
                             <div key={index} className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
                                 <button
                                     onClick={() => setOpenFaq(openFaq === index ? null : index)}

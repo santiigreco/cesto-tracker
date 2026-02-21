@@ -15,15 +15,12 @@ const Scoreboard: React.FC = React.memo(() => {
       return Object.entries(tallyStats).reduce((total: number, [playerNumber, playerTally]) => {
         if (playerNumber === 'Equipo') return total;
 
-        const fh = playerTally['First Half'];
-        const sh = playerTally['Second Half'];
+        let playerTotal = 0;
+        Object.values(playerTally).forEach(periodStats => {
+          playerTotal += ((periodStats?.goles || 0) * 2) + ((periodStats?.triples || 0) * 3);
+        });
 
-        // Goles = 2pts, Triples = 3pts.
-        // Explicitly access properties to avoid object prototype issues
-        const pointsFH = ((fh?.goles || 0) * 2) + ((fh?.triples || 0) * 3);
-        const pointsSH = ((sh?.goles || 0) * 2) + ((sh?.triples || 0) * 3);
-
-        return total + pointsFH + pointsSH;
+        return total + playerTotal;
       }, 0);
     }
     return 0;
