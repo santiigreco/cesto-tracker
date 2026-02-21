@@ -2,6 +2,7 @@
 import React from 'react';
 import { HamburgerIcon } from './icons';
 import { GearIcon } from './icons';
+import { useNavigate } from 'react-router-dom';
 import CloudIndicator from './CloudIndicator';
 import { GameMode, GamePeriod } from '../types';
 import { PERIOD_NAMES } from '../constants';
@@ -37,6 +38,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     currentPeriod,
     onPeriodChange
 }) => {
+    const navigate = useNavigate();
     return (
         <>
             {isReadOnly && (
@@ -91,7 +93,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 <div className="flex-none w-24 flex justify-end items-center gap-2">
                     {isAdmin && (
                         <button
-                            onClick={() => window.location.href = '/admin'}
+                            onClick={() => navigate('/admin')}
                             className="p-2 rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
                             title="Panel de Administración"
                         >

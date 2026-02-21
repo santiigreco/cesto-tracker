@@ -24,7 +24,8 @@ const AdminRoute: React.FC = () => {
     const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
 
     useEffect(() => {
-        if (!authLoading && !profileLoading) {
+        // Only redirect once we are sure loading is finished
+        if (authLoading === false && profileLoading === false) {
             if (!user || !canAccessAdmin) {
                 navigate('/', { replace: true });
             }
