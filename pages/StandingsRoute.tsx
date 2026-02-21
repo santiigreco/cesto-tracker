@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import StandingsView from '../components/StandingsView';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import { SUPER_ADMIN_EMAILS } from '../constants';
 
 export default function StandingsRoute() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { profile } = useProfile();
-    const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
-    const isAdmin = profile?.is_admin || isSuperAdmin;
+    const isAdmin = profile?.is_admin === true;
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">

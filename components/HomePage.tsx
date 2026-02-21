@@ -19,7 +19,6 @@ import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
 import { useNextMatch } from '../hooks/useNextMatch';
-import { SUPER_ADMIN_EMAILS } from '../constants';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -228,10 +227,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const { profile } = useProfile();
-    const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
-
-    // Permissions: use DB-sourced is_admin, supplemented by SuperAdmin list
-    const isOwner = user && (profile?.is_admin === true || isSuperAdmin);
+    // Permissions: use DB-sourced is_admin
+    const isOwner = user && profile?.is_admin === true;
     const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {

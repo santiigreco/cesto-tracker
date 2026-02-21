@@ -2,18 +2,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import { SUPER_ADMIN_EMAILS } from '../constants';
 import FixtureView from '../components/FixtureView';
 
 export default function FixtureRoute() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { profile } = useProfile();
-    const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
 
     const canEditFixture =
         profile?.is_admin === true ||
-        isSuperAdmin ||
         profile?.permission_role === 'admin' ||
         profile?.permission_role === 'fixture_manager';
 

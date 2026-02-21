@@ -12,7 +12,6 @@ import { AdminFixtureView } from '../components/admin/views/AdminFixtureView';
 import { AdminSidebar } from '../components/admin/ui/AdminSidebar';
 import { AdminTab } from '../components/admin/types';
 import { RefreshIcon, XIcon } from '../components/icons';
-import { SUPER_ADMIN_EMAILS } from '../constants';
 
 const AdminRoute: React.FC = () => {
     const { user, authLoading } = useAuth();
@@ -21,8 +20,7 @@ const AdminRoute: React.FC = () => {
     const [activeTab, setActiveTab] = React.useState<AdminTab>('dashboard');
     const [refreshKey, setRefreshKey] = React.useState(0);
 
-    const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
-    const isOwner = profile?.is_admin === true || isSuperAdmin;
+    const isOwner = profile?.is_admin === true;
     const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
 
     useEffect(() => {

@@ -27,9 +27,6 @@ export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 // --- ADMIN CONFIGURATION ---
 // Admin access is controlled via the `is_admin` column in the `profiles` table in Supabase.
 // To grant admin access, run: UPDATE profiles SET is_admin = TRUE WHERE id = '<user-id>';
-export const SUPER_ADMIN_EMAILS = [
-    'santiigreco@gmail.com', // Developer/Owner
-];
 
 // Configuration for Teams
 export interface TeamConfig {

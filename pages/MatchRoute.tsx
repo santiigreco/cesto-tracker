@@ -12,7 +12,7 @@ import AppModals from '../components/AppModals';
 import Loader from '../components/Loader';
 import Scoreboard from '../components/Scoreboard';
 import { ShotPosition, GameEvent, StatAction, AppTab, SavedTeam } from '../types';
-import { STAT_LABELS, SUPER_ADMIN_EMAILS } from '../constants';
+import { STAT_LABELS } from '../constants';
 import { useProfile } from '../hooks/useProfile';
 
 export default function MatchRoute() {
@@ -25,7 +25,7 @@ export default function MatchRoute() {
         actionToAssign, setActionToAssign
     } = useUI();
     const { profile } = useProfile();
-    const isAdmin = profile?.is_admin || (user?.email && SUPER_ADMIN_EMAILS.includes(user.email));
+    const isAdmin = profile?.is_admin === true || profile?.permission_role === 'admin';
 
     const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving } = useSupabaseSync();
 
