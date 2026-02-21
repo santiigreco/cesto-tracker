@@ -1,15 +1,15 @@
 export const faqData = [
   {
     question: "¿Cómo arranco un partido?",
-    answer: "Cuando abrís la app, lo primero es elegir los jugadores que van a participar seleccionando sus números. Después podés ponerles nombre para que sea más fácil. Si durante el partido necesitás cambiar algo, podés hacerlo desde el menú de configuración (el engranaje)."
+    answer: "¡Es simple! En la pantalla de inicio, tocá en <strong>'Empezar Partido'</strong>. Podés elegir tu club de una lista o saltar este paso. Luego, en la pantalla de configuración, seleccionás los números de los jugadores que van a jugar y el modo de juego: <strong>'Estadísticas y Tanteador'</strong> (para registrar rápido goles, faltas y rebotes) o <strong>'Registro de Tiros y Mapa'</strong> (para marcar la posición exacta de cada tiro)."
   },
   {
     question: "¿Para qué sirven las otras pestañas?",
-    answer: "Una vez que cargaste varios tiros, la magia empieza. En 'Análisis de Cancha' tenés mapas de calor para ver de dónde se tira más y gráficos de zonas para ver la efectividad, ¡ideal para la charla técnica! En 'Estadísticas' tenés el resumen completo del equipo y de cada jugador."
+    answer: "Una vez que cargaste varias acciones, la magia empieza. En <strong>'Análisis de Cancha'</strong> tenés mapas de calor para ver de dónde se tira más y gráficos de zonas para ver la efectividad. En <strong>'Estadísticas'</strong> tenés el resumen completo del equipo y de cada jugador, incluyendo la eficacia de tiro y los rebotes."
   },
   {
     question: "¿Puedo compartir las estadísticas?",
-    answer: "¡Obvio! En la pestaña 'Estadísticas', vas a ver un botón de 'Compartir'. Te genera una imagen con el resumen del partido, lista para que la mandes por WhatsApp al grupo del equipo o la subas a Instagram. También podés descargar el <strong>Excel oficial para la Federación</strong> con un solo clic."
+    answer: "¡Obvio! En la pestaña 'Estadísticas', vas a ver un botón de <strong>'Compartir'</strong>. Te genera una imagen con el resumen del partido, lista para que la mandes por WhatsApp al grupo del equipo o la subas a Instagram. También podés descargar el <strong>Excel oficial para la Federación</strong> con un solo clic."
   },
   {
     question: "¿Cómo funciona el reporte para la Federación?",
@@ -21,14 +21,14 @@ export const faqData = [
   },
   {
     question: "¿Mis datos están seguros? ¿Se guardan en algún lado?",
-    answer: "Tus datos son tuyos y de nadie más. Para cuidar tu privacidad y que puedas usar la app sin internet, todo se guarda únicamente en tu celular o computadora. No se sube nada a la nube, así que la información no se comparte entre distintos dispositivos."
+    answer: "Tus datos están protegidos. Cesto Tracker guarda la información localmente en tu dispositivo para que puedas seguir trabajando incluso si te quedas sin internet en medio del club. Si iniciás sesión con Google, los partidos se <strong>sincronizan automáticamente en la nube</strong> de Supabase, lo que te permite recuperar tus datos si cambias de celular o borrás el navegador."
   },
   {
     question: "¿Cómo es el paso a paso para registrar un tiro?",
-    answer: `1. <strong>Elegí el jugador:</strong> Abajo de la cancha, seleccioná la camiseta con el número del jugador que va a tirar.<br>2. <strong>Marcá la posición:</strong> Tocá en la cancha el punto exacto desde donde se hizo el tiro. Vas a ver un círculo azul para confirmar.<br>3. <strong>Definí el resultado:</strong> Al toque, te va a aparecer un menú para que elijas si fue 'Gol' o 'Fallo'. ¡Y listo! El tiro queda guardado.`
+    answer: `1. <strong>Elegí el jugador:</strong> En la parte inferior, seleccioná el número del jugador que va a tirar.<br>2. <strong>Marcá la posición:</strong> Tocá en la cancha el punto exacto desde donde se hizo el tiro. Vas a ver un círculo azul para confirmar.<br>3. <strong>Definí el resultado:</strong> En el menú que aparece, elegí si fue 'Gol' (2 o 3 pts) o 'Fallo'. ¡Y listo! El tiro queda guardado.`
   },
   {
-    question: "¿Me equivoqué al cargar un tiro, ¿lo puedo corregir?",
-    answer: "¡Sí, obvio! Abajo de la cancha tenés el botón 'Deshacer' (con una flechita para atrás) que borra el último tiro que cargaste. Si te arrepentís de haberlo borrado, el botón 'Rehacer' (la flecha para adelante) lo vuelve a poner. Y si querés empezar de cero, el botón 'Limpiar Planilla' borra todo."
+    question: "¿Me equivoqué al cargar algo, ¿lo puedo corregir?",
+    answer: "¡Sí, obvio! En la parte superior de la pantalla tenés el botón <strong>'Deshacer'</strong> (flecha hacia atrás) que borra la última acción cargada. Si te arrepentís, podés usar <strong>'Rehacer'</strong>. Si lo que querés es borrar todo el progreso para iniciar un juego de cero, entrá a Configuración (el engranaje) y seleccioná <strong>'Comenzar Nuevo Partido'</strong>."
   }
 ];
