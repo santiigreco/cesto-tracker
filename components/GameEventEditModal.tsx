@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
+import { X, Trash2, Check } from 'lucide-react';
 import { GameEvent, StatAction } from '../types';
 import { STAT_LABELS } from '../constants';
-import XIcon from './XIcon';
-import TrashIcon from './TrashIcon';
-import CheckIcon from './CheckIcon';
 
 interface GameEventEditModalProps {
     isOpen: boolean;
@@ -60,7 +58,7 @@ const GameEventEditModal: React.FC<GameEventEditModalProps> = ({
                 <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800">
                     <h2 className="text-xl font-bold text-cyan-400">Editar Evento</h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
-                        <XIcon />
+                        <X />
                     </button>
                 </div>
 
@@ -107,7 +105,7 @@ const GameEventEditModal: React.FC<GameEventEditModalProps> = ({
                                 : 'bg-red-900/30 text-red-400 border-red-900/50 hover:bg-red-900/50'
                             }`}
                         >
-                            <TrashIcon className="h-5 w-5" />
+                            <Trash2 className="h-5 w-5" />
                             {isConfirmingDelete ? '¿Seguro?' : 'Eliminar'}
                         </button>
                         <button
@@ -115,7 +113,7 @@ const GameEventEditModal: React.FC<GameEventEditModalProps> = ({
                             onClick={handleSave}
                             className="flex-[2] flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg"
                         >
-                            <CheckIcon className="h-5 w-5" />
+                            <Check className="h-5 w-5" />
                             Guardar
                         </button>
                     </div>

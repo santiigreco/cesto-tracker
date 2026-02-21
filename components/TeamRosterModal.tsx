@@ -1,11 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import XIcon from './XIcon';
+import { X, Users, Plus, Trash2, Check } from 'lucide-react';
 import Loader from './Loader';
-import UsersIcon from './UsersIcon';
-import PlusIcon from './PlusIcon';
-import TrashIcon from './TrashIcon';
-import CheckIcon from './CheckIcon';
 import JerseyIcon from './JerseyIcon';
 import { useTeamManager } from '../hooks/useTeamManager';
 import { SavedTeam, RosterPlayer } from '../types';
@@ -101,11 +97,11 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
                 {/* Header */}
                 <div className="flex justify-between items-center p-5 border-b border-slate-700 bg-slate-800 flex-shrink-0">
                     <div className="flex items-center gap-2">
-                        <UsersIcon className="h-6 w-6 text-cyan-400" />
+                        <Users className="h-6 w-6 text-cyan-400" />
                         <h2 className="text-xl font-bold text-white">Mis Equipos</h2>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white" aria-label="Cerrar">
-                        <XIcon />
+                        <X />
                     </button>
                 </div>
 
@@ -127,7 +123,7 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
                                         }}
                                         className="w-full bg-cyan-900/30 border border-cyan-500/50 hover:bg-cyan-900/50 text-cyan-400 font-bold p-4 rounded-xl flex items-center justify-center gap-2 transition-all"
                                     >
-                                        <PlusIcon className="h-6 w-6" />
+                                        <Plus className="h-6 w-6" />
                                         <span>Crear Nuevo Equipo</span>
                                     </button>
 
@@ -150,7 +146,7 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
                                                             className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-2 rounded transition-colors"
                                                             title="Eliminar"
                                                         >
-                                                            <TrashIcon className="h-4 w-4" />
+                                                            <Trash2 className="h-4 w-4" />
                                                         </button>
                                                     </div>
                                                     <p className="text-sm text-slate-400">
@@ -238,7 +234,7 @@ const TeamRosterModal: React.FC<TeamRosterModalProps> = ({ isOpen, onClose, onLo
                                     onClick={handleSave}
                                     className="flex-[2] py-3 rounded-lg bg-cyan-600 text-white font-bold hover:bg-cyan-700 flex items-center justify-center gap-2 shadow-lg"
                                 >
-                                    <CheckIcon className="h-5 w-5" />
+                                    <Check className="h-5 w-5" />
                                     Guardar Equipo
                                 </button>
                             </div>

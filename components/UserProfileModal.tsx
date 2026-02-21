@@ -1,10 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import XIcon from './XIcon';
-import CheckIcon from './CheckIcon';
+import { useNavigate } from 'react-router-dom';
+import { X, Check, Camera } from 'lucide-react';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
-import CameraIcon from './CameraIcon';
 import { useProfile } from '../hooks/useProfile';
 import { TEAMS_CONFIG, ADMIN_EMAILS } from '../constants';
 import { IdentityRole } from '../types';
@@ -29,6 +28,7 @@ const IDENTITY_ROLES: { value: IdentityRole; label: string; emoji: string }[] = 
 ];
 
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user, onLogout, onLoadGame }) => {
+    const navigate = useNavigate();
     const { profile, loading: profileLoading, updateProfile, uploadAvatar } = useProfile();
     
     // Form State
@@ -111,7 +111,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                     {/* Header Profile Card Style */}
                     <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 flex flex-col items-center border-b border-slate-700 relative">
                         <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" aria-label="Cerrar">
-                            <XIcon />
+                            <X />
                         </button>
 
                         <div className="relative group cursor-pointer" onClick={triggerFileInput}>
@@ -134,7 +134,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                                 
                                 {/* Overlay for Edit */}
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <CameraIcon className="h-8 w-8 text-white" />
+                                    <Camera className="h-8 w-8 text-white" />
                                 </div>
                             </div>
                             
@@ -221,14 +221,14 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                             }`}
                         >
                             {isSaving ? <Loader className="h-5 w-5 text-white" /> : (
-                                saveSuccess ? <><CheckIcon className="h-5 w-5" /> Guardado</> : 'Guardar Perfil'
+                                saveSuccess ? <><Check className="h-5 w-5" /> Guardado</> : 'Guardar Perfil'
                             )}
                         </button>
 
                         {/* Admin Button (Secret - Visible for Owner and Admins) */}
                         {canAccessAdminPanel && (
                             <button
-                                onClick={() => setShowAdmin(true)}
+                                onClick={() => { navigate('/admin'); onClose(); }}
                                 className="w-full py-2 bg-red-900/20 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
                             >
                                 🛡️ Abrir Panel Admin {isOwner ? '(Owner)' : ''}
@@ -246,19 +246,6 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                     </div>
                 </div>
             </div>
-            
-            {/* Render Admin Dashboard on top if active, passing isOwner prop */}
-            <AdminDashboard 
-                isOpen={showAdmin} 
-                onClose={() => setShowAdmin(false)} 
-                isOwner={isOwner} 
-                onLoadGame={(id, asOwner) => {
-                    // Close both modals and trigger load
-                    setShowAdmin(false);
-                    onClose();
-                    onLoadGame(id, asOwner);
-                }}
-            />
         </>
     );
 };

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { X, ArrowLeftRight } from 'lucide-react';
 import JerseyIcon from './JerseyIcon';
-import SwitchIcon from './SwitchIcon';
-import XIcon from './XIcon';
 
 interface SubstitutionModalProps {
     isOpen: boolean;
@@ -56,7 +55,7 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
                     <h2 id="substitution-modal-title" className="text-2xl sm:text-3xl font-bold text-cyan-400">Cambio de Jugador</h2>
                     <button onClick={handleClose} className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar modal">
-                        <XIcon className="h-5 w-5" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
@@ -102,7 +101,7 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                         className="w-full max-w-sm bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-500/50 text-lg disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                     >
                         <span className="flex items-center justify-center gap-2">
-                            <SwitchIcon className="h-5 w-5" />
+                            <ArrowLeftRight className="h-5 w-5" />
                             Confirmar Cambio
                         </span>
                     </button>

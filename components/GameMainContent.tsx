@@ -87,11 +87,12 @@ const GameMainContent: React.FC<GameMainContentProps> = (props) => {
 
     return (
         <main className="flex flex-col gap-6">
+            {/* Sticky Scoreboard for Logger Tabs */}
+            {activeTab === 'logger' && <Scoreboard />}
+
             {gameMode === 'stats-tally' && activeTab === 'logger' && (
               <>
                 <div className="flex flex-col gap-6">
-                    <Scoreboard />
-                    
                     {!isReadOnly && <QuickActionsPanel onActionSelect={props.onActionSelect} />}
                     
                     {!isReadOnly && (
@@ -134,22 +135,6 @@ const GameMainContent: React.FC<GameMainContentProps> = (props) => {
                                 <StatsTallyView />
                             </div>
                         </div>
-                    </div>
-                    
-                     <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex-1 text-center sm:text-left">
-                        <h2 className="text-xl font-bold text-cyan-400">Sesión Actual</h2>
-                        <p className="text-sm text-slate-400">Estás viendo el {PERIOD_NAMES[currentPeriod]}</p>
-                      </div>
-                      <select
-                          value={currentPeriod}
-                          onChange={(e) => setGameState((prev: any) => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
-                          className="w-full sm:w-auto bg-slate-700 border border-slate-600 text-white text-lg rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
-                      >
-                        {Object.entries(PERIOD_NAMES).map(([key, name]) => (
-                          <option key={key} value={key}>{name}</option>
-                        ))}
-                      </select>
                     </div>
                 </div>
               </>
@@ -248,7 +233,6 @@ const GameMainContent: React.FC<GameMainContentProps> = (props) => {
                   )}
                 </div>
                 
-                <Scoreboard />
                 <ShotLog shots={props.shots} playerNames={playerNames} />
               </>
             )}

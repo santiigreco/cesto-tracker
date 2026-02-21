@@ -15,34 +15,16 @@ import GameEventEditModal from './GameEventEditModal';
 import UserProfileModal from './UserProfileModal';
 import TeamRosterModal from './TeamRosterModal';
 import { SyncState } from '../hooks/useSupabaseSync';
+import { ModalType } from '../hooks/useAppModals';
 
 interface AppModalsProps {
+    // Modal Manager
+    activeModal: ModalType;
+    modalProps: any;
+    closeModal: () => void;
+    
     // UI States
     activeTab: AppTab;
-    isMobileMenuOpen: boolean;
-    setIsMobileMenuOpen: (isOpen: boolean) => void;
-    isPlayerSelectionModalOpen: boolean;
-    setIsPlayerSelectionModalOpen: (isOpen: boolean) => void;
-    isLoadGameModalOpen: boolean;
-    setIsLoadGameModalOpen: (isOpen: boolean) => void;
-    isSaveGameModalOpen: boolean;
-    setIsSaveGameModalOpen: (isOpen: boolean) => void;
-    isSettingsModalOpen: boolean;
-    setIsSettingsModalOpen: (isOpen: boolean) => void;
-    isShareModalOpen: boolean;
-    setIsShareModalOpen: (isOpen: boolean) => void;
-    isSubstitutionModalOpen: boolean;
-    setIsSubstitutionModalOpen: (isOpen: boolean) => void;
-    isClearSheetModalOpen: boolean;
-    setIsClearSheetModalOpen: (isOpen: boolean) => void;
-    isNewGameConfirmOpen: boolean;
-    setIsNewGameConfirmOpen: (isOpen: boolean) => void;
-    isReturnHomeConfirmOpen: boolean;
-    setIsReturnHomeConfirmOpen: (isOpen: boolean) => void;
-    isReselectConfirmOpen: boolean;
-    setIsReselectConfirmOpen: (isOpen: boolean) => void;
-    isTeamManagerOpen: boolean;
-    setIsTeamManagerOpen: (isOpen: boolean) => void;
     
     // Data & Handlers
     onSelectTab: (tab: AppTab) => void;
@@ -50,12 +32,9 @@ interface AppModalsProps {
     tabTranslations: { [key in AppTab]: string };
     tabs: AppTab[];
     
-    actionToAssign: StatAction | null;
-    setActionToAssign: (action: StatAction | null) => void;
     handleAssignActionToPlayer: (playerNumber: string) => void;
     playersForTally: string[];
     playerNames: Record<string, string>;
-    actionLabel?: string;
     
     handleLoadGame: (id: string, asOwner: boolean) => Promise<void>;
     user: any;
@@ -91,8 +70,6 @@ interface AppModalsProps {
     notificationPopup: any;
     setNotificationPopup: (val: any) => void;
     
-    editingEvent: GameEvent | null;
-    setEditingEvent: (e: GameEvent | null) => void;
     handleEditGameEvent: (id: string, player: string, action: StatAction) => void;
     handleDeleteGameEvent: (id: string) => void;
     
@@ -105,31 +82,31 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
     return (
         <>
             <MobileMenu 
-                isOpen={props.isMobileMenuOpen} 
-                onClose={() => props.setIsMobileMenuOpen(false)} 
+                isOpen={props.activeModal === 'mobileMenu'} 
+                onClose={props.closeModal} 
                 activeTab={props.activeTab} 
-                onSelectTab={(tab) => { props.onSelectTab(tab); props.setIsMobileMenuOpen(false); }} 
+                onSelectTab={(tab) => { props.onSelectTab(tab); props.closeModal(); }} 
                 onShare={props.onShare} 
                 tabTranslations={props.tabTranslations} 
                 tabs={props.tabs} 
             />
             
-            {props.isPlayerSelectionModalOpen && props.actionToAssign && (
+            {props.activeModal === 'playerSelection' && (
                 <PlayerSelectionModal 
-                    isOpen={props.isPlayerSelectionModalOpen} 
-                    onClose={() => { props.setIsPlayerSelectionModalOpen(false); props.setActionToAssign(null); }} 
+                    isOpen={true} 
+                    onClose={props.closeModal} 
                     onSelectPlayer={props.handleAssignActionToPlayer} 
                     players={props.playersForTally} 
                     playerNames={props.playerNames} 
-                    actionLabel={props.actionLabel || ''} 
+                    actionLabel={props.modalProps.actionLabel || ''} 
                 />
             )}
 
-            {props.isLoadGameModalOpen && (
+            {props.activeModal === 'loadGame' && (
                 <LoadGameModal 
-                    onClose={() => props.setIsLoadGameModalOpen(false)} 
+                    onClose={props.closeModal} 
                     onLoadGame={async (id) => { 
-                        props.setIsLoadGameModalOpen(false); 
+                        props.closeModal(); 
                         await props.handleLoadGame(id, false); 
                         props.setActiveTab('statistics');
                     }} 
@@ -137,21 +114,21 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            {props.isSaveGameModalOpen && (
+            {props.activeModal === 'saveGame' && (
                 <SaveGameModal 
-                    isOpen={props.isSaveGameModalOpen} 
-                    onClose={() => props.setIsSaveGameModalOpen(false)} 
+                    isOpen={true} 
+                    onClose={props.closeModal} 
                     onSave={props.handleSyncToSupabase} 
                     syncState={props.syncState} 
                     initialGameName={props.gameName} 
                 />
             )}
             
-            {props.isSettingsModalOpen && (
+            {props.activeModal === 'settings' && (
                 <SettingsModal 
                     settings={props.settings} 
                     setSettings={props.handleSettingsChange} 
-                    onClose={() => props.setIsSettingsModalOpen(false)} 
+                    onClose={props.closeModal} 
                     onRequestNewGame={props.handleRequestNewGame} 
                     onRequestReselectPlayers={props.handleRequestReselectPlayers} 
                     onRequestChangeMode={props.handleChangeMode} 
@@ -163,16 +140,16 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
             )}
             
             <ShareModal 
-                isOpen={props.isShareModalOpen} 
-                onClose={() => props.setIsShareModalOpen(false)} 
+                isOpen={props.activeModal === 'share'} 
+                onClose={props.closeModal} 
                 gameState={props.gameState} 
                 playerStats={[]} 
             />
 
-            {props.isSubstitutionModalOpen && (
+            {props.activeModal === 'substitution' && (
                 <SubstitutionModal 
-                    isOpen={props.isSubstitutionModalOpen} 
-                    onClose={() => props.setIsSubstitutionModalOpen(false)} 
+                    isOpen={true} 
+                    onClose={props.closeModal} 
                     onSubstitute={props.handleSubstitution} 
                     activePlayers={props.activePlayers} 
                     availablePlayers={props.availablePlayers} 
@@ -187,47 +164,47 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
             
-            {props.isClearSheetModalOpen && (
+            {props.activeModal === 'clearSheet' && (
                 <ConfirmationModal 
                     title="Limpiar Planilla" 
                     message="¿Borrar todos los tiros?" 
                     confirmText="Sí, borrar" 
                     cancelText="Cancelar" 
                     onConfirm={props.handleConfirmClearSheet} 
-                    onClose={() => props.setIsClearSheetModalOpen(false)} 
+                    onClose={props.closeModal} 
                 />
             )}
 
-            {props.isNewGameConfirmOpen && (
+            {props.activeModal === 'newGameConfirm' && (
                 <ConfirmationModal 
                     title="Nuevo Partido" 
                     message="Se perderán los datos actuales." 
                     confirmText="Sí, nuevo partido" 
                     cancelText="Cancelar" 
                     onConfirm={props.handleConfirmNewGameWrapper} 
-                    onClose={() => props.setIsNewGameConfirmOpen(false)} 
+                    onClose={props.closeModal} 
                 />
             )}
 
-            {props.isReturnHomeConfirmOpen && (
+            {props.activeModal === 'returnHomeConfirm' && (
                 <ConfirmationModal 
                     title="Volver al Inicio" 
                     message="Se perderán los datos no guardados." 
                     confirmText="Volver" 
                     cancelText="Cancelar" 
                     onConfirm={props.handleConfirmReturnHome} 
-                    onClose={() => props.setIsReturnHomeConfirmOpen(false)} 
+                    onClose={props.closeModal} 
                 />
             )}
 
-            {props.isReselectConfirmOpen && (
+            {props.activeModal === 'reselectConfirm' && (
                 <ConfirmationModal 
                     title="Corregir Jugadores" 
                     message="Volver a selección de equipo." 
                     confirmText="Volver" 
                     cancelText="Cancelar" 
                     onConfirm={props.handleConfirmReselectPlayers} 
-                    onClose={() => props.setIsReselectConfirmOpen(false)} 
+                    onClose={props.closeModal} 
                     confirmButtonColor="bg-yellow-600 hover:bg-yellow-700" 
                 />
             )}
@@ -242,11 +219,11 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            {props.editingEvent && (
+            {props.activeModal === 'editEvent' && props.modalProps.event && (
                 <GameEventEditModal
-                    isOpen={!!props.editingEvent}
-                    onClose={() => props.setEditingEvent(null)}
-                    event={props.editingEvent}
+                    isOpen={true}
+                    onClose={props.closeModal}
+                    event={props.modalProps.event}
                     onSave={props.handleEditGameEvent}
                     onDelete={props.handleDeleteGameEvent}
                     playerNames={props.playerNames}
@@ -267,10 +244,10 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            {props.isTeamManagerOpen && (
+            {props.activeModal === 'teamManager' && (
                 <TeamRosterModal
-                    isOpen={props.isTeamManagerOpen}
-                    onClose={() => props.setIsTeamManagerOpen(false)}
+                    isOpen={true}
+                    onClose={props.closeModal}
                     onLoadTeam={props.handleTeamLoadedFromHome}
                     currentSelection={{ name: '', players: [] }}
                 />

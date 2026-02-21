@@ -1,12 +1,7 @@
 import React, { useEffect } from 'react';
+import { Share2, X, ClipboardList, PieChart, BarChart3, HelpCircle } from 'lucide-react';
 import { AppTab } from '../types';
-import ShareIcon from './ShareIcon';
-import XIcon from './XIcon';
-import WhatsappIcon from './WhatsappIcon';
-import ClipboardIcon from './ClipboardIcon';
-import ChartPieIcon from './ChartPieIcon';
-import ChartBarIcon from './ChartBarIcon';
-import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
+import { WhatsappIcon } from './Icons';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -20,10 +15,10 @@ interface MobileMenuProps {
 
 const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations, tabs }) => {
   const tabIcons: Record<AppTab, React.FC<{ className?: string }>> = {
-    logger: ClipboardIcon,
-    courtAnalysis: ChartPieIcon,
-    statistics: ChartBarIcon,
-    faq: QuestionMarkCircleIcon,
+    logger: ClipboardList,
+    courtAnalysis: PieChart,
+    statistics: BarChart3,
+    faq: HelpCircle,
   };
 
   useEffect(() => {
@@ -61,7 +56,7 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <h2 id="menu-title" className="text-xl font-bold text-cyan-400">Menú</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar menú">
-            <XIcon className="h-5 w-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         <nav className="flex-grow p-2 overflow-y-auto">
@@ -89,7 +84,7 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, act
             onClick={onShare}
             className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
           >
-            <ShareIcon className="h-5 w-5" />
+            <Share2 className="h-5 w-5" />
             <span>Compartir App</span>
           </button>
            <a

@@ -1,9 +1,6 @@
 import React from 'react';
+import { BarChart3, ClipboardList, PieChart, HelpCircle } from 'lucide-react';
 import { AppTab, GameMode } from '../types';
-import ClipboardIcon from './ClipboardIcon';
-import ChartPieIcon from './ChartPieIcon';
-import ChartBarIcon from './ChartBarIcon';
-import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
 
 interface BottomNavigationProps {
   activeTab: AppTab;
@@ -15,10 +12,10 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onSelect
   
   // Definimos las pestañas disponibles
   const allTabs = [
-    { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
-    { id: 'logger' as AppTab, label: 'Anotador', Icon: ClipboardIcon }, // Anotador en el medio (índice 1) para arrays de 3
-    ...(gameMode === 'shot-chart' ? [{ id: 'courtAnalysis' as AppTab, label: 'Análisis', Icon: ChartPieIcon }] : []),
-    { id: 'faq' as AppTab, label: 'Ayuda', Icon: QuestionMarkCircleIcon },
+    { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: BarChart3 },
+    { id: 'logger' as AppTab, label: 'Anotador', Icon: ClipboardList }, // Anotador en el medio (índice 1) para arrays de 3
+    ...(gameMode === 'shot-chart' ? [{ id: 'courtAnalysis' as AppTab, label: 'Análisis', Icon: PieChart }] : []),
+    { id: 'faq' as AppTab, label: 'Ayuda', Icon: HelpCircle },
   ];
 
   // Calculamos la clase de la grilla dinámicamente según la cantidad de pestañas (3 o 4)

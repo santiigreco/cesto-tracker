@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { useGameContext } from '../context/GameContext';
+import { GamePeriod } from '../types';
+import { PERIOD_NAMES } from '../constants';
 
 const Scoreboard: React.FC = React.memo(() => {
-  const { gameState } = useGameContext();
-  const { gameMode, shots, tallyStats } = gameState;
+  const { gameState, setGameState } = useGameContext();
+  const { gameMode, shots, tallyStats, currentPeriod, isReadOnly } = gameState;
 
   const totalPoints = useMemo(() => {
     if (gameMode === 'shot-chart') {
@@ -30,12 +32,30 @@ const Scoreboard: React.FC = React.memo(() => {
   }, [shots, tallyStats, gameMode]);
 
   return (
-    <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg flex flex-col items-center">
-      <h2 className="text-xl font-bold text-cyan-400 mb-2 text-center">Tablero</h2>
-      <div className="text-6xl font-bold text-white tracking-wider">
+    <div className="sticky top-0 z-40 w-full bg-slate-800/95 backdrop-blur-md p-3 sm:p-4 rounded-b-2xl sm:rounded-2xl shadow-xl border-b border-slate-700/50 flex flex-row justify-between items-center mb-4">
+      <div className="flex flex-col gap-2">
+        <div>
+          <h2 className="text-sm sm:text-base font-bold text-cyan-400 uppercase tracking-wider">Tablero</h2>
+          <p className="text-xs text-slate-400">Puntos Totales</p>
+        </div>
+        
+        {/* Period Selector integrated into Scoreboard */}
+        <div className="flex items-center gap-2">
+            <select
+                value={currentPeriod}
+                onChange={(e) => setGameState((prev: any) => ({...prev, currentPeriod: e.target.value as GamePeriod}))}
+                className="bg-slate-700/80 border border-slate-600 text-cyan-300 text-xs sm:text-sm font-semibold rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-1.5 cursor-pointer hover:bg-slate-600 transition-colors"
+            >
+                {Object.entries(PERIOD_NAMES).map(([key, name]) => (
+                    <option key={key} value={key}>{name}</option>
+                ))}
+            </select>
+        </div>
+      </div>
+      
+      <div className="text-4xl sm:text-5xl font-black text-white tracking-wider drop-shadow-md">
         {totalPoints}
       </div>
-      <p className="text-sm text-slate-400 mt-1">Puntos Totales</p>
     </div>
   );
 });

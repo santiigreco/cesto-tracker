@@ -1,29 +1,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, Eye, Search, Calendar, ChevronDown, Users, ChevronRight, Folder } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
-import XIcon from './XIcon';
-import EyeIcon from './EyeIcon';
-import SearchIcon from './SearchIcon';
-import CalendarIcon from './CalendarIcon';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
-import TrophyIcon from './TrophyIcon';
-import ChevronDownIcon from './ChevronDownIcon';
-import UsersIcon from './UsersIcon';
+import { TrophyIcon } from './Icons';
 import { GameMode, Settings } from '../types';
-
-// Internal Icon for Navigation
-const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-);
-
-const FolderIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-    </svg>
-);
 
 interface SavedGame {
     id: string;
@@ -223,7 +205,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                 onClick={handleBackToTournaments}
                                 className="p-1.5 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
                             >
-                                <ChevronDownIcon className="h-6 w-6 rotate-90" />
+                                <ChevronDown className="h-6 w-6 rotate-90" />
                             </button>
                         )}
                         <div>
@@ -238,7 +220,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white" aria-label="Cerrar">
-                        <XIcon />
+                        <X />
                     </button>
                 </div>
 
@@ -253,7 +235,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                 {/* Section: My Activity */}
                                 <div>
                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <UsersIcon className="h-4 w-4"/> Tu Actividad
+                                        <Users className="h-4 w-4"/> Tu Actividad
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         
@@ -263,17 +245,17 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                             className="group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] border border-slate-700 hover:border-cyan-500/50 bg-gradient-to-br from-slate-800 to-slate-900"
                                         >
                                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                                <FolderIcon className="h-24 w-24 text-cyan-400" />
+                                                <Folder className="h-24 w-24 text-cyan-400" />
                                             </div>
                                             <div className="relative z-10">
                                                 <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-4 text-cyan-400 group-hover:scale-110 transition-transform">
-                                                    <UsersIcon className="h-6 w-6" />
+                                                    <Users className="h-6 w-6" />
                                                 </div>
                                                 <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">Mis Partidos</h3>
                                                 <p className="text-sm text-slate-400">Ver todo tu historial de juegos guardados.</p>
                                             </div>
                                             <div className="absolute bottom-6 right-6 text-cyan-500 transform translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all">
-                                                <ChevronRightIcon />
+                                                <ChevronRight />
                                             </div>
                                         </button>
 
@@ -284,7 +266,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                         >
                                             <div className="relative z-10">
                                                 <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center mb-4 text-slate-400 group-hover:text-white transition-colors">
-                                                    <CalendarIcon className="h-6 w-6" />
+                                                    <Calendar className="h-6 w-6" />
                                                 </div>
                                                 <h3 className="text-xl font-bold text-slate-200 mb-1 group-hover:text-white">Partidos Sueltos</h3>
                                                 <p className="text-sm text-slate-500">Amistosos y juegos sin torneo asignado.</p>
@@ -318,7 +300,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                                             {t.name}
                                                         </span>
                                                     </div>
-                                                    <ChevronRightIcon className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                                                    <ChevronRight className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
                                                 </button>
                                             ))}
                                         </div>
@@ -338,7 +320,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                         <div className="p-4 bg-slate-800/50 border-b border-slate-700 space-y-4 flex-shrink-0">
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                    <SearchIcon />
+                                    <Search />
                                 </div>
                                 <input
                                     type="text"
@@ -423,7 +405,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                                 
                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
                                                     <div className="flex items-center gap-1.5">
-                                                        <CalendarIcon className="h-3.5 w-3.5" />
+                                                        <Calendar className="h-3.5 w-3.5" />
                                                         <span>
                                                             {new Date(game.created_at).toLocaleDateString('es-AR', {
                                                                 day: 'numeric', month: 'short', year: 'numeric'
@@ -444,7 +426,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
 
                                             <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 justify-between">
                                                 <div className="flex items-center gap-1 bg-slate-900/50 px-2 py-1 rounded text-slate-500 text-xs font-medium" title="Veces visto">
-                                                    <EyeIcon className="h-3 w-3" />
+                                                    <Eye className="h-3 w-3" />
                                                     <span>{game.views || 0}</span>
                                                 </div>
                                                 <button

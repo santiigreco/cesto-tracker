@@ -2,6 +2,7 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { handleActionFeedback } from '../utils/haptics';
 
 interface OutcomeModalProps {
   onOutcomeSelect: (isGol: boolean) => void;
@@ -24,6 +25,11 @@ const OutcomeModal: React.FC<OutcomeModalProps> = React.memo(({ onOutcomeSelect,
     return () => clearTimeout(timer);
   }, []);
 
+  const handleOutcomeClick = (isGol: boolean) => {
+    handleActionFeedback(isGol);
+    onOutcomeSelect(isGol);
+  };
+
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity"
@@ -36,16 +42,16 @@ const OutcomeModal: React.FC<OutcomeModalProps> = React.memo(({ onOutcomeSelect,
         <h2 id="modal-title" className="text-2xl font-bold text-white mb-8">Resultado del Tiro</h2>
         <div className="flex justify-center gap-4">
           <button
-            onClick={() => onOutcomeSelect(true)}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-green-500"
+            onClick={() => handleOutcomeClick(true)}
+            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xl py-4 px-6 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 shadow-lg border-b-[6px] border-emerald-700 active:border-b-0 active:translate-y-1.5 active:scale-95 focus:outline-none"
           >
-            Gol
+            GOL
           </button>
           <button
-            onClick={() => onOutcomeSelect(false)}
-            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500"
+            onClick={() => handleOutcomeClick(false)}
+            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-black text-xl py-4 px-6 rounded-xl transition duration-300 ease-in-out transform hover:scale-105 shadow-lg border-b-[6px] border-rose-800 active:border-b-0 active:translate-y-1.5 active:scale-95 focus:outline-none"
           >
-            Fallo
+            FALLO
           </button>
         </div>
         <button

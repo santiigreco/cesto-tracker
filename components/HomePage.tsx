@@ -1,16 +1,20 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, Users, CloudDownload, ChevronDown } from 'lucide-react';
 import { RosterPlayer } from '../types';
 import PhoneMockup from './PhoneMockup';
-import FeatureMapIcon from './FeatureMapIcon';
-import FeatureTrophyIcon from './FeatureTrophyIcon';
-import FeatureTapIcon from './FeatureTapIcon';
-import ChevronDownIcon from './ChevronDownIcon';
-import WhatsappIcon from './WhatsappIcon';
+import { 
+    FeatureMapIcon, 
+    FeatureTrophyIcon, 
+    FeatureTapIcon, 
+    InstagramIcon, 
+    WhatsappIcon, 
+    GoogleIcon, 
+    TrendingUpIcon, 
+    LockIcon 
+} from './Icons';
 import { faqData } from './faqData';
-import GoogleIcon from './GoogleIcon';
-import UsersIcon from './UsersIcon';
-import CalendarIcon from './CalendarIcon';
 import UserProfileModal from './UserProfileModal';
 import { supabase } from '../utils/supabaseClient';
 import { useProfile } from '../hooks/useProfile';
@@ -19,31 +23,6 @@ import FixtureView from './FixtureView';
 import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
-
-const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.359 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.359-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.359-2.618-6.78-6.98-6.98C15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/>
-    </svg>
-);
-
-const CloudDownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17l-4-4m0 0l4-4m-4 4h12" />
-    </svg>
-);
-
-const TrendingUpIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-    </svg>
-);
-
-const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-4 w-4"} viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-    </svg>
-);
 
 const TallyMockup = () => (
     <PhoneMockup>
@@ -92,6 +71,7 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame }) => {
+    const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isFixtureOpen, setIsFixtureOpen] = useState(false);
@@ -112,7 +92,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     };
 
     const handleFixtureClick = () => {
-        setIsFixtureOpen(true);
+        navigate('/fixture');
     };
 
     const handleStartClick = () => {
@@ -226,7 +206,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     className={gridItemClass}
                                 >
                                     <div className={iconContainerClass}>
-                                        <CloudDownloadIcon className="h-6 w-6 text-slate-400 group-hover:text-emerald-400" />
+                                        <CloudDownload className="h-6 w-6 text-slate-400 group-hover:text-emerald-400" />
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Historial</span>
@@ -239,7 +219,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     className={gridItemClass}
                                 >
                                     <div className={iconContainerClass}>
-                                        <UsersIcon className="h-6 w-6 text-slate-400 group-hover:text-blue-400" />
+                                        <Users className="h-6 w-6 text-slate-400 group-hover:text-blue-400" />
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Mis Equipos</span>
@@ -252,7 +232,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     className={gridItemClass}
                                 >
                                     <div className={iconContainerClass}>
-                                        <CalendarIcon className="h-6 w-6 text-slate-400 group-hover:text-yellow-400" />
+                                        <Calendar className="h-6 w-6 text-slate-400 group-hover:text-yellow-400" />
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Fixture</span>
@@ -320,7 +300,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     className="w-full flex justify-between items-center text-left p-4 font-medium text-slate-200 hover:bg-slate-800 transition-colors"
                                 >
                                     <span>{faq.question}</span>
-                                    <ChevronDownIcon className={`h-5 w-5 text-slate-500 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
+                                    <ChevronDown className={`h-5 w-5 text-slate-500 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
                                 </button>
                                 {openFaq === index && (
                                     <div className="p-4 pt-0 text-sm text-slate-400 border-t border-slate-700/50 mt-2">
@@ -358,14 +338,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     user={user}
                     onLogout={handleLogout}
                     onLoadGame={onLoadGame}
-                />
-            )}
-
-            {isFixtureOpen && (
-                <FixtureView 
-                    isOpen={isFixtureOpen} 
-                    onClose={() => setIsFixtureOpen(false)} 
-                    isAdmin={canEditFixture ? true : false} 
                 />
             )}
 

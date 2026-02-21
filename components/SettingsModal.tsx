@@ -1,19 +1,11 @@
 
 import React, { useState } from 'react';
+import { X, ChevronDown, CloudUpload } from 'lucide-react';
 import ToggleSwitch from './ToggleSwitch';
 import { Settings } from '../types';
-import XIcon from './XIcon';
-import ChevronDownIcon from './ChevronDownIcon';
 import TeamSelectorModal from './TeamSelectorModal';
-import GoogleIcon from './GoogleIcon';
+import { GoogleIcon } from './Icons';
 import { useProfile } from '../hooks/useProfile';
-
-// --- ICONS (local to this component) ---
-const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m-4-4l4-4 4 4" />
-    </svg>
-);
 
 interface SettingsModalProps {
   settings: Settings;
@@ -49,7 +41,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
             <div className="bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="settings-modal-title" className="text-3xl font-bold text-cyan-400">Configuración</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white p-2 -mr-2 rounded-full" aria-label="Cerrar"><XIcon/></button>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white p-2 -mr-2 rounded-full" aria-label="Cerrar"><X/></button>
                 </div>
 
                 <div className="space-y-6">
@@ -91,7 +83,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                                 <span className={`text-base ${settings.myTeam ? 'text-white font-bold' : 'text-slate-500'}`}>
                                     {settings.myTeam || 'Seleccionar Equipo...'}
                                 </span>
-                                <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+                                <ChevronDown className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
                             </button>
                         </div>
 
@@ -186,7 +178,7 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                                 onClick={onRequestSaveGame}
                                 className="w-full max-w-xs flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform bg-cyan-600 hover:bg-cyan-700 hover:scale-105"
                             >
-                                <CloudUploadIcon className="h-5 w-5" />
+                                <CloudUpload className="h-5 w-5" />
                                 <span>Guardar Partido en la Nube</span>
                             </button>
                         ) : (

@@ -1,7 +1,6 @@
 
 import React from 'react';
-import HamburgerIcon from './HamburgerIcon';
-import GearIcon from './GearIcon';
+import { Menu, Settings } from 'lucide-react';
 import CloudIndicator from './CloudIndicator';
 import { GameMode } from '../types';
 
@@ -45,7 +44,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                         onClick={onOpenMobileMenu} 
                         aria-label="Abrir menú"
                     >
-                        <HamburgerIcon />
+                        <Menu />
                     </button>
                 </div>
                 <div className="flex-grow text-center">
@@ -75,7 +74,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                         className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
                         aria-label="Abrir configuración"
                     >
-                        <GearIcon className="h-7 w-7" />
+                        <Settings className="h-7 w-7" />
                     </button>
                 </div>
             </header>

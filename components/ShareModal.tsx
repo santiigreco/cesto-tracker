@@ -1,9 +1,7 @@
 
 import React, { useRef, useState } from 'react';
+import { X, Share2, ClipboardList } from 'lucide-react';
 import { GameState, PlayerStats } from '../types';
-import XIcon from './XIcon';
-import ShareIcon from './ShareIcon';
-import ClipboardIcon from './ClipboardIcon';
 import ShareReport from './ShareReport';
 
 // TypeScript declaration for html2canvas global variable
@@ -205,7 +203,7 @@ cestotracker.com`;
                 <div className="flex justify-between items-center p-4 border-b border-slate-700 flex-shrink-0 bg-slate-800 z-10">
                     <h2 className="text-xl sm:text-2xl font-bold text-cyan-400">Compartir Reporte</h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar">
-                        <XIcon />
+                        <X />
                     </button>
                 </div>
                 
@@ -241,7 +239,7 @@ cestotracker.com`;
                                 onClick={handleCopyText}
                                 className={`flex-1 flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-[1.02] shadow-lg ${copyFeedback ? 'bg-green-600 text-white' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
                             >
-                                <ClipboardIcon className="h-5 w-5" />
+                                <ClipboardList className="h-5 w-5" />
                                 {copyFeedback ? '¡Copiado!' : 'Copiar Texto'}
                             </button>
                         )}
@@ -250,7 +248,7 @@ cestotracker.com`;
                             disabled={isCapturing}
                             className="flex-[2] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-slate-600 disabled:opacity-50 transform hover:scale-[1.02] shadow-lg"
                         >
-                            <ShareIcon />
+                            <Share2 />
                             {isCapturing ? 'Generando...' : 'Compartir Imagen'}
                         </button>
                     </div>
