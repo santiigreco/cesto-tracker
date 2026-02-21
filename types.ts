@@ -39,10 +39,10 @@ export interface Settings {
 }
 
 export interface PlayerStreak {
-    consecutiveGoles: number;
-    consecutiveMisses: number;
-    notifiedCaliente: boolean;
-    notifiedFria: boolean;
+  consecutiveGoles: number;
+  consecutiveMisses: number;
+  notifiedCaliente: boolean;
+  notifiedFria: boolean;
 }
 
 // Represents stats for a single period
@@ -61,53 +61,53 @@ export interface TallyStatsPeriod {
 
 // Holds stats for all periods
 export type TallyStats = {
-    [key in GamePeriod]: TallyStatsPeriod;
+  [key in GamePeriod]: TallyStatsPeriod;
 };
 
 export type StatAction = keyof TallyStatsPeriod;
 
 export interface GameEvent {
-    id: string;
-    timestamp: number;
-    period: GamePeriod;
-    playerNumber: string; // can be 'Equipo'
-    action: StatAction;
+  id: string;
+  timestamp: number;
+  period: GamePeriod;
+  playerNumber: string; // can be 'Equipo'
+  action: StatAction;
 }
 
 
 export interface GameState {
-    gameId: string | null; // Supabase game ID
-    shots: Shot[];
-    isSetupComplete: boolean;
-    hasSeenHomepage: boolean;
-    availablePlayers: string[]; // Full roster
-    activePlayers: string[]; // 6 players on court
-    playerNames: Record<string, string>;
-    currentPlayer: string;
-    currentPeriod: GamePeriod;
-    settings: Settings;
-    playerStreaks: Record<string, PlayerStreak>;
-    tutorialStep: number; // 1: Select Player, 2: Tap Court, 3: Done
-    gameMode: GameMode;
-    tallyStats: Record<string, TallyStats>; // Maps playerNumber to their TallyStats
-    opponentScore: number;
-    teamFouls: { [key in GamePeriod]: number };
-    gameLog: GameEvent[];
-    tallyRedoLog: GameEvent[];
-    isReadOnly: boolean;
+  gameId: string | null; // Supabase game ID
+  shots: Shot[];
+  isSetupComplete: boolean;
+  hasSeenHomepage: boolean;
+  availablePlayers: string[]; // Full roster
+  activePlayers: string[]; // 6 players on court
+  playerNames: Record<string, string>;
+  currentPlayer: string;
+  currentPeriod: GamePeriod;
+  settings: Settings;
+  playerStreaks: Record<string, PlayerStreak>;
+  tutorialStep: number; // 1: Select Player, 2: Tap Court, 3: Done
+  gameMode: GameMode;
+  tallyStats: Record<string, TallyStats>; // Maps playerNumber to their TallyStats
+  opponentScore: number;
+  teamFouls: { [key in GamePeriod]: number };
+  gameLog: GameEvent[];
+  tallyRedoLog: GameEvent[];
+  isReadOnly: boolean;
 }
 
 export interface RosterPlayer {
-    number: string;
-    name: string;
+  number: string;
+  name: string;
 }
 
 export interface SavedTeam {
-    id: string;
-    name: string;
-    players: RosterPlayer[];
-    category?: string;
-    created_at?: string;
+  id: string;
+  name: string;
+  players: RosterPlayer[];
+  category?: string;
+  created_at?: string;
 }
 
 // Roles de identidad (visibles y elegibles por el usuario)
@@ -120,11 +120,12 @@ export type UserRole = IdentityRole;
 export type PermissionRole = 'admin' | 'fixture_manager' | null;
 
 export interface UserProfile {
-    id: string;
-    full_name: string | null;
-    favorite_club: string | null;
-    role: IdentityRole | null; // Rol autopercibido
-    permission_role: PermissionRole; // Rol de sistema
-    avatar_url: string | null;
-    updated_at?: string;
+  id: string;
+  full_name: string | null;
+  favorite_club: string | null;
+  role: IdentityRole | null; // Rol autopercibido
+  permission_role: PermissionRole; // Rol de sistema
+  is_admin: boolean; // Asignado desde la DB — fuente de verdad para acceso admin
+  avatar_url: string | null;
+  updated_at?: string;
 }

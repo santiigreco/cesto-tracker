@@ -35,6 +35,7 @@ export const useProfile = () => {
                     favorite_club: null,
                     role: 'jugador', // Default identity role
                     permission_role: null, // Default permission (none)
+                    is_admin: false, // Default: not admin
                     avatar_url: user.user_metadata?.avatar_url || null,
                     updated_at: new Date().toISOString()
                 };
@@ -106,7 +107,7 @@ export const useProfile = () => {
 
             // Update profile with new URL
             await updateProfile({ avatar_url: publicUrl });
-            
+
             return publicUrl;
         } catch (err: any) {
             console.error("Error uploading avatar:", err);

@@ -14,7 +14,6 @@ import { CalendarIcon } from './icons';
 import UserProfileModal from './UserProfileModal';
 import { supabase } from '../utils/supabaseClient';
 import { useProfile } from '../hooks/useProfile';
-import { ADMIN_EMAILS } from '../constants';
 import FixtureView from './FixtureView';
 import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
@@ -22,7 +21,7 @@ import TeamLogo from './TeamLogo';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.359 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.359-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.359-2.618-6.78-6.98-6.98C15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/>
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.359 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.359-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.359-2.618-6.78-6.98-6.98C15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z" />
     </svg>
 );
 
@@ -70,13 +69,13 @@ const TallyMockup = () => (
                 </div>
             </div>
             <div className="mt-3 bg-slate-900 p-2 rounded border border-slate-700">
-                 <div className="flex justify-between text-xs text-slate-400 mb-1">
+                <div className="flex justify-between text-xs text-slate-400 mb-1">
                     <span>Última acción:</span>
                     <span>Hace 2s</span>
-                 </div>
-                 <div className="text-sm font-bold text-white flex items-center gap-2">
+                </div>
+                <div className="text-sm font-bold text-white flex items-center gap-2">
                     <span className="text-green-400">[GOL]</span> #10
-                 </div>
+                </div>
             </div>
         </div>
     </PhoneMockup>
@@ -95,15 +94,14 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isFixtureOpen, setIsFixtureOpen] = useState(false);
-    
+
     // New state for direct team selection flow
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const { profile } = useProfile();
 
-    // Permissions Logic: Owner OR Permission='admin' OR Permission='fixture_manager'
-    // This is now used only for EDITING privileges, not viewing
-    const isOwner = user && ADMIN_EMAILS.map(e => e.toLowerCase()).includes((user.email || '').toLowerCase());
+    // Permissions: use DB-sourced is_admin, not client-side email list
+    const isOwner = user && profile?.is_admin === true;
     const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {
@@ -127,7 +125,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const handleCloseTeamSelector = () => {
         setIsTeamSelectorOpen(false);
         // If the user closes the modal without selecting, default to their favorite club if available.
-        onStart(profile?.favorite_club || undefined); 
+        onStart(profile?.favorite_club || undefined);
     };
 
     // --- ANIMATIONS & STYLES ---
@@ -137,16 +135,16 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white">
-             
-             {/* Navbar */}
-             <nav className="sticky top-0 z-50 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center">
+
+            {/* Navbar */}
+            <nav className="sticky top-0 z-50 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <span className="text-2xl">🏐</span>
                     <h1 className="font-extrabold text-lg tracking-tight text-white">Cesto Tracker</h1>
                 </div>
                 <div>
                     {user ? (
-                        <div 
+                        <div
                             onClick={() => setIsProfileOpen(true)}
                             className="flex items-center gap-3 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors group"
                         >
@@ -159,7 +157,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             </div>
                         </div>
                     ) : (
-                        <button 
+                        <button
                             onClick={onLogin}
                             className="flex items-center gap-2 bg-white text-slate-900 hover:bg-gray-100 font-bold px-4 py-2 rounded-full text-sm transition-transform hover:scale-105"
                         >
@@ -168,21 +166,21 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                         </button>
                     )}
                 </div>
-             </nav>
+            </nav>
 
             <main className="flex-grow flex flex-col relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
-                    
+
                     {/* LEFT COLUMN: User Dashboard / CTA */}
                     <div className="flex-1 w-full max-w-lg mx-auto lg:mx-0 flex flex-col gap-8">
-                        
+
                         {/* Welcome Header */}
                         <div className="text-center lg:text-left space-y-2">
                             {user && profile && (
                                 <h2 className="text-2xl font-medium text-slate-400">Hola, <span className="text-white font-bold">{profile.full_name || user.email?.split('@')[0]}</span> 👋</h2>
                             )}
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-none">
-                                Domina la cancha <br/>
+                                Domina la cancha <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">con datos reales.</span>
                             </h1>
                             <p className="text-lg text-slate-400 max-w-md mx-auto lg:mx-0 pt-2">
@@ -230,7 +228,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Historial</span>
-                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3"/> Login</span>}
+                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3" /> Login</span>}
                                     </div>
                                 </button>
 
@@ -243,7 +241,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className={labelClass}>Mis Equipos</span>
-                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3"/> Login</span>}
+                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3" /> Login</span>}
                                     </div>
                                 </button>
 
@@ -266,27 +264,27 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
                     {/* RIGHT COLUMN: Visuals (Desktop only or stacked below) */}
                     <div className="flex-1 w-full flex flex-col items-center lg:items-end mt-8 lg:mt-0 relative">
-                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
-                         
-                         {/* This section disappears on small screens to prioritize the dashboard grid */}
-                         <div className="hidden lg:block relative transition-transform duration-500 ease-out hover:scale-105 cursor-pointer">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+
+                        {/* This section disappears on small screens to prioritize the dashboard grid */}
+                        <div className="hidden lg:block relative transition-transform duration-500 ease-out hover:scale-105 cursor-pointer">
                             <TallyMockup />
                             <div className="absolute -right-12 top-20 bg-slate-800/90 backdrop-blur-md p-4 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
                                 <div className="bg-green-500/20 p-2 rounded-xl">
-                                    <TrendingUpIcon className="h-6 w-6 text-green-400"/>
+                                    <TrendingUpIcon className="h-6 w-6 text-green-400" />
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Efectividad</p>
                                     <p className="text-xl font-bold text-white leading-none">+85%</p>
                                 </div>
                             </div>
-                         </div>
+                        </div>
 
-                         {/* Mobile PWA Text */}
-                         <div className="lg:hidden mt-8 w-full bg-slate-800/50 border border-slate-700/50 p-6 rounded-2xl text-center backdrop-blur-sm">
-                             <p className="text-slate-200 font-bold text-lg mb-1">Planilla digital y mapa de calor en tu bolsillo.</p>
-                             <p className="text-cyan-400 text-sm font-medium">PWA · Sin instalar desde la tienda.</p>
-                         </div>
+                        {/* Mobile PWA Text */}
+                        <div className="lg:hidden mt-8 w-full bg-slate-800/50 border border-slate-700/50 p-6 rounded-2xl text-center backdrop-blur-sm">
+                            <p className="text-slate-200 font-bold text-lg mb-1">Planilla digital y mapa de calor en tu bolsillo.</p>
+                            <p className="text-cyan-400 text-sm font-medium">PWA · Sin instalar desde la tienda.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -332,29 +330,29 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     </div>
                     <div className="mt-8 text-center">
                         <a
-                           href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20consulta..."
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="inline-flex items-center gap-2 text-green-400 hover:text-green-300 font-semibold text-sm"
+                            href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20consulta..."
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-green-400 hover:text-green-300 font-semibold text-sm"
                         >
                             <WhatsappIcon className="h-4 w-4" />
                             Tienes dudas? Escríbeme
                         </a>
-                     </div>
+                    </div>
                 </section>
             </main>
 
-             <footer className="w-full py-8 text-center text-slate-600 text-xs border-t border-slate-800 bg-slate-950">
+            <footer className="w-full py-8 text-center text-slate-600 text-xs border-t border-slate-800 bg-slate-950">
                 <div className="flex justify-center gap-4 mb-3">
-                     <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors" aria-label="Instagram"><InstagramIcon className="h-5 w-5"/></a>
+                    <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors" aria-label="Instagram"><InstagramIcon className="h-5 w-5" /></a>
                 </div>
                 <p>Santiago Greco - Gresolutions © 2026</p>
             </footer>
 
             {user && (
-                <UserProfileModal 
-                    isOpen={isProfileOpen} 
-                    onClose={() => setIsProfileOpen(false)} 
+                <UserProfileModal
+                    isOpen={isProfileOpen}
+                    onClose={() => setIsProfileOpen(false)}
                     user={user}
                     onLogout={handleLogout}
                     onLoadGame={onLoadGame}
@@ -362,17 +360,17 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
             )}
 
             {isFixtureOpen && (
-                <FixtureView 
-                    isOpen={isFixtureOpen} 
-                    onClose={() => setIsFixtureOpen(false)} 
-                    isAdmin={canEditFixture ? true : false} 
+                <FixtureView
+                    isOpen={isFixtureOpen}
+                    onClose={() => setIsFixtureOpen(false)}
+                    isAdmin={canEditFixture ? true : false}
                 />
             )}
 
             {isTeamSelectorOpen && (
-                <TeamSelectorModal 
-                    isOpen={isTeamSelectorOpen} 
-                    onClose={handleCloseTeamSelector} 
+                <TeamSelectorModal
+                    isOpen={isTeamSelectorOpen}
+                    onClose={handleCloseTeamSelector}
                     onSelectTeam={handleTeamSelected}
                     currentTeam={profile?.favorite_club || ''}
                 />

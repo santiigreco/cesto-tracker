@@ -25,8 +25,8 @@ export const STAT_LABELS: Record<keyof TallyStatsPeriod, string> = {
 export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 
 // --- ADMIN CONFIGURATION ---
-// Reemplaza esto con tu email real para ver el panel de admin
-export const ADMIN_EMAILS = ['gresolutions.info@gmail.com', 'santiagogreco@gmail.com'];
+// Admin access is controlled via the `is_admin` column in the `profiles` table in Supabase.
+// To grant admin access, run: UPDATE profiles SET is_admin = TRUE WHERE id = '<user-id>';
 
 // Configuration for Teams
 export interface TeamConfig {
