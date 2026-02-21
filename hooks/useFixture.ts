@@ -138,6 +138,11 @@ export const useFixture = () => {
             away_team: matchData.awayTeam,
             status: 'scheduled',
             season,
+            category: matchData.category,
+            gender: matchData.gender,
+            round: matchData.round,
+            stage_group: matchData.stageGroup,
+            is_rest: matchData.isRest,
         }]);
 
         if (error) {

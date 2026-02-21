@@ -9,6 +9,7 @@ import { TrashIcon } from './icons';
 import { ChevronDownIcon } from './icons';
 import TeamLogo from './TeamLogo';
 import Loader from './Loader';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useFixture, Match } from '../hooks/useFixture';
 import { TEAMS_CONFIG } from '../constants';
 
@@ -242,23 +243,55 @@ const RoundHeader: React.FC<{
 
 // --- Main Component ---
 const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
+    const { year, tournament: tournamentParam, category: categoryParam } = useParams();
+    const navigate = useNavigate();
     const now = useNow();
     const { matches, tournaments, loading, updateMatch, addMatch, deleteMatch, activeSeason, changeSeason, activeRoundKey } = useFixture();
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
     const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
 
+    // Local filter state (synced from URL)
     const [filterTournament, setFilterTournament] = useState<string>('Todos');
     const [filterCategory, setFilterCategory] = useState<string>('Primera A');
 
+    // 1. Sync activeSeason with URL parameter :year
     useEffect(() => {
-        setFilterTournament('Todos');
-        setFilterCategory('Primera A');
-    }, [activeSeason]);
+        if (year && year !== activeSeason) {
+            changeSeason(year);
+        }
+    }, [year, activeSeason, changeSeason]);
 
+    // 2. Sync local filter state with URL parameters
     useEffect(() => {
-        setFilterCategory('Primera A');
-    }, [filterTournament]);
+        const t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
+        const c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera A';
+
+        setFilterTournament(t);
+        setFilterCategory(c);
+    }, [tournamentParam, categoryParam]);
+
+    // 3. Navigation helpers
+    const handleYearChange = (newYear: string) => {
+        navigate(`/fixture/${newYear}`);
+    };
+
+    const handleTournamentChange = (t: string) => {
+        if (t === 'Todos') {
+            navigate(`/fixture/${activeSeason}`);
+        } else {
+            navigate(`/fixture/${activeSeason}/${encodeURIComponent(t)}`);
+        }
+    };
+
+    const handleCategoryChange = (c: string) => {
+        const t = filterTournament === 'Todos' ? 'Todos' : filterTournament;
+        if (c === 'Todas') {
+            navigate(`/fixture/${activeSeason}/${encodeURIComponent(t)}`);
+        } else {
+            navigate(`/fixture/${activeSeason}/${encodeURIComponent(t)}/${encodeURIComponent(c)}`);
+        }
+    };
 
     // Auto-collapse all rounds except the active one when data loads
     useEffect(() => {
@@ -289,7 +322,12 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         date: new Date().toISOString().split('T')[0],
         time: '20:30',
         homeTeam: '',
-        awayTeam: ''
+        awayTeam: '',
+        category: 'Primera A',
+        gender: 'Femenino',
+        round: '',
+        stageGroup: '',
+        isRest: false
     });
 
     const availableYears = ['2026', '2025', '2024', '2023', '2022', '2021', '2019', '2018'];
@@ -462,7 +500,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                 <div className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
                     <select
                         value={activeSeason}
-                        onChange={(e) => changeSeason(e.target.value)}
+                        onChange={(e) => handleYearChange(e.target.value)}
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0"
                     >
                         {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
@@ -470,7 +508,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
 
                     <select
                         value={filterTournament}
-                        onChange={(e) => setFilterTournament(e.target.value)}
+                        onChange={(e) => handleTournamentChange(e.target.value)}
                         disabled={availableTournaments.length <= 1}
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[140px] truncate disabled:opacity-50"
                     >
@@ -479,7 +517,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
 
                     <select
                         value={filterCategory}
-                        onChange={(e) => setFilterCategory(e.target.value)}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[120px] truncate"
                     >
                         {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -740,6 +778,48 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                         {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                     </select>
                                 </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Categoría</label>
+                                    <select value={newMatchData.category} onChange={e => setNewMatchData({ ...newMatchData, category: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none">
+                                        <option value="Primera A">Primera A</option>
+                                        <option value="Primera B">Primera B</option>
+                                        <option value="Primera C">Primera C</option>
+                                        <option value="Promo">Promo</option>
+                                        <option value="Maxi">Maxi</option>
+                                        <option value="Mini">Mini</option>
+                                        <option value="Premini">Premini</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Rama</label>
+                                    <select value={newMatchData.gender} onChange={e => setNewMatchData({ ...newMatchData, gender: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none">
+                                        <option value="Femenino">Femenino</option>
+                                        <option value="Masculino">Masculino</option>
+                                        <option value="Mixte">Mixto</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha #</label>
+                                    <input type="text" value={newMatchData.round} onChange={e => setNewMatchData({ ...newMatchData, round: e.target.value })} placeholder="Ej: Fecha 1" className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Grupo / Fase</label>
+                                    <input type="text" value={newMatchData.stageGroup} onChange={e => setNewMatchData({ ...newMatchData, stageGroup: e.target.value })} placeholder="Ej: Zona A" className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none" />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="isRest"
+                                    checked={newMatchData.isRest}
+                                    onChange={e => setNewMatchData({ ...newMatchData, isRest: e.target.checked })}
+                                    className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-cyan-500 focus:ring-cyan-500"
+                                />
+                                <label htmlFor="isRest" className="text-xs font-bold text-slate-300 uppercase cursor-pointer">Es descanso (Fecha Libre)</label>
                             </div>
                             <button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg text-sm transition-colors mt-2">
                                 ✅ Crear Partido

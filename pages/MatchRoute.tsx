@@ -92,7 +92,7 @@ export default function MatchRoute() {
     const renderModalsProps = {
         tabTranslations,
         tabs: tabsForCurrentMode as any,
-        playersForTally: gameState.activePlayers,
+        playersForTally: gameState.availablePlayers,
         actionLabel: actionToAssign ? STAT_LABELS[actionToAssign as any] : '',
         pendingShotPosition,
         setPendingShotPosition,
@@ -161,6 +161,7 @@ export default function MatchRoute() {
                     startEditingHeader={() => { setHeaderPlayerName(gameState.playerNames[gameState.currentPlayer] || ''); setIsEditingHeaderPlayer(true); }}
                     handlePlayerChange={handlePlayerChange}
                     activePlayers={gameState.activePlayers}
+                    availablePlayers={gameState.availablePlayers}
                     setIsSubstitutionModalOpen={() => openModal('substitution')}
                     filteredLoggerTabShots={gameState.shots.filter(s => s.period === gameState.currentPeriod)}
                     handleCourtClick={handleCourtClick}

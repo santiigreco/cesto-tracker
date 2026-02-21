@@ -116,51 +116,60 @@ const NextMatchWidget: React.FC<{
         return (
             <button
                 onClick={onFixtureClick}
-                className="group w-full text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 rounded-2xl p-4 transition-all duration-200"
+                className="group w-full text-left bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-[2rem] p-5 transition-all duration-300 backdrop-blur-md shadow-xl overflow-hidden relative"
             >
-                <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-red-400' : 'text-slate-500'
-                        }`}>
-                        {isFinished ? '✅ Último resultado' : `${dayLabel} · ${nextMatch.time}hs`}
-                    </span>
+                <div className="absolute top-0 right-10 w-20 h-20 bg-cyan-500/5 blur-2xl rounded-full"></div>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        {isToday && <span className="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>}
+                        <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isToday ? 'text-red-400' : 'text-slate-500'}`}>
+                            {isFinished ? 'Finalizado' : `${dayLabel} • ${nextMatch.time}hs`}
+                        </span>
+                    </div>
                     {nextMatch.round && (
-                        <span className="text-[10px] text-slate-600 font-bold">{nextMatch.round}</span>
+                        <span className="text-[10px] text-slate-500 font-bold bg-slate-900/50 px-2 py-0.5 rounded-full border border-slate-700/50">{nextMatch.round}</span>
                     )}
                 </div>
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-4 py-2">
                     {/* Local */}
-                    <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                        <span className="text-sm font-bold text-slate-200 truncate text-right">
+                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                        <TeamLogo teamName={nextMatch.homeTeam} className="h-12 w-12 flex-shrink-0 drop-shadow-lg group-hover:scale-110 transition-transform duration-300" />
+                        <span className="text-xs font-black text-slate-200 truncate w-full text-center uppercase tracking-tighter">
                             {nextMatch.homeTeam}
                         </span>
-                        <TeamLogo teamName={nextMatch.homeTeam} className="h-8 w-8 flex-shrink-0" />
                     </div>
 
                     {/* Score / vs */}
-                    <div className="flex-shrink-0 text-center min-w-[52px]">
+                    <div className="flex-shrink-0 flex flex-col items-center justify-center">
                         {isFinished ? (
-                            <span className="text-xl font-black text-white tabular-nums">
-                                {nextMatch.scoreHome} : {nextMatch.scoreAway}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-3xl font-black text-white px-2">
+                                    {nextMatch.scoreHome}
+                                </span>
+                                <span className="text-slate-700 font-black">:</span>
+                                <span className="text-3xl font-black text-white px-2">
+                                    {nextMatch.scoreAway}
+                                </span>
+                            </div>
                         ) : (
-                            <span className="text-xs font-black text-slate-500 tracking-widest">VS</span>
+                            <div className="bg-slate-900/80 px-4 py-1.5 rounded-2xl border border-slate-700 font-black text-[10px] text-slate-500 tracking-[0.3em]">VS</div>
                         )}
                     </div>
 
                     {/* Visitante */}
-                    <div className="flex items-center gap-2 flex-1 justify-start min-w-0">
-                        <TeamLogo teamName={nextMatch.awayTeam} className="h-8 w-8 flex-shrink-0" />
-                        <span className="text-sm font-bold text-slate-200 truncate">
+                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                        <TeamLogo teamName={nextMatch.awayTeam} className="h-12 w-12 flex-shrink-0 drop-shadow-lg group-hover:scale-110 transition-transform duration-300" />
+                        <span className="text-xs font-black text-slate-200 truncate w-full text-center uppercase tracking-tighter">
                             {nextMatch.awayTeam}
                         </span>
                     </div>
                 </div>
 
-                <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-600 truncate">{nextMatch.tournament}</span>
-                    <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">
-                        Ver fixture →
+                <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-700/30">
+                    <span className="text-[10px] text-slate-600 font-bold tracking-wider truncate max-w-[70%]">{nextMatch.tournament}</span>
+                    <span className="text-[10px] text-cyan-400 font-black uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                        Fixture →
                     </span>
                 </div>
             </button>
@@ -248,12 +257,19 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     };
 
     // --- ANIMATIONS & STYLES ---
-    const gridItemClass = "flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-750 transition-all group active:scale-95 cursor-pointer shadow-lg";
-    const iconContainerClass = "p-3 bg-slate-900 rounded-full group-hover:bg-slate-800 transition-colors";
-    const labelClass = "text-sm font-bold text-slate-300 group-hover:text-white";
+    const gridItemClass = "flex flex-col items-center justify-center gap-2 p-5 rounded-3xl bg-slate-800/40 border border-slate-700/50 hover:border-cyan-500/40 hover:bg-slate-800/60 backdrop-blur-md transition-all duration-300 group active:scale-95 cursor-pointer shadow-xl relative overflow-hidden";
+    const iconContainerClass = "p-4 bg-slate-950/50 rounded-2xl group-hover:bg-slate-900/50 transition-all duration-300 ring-1 ring-slate-800 group-hover:ring-cyan-500/30";
+    const labelClass = "text-sm font-black text-slate-400 group-hover:text-white tracking-wide uppercase transition-colors";
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans overflow-x-hidden bg-pattern-hoops selection:bg-cyan-500 selection:text-white">
+        <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+
+            {/* ── Background Glows ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
+                <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/10 blur-[120px] rounded-full animate-float"></div>
+                <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 blur-[100px] rounded-full"></div>
+            </div>
 
             {/* Navbar */}
             <nav className="sticky top-0 z-50 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center">
@@ -294,16 +310,24 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     <div className="flex-1 w-full max-w-lg mx-auto lg:mx-0 flex flex-col gap-8">
 
                         {/* Welcome Header */}
-                        <div className="text-center lg:text-left space-y-2">
+                        <div className="text-center lg:text-left space-y-4">
                             {user && profile && (
-                                <h2 className="text-2xl font-medium text-slate-400">Hola, <span className="text-white font-bold">{profile.full_name || user.email?.split('@')[0]}</span> 👋</h2>
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-2">
+                                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                                    <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">En línea</span>
+                                    <span className="text-slate-500 px-1">•</span>
+                                    <span className="text-xs font-bold text-slate-300">{profile.full_name || user.email?.split('@')[0]}</span>
+                                </div>
                             )}
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-none">
-                                Domina la cancha <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">con datos reales.</span>
+                            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-[0.8] lg:leading-[0.8]">
+                                El Cestoball, <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-[length:200%_auto] animate-text-shimmer">
+                                    transformado en datos.
+                                </span>
                             </h1>
-                            <p className="text-lg text-slate-400 max-w-md mx-auto lg:mx-0 pt-2">
-                                La app definitiva para el <strong>Cestoball</strong>. Planilla digital, estadísticas en vivo y gestión de equipos.
+                            <p className="text-lg sm:text-xl text-slate-400 max-w-md mx-auto lg:mx-0 pt-4 leading-relaxed font-medium">
+                                Estadísticas en vivo, mapas de calor y gestión profesional. <br className="hidden sm:block" />
+                                <span className="text-slate-200">Creado por y para la comunidad del Cesto.</span>
                             </p>
                         </div>
 
@@ -315,73 +339,101 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             onLoadGame={(id) => onLoadGame(id, true)}
                         />
 
-                        {/* --- BENTO GRID ACTION CENTER --- */}
-                        <div className="w-full bg-slate-800/30 p-4 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                                {/* Primary Action: New Game (Full Width) */}
-                                <button
-                                    onClick={handleStartClick}
-                                    className="col-span-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold py-5 px-6 rounded-2xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] flex items-center justify-center gap-3 group"
-                                >
-                                    <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                                        <FeatureTapIcon className="h-6 w-6" />
-                                    </div>
-                                    <span className="text-xl tracking-tight">Empezar Partido</span>
-                                </button>
+                        {/* --- NEW STRIKING ACTION CENTER --- */}
+                        <div className="w-full grid grid-cols-6 gap-3 sm:gap-4 mt-4">
 
-                                {/* Secondary Actions Grid */}
-                                <button
-                                    onClick={user ? onLoadGameClick : onLogin}
-                                    className={gridItemClass}
-                                >
-                                    <div className={iconContainerClass}>
-                                        <CloudDownloadIcon className="h-6 w-6 text-slate-400 group-hover:text-emerald-400" />
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className={labelClass}>Historial</span>
-                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3" /> Login</span>}
-                                    </div>
-                                </button>
+                            {/* NEW MATCH CARD (MAIN CTA) */}
+                            <div
+                                onClick={handleStartClick}
+                                className="col-span-6 group relative h-40 rounded-[2.5rem] bg-slate-900 border border-slate-700/50 hover:border-cyan-500/50 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-cyan-500/10 blur-3xl group-hover:bg-cyan-500/20 transition-all duration-500"></div>
 
-                                <button
-                                    onClick={user ? onManageTeamsClick : onLogin}
-                                    className={gridItemClass}
-                                >
-                                    <div className={iconContainerClass}>
-                                        <UsersIcon className="h-6 w-6 text-slate-400 group-hover:text-blue-400" />
+                                <div className="relative h-full flex flex-col justify-center px-8">
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <div className="p-3 bg-cyan-500 rounded-2xl shadow-lg shadow-cyan-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                            <FeatureTapIcon className="h-8 w-8 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Empezar Partido</h3>
+                                            <p className="text-cyan-400/80 text-xs font-bold uppercase tracking-widest">Planilla digital en vivo</p>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className={labelClass}>Mis Equipos</span>
-                                        {!user && <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><LockIcon className="h-3 w-3" /> Login</span>}
-                                    </div>
-                                </button>
+                                    <p className="text-slate-400 text-sm max-w-[240px] leading-snug">Registra goles, faltas y mapa de tiro de forma profesional.</p>
+                                </div>
+                                <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500">
+                                    <svg className="h-12 w-12 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+                            </div>
 
-                                <button
-                                    onClick={handleFixtureClick}
-                                    className={gridItemClass}
-                                >
-                                    <div className={iconContainerClass}>
-                                        <CalendarIcon className="h-6 w-6 text-slate-400 group-hover:text-yellow-400" />
+                            {/* FIXTURE CARD (MEDIUM) */}
+                            <div
+                                onClick={handleFixtureClick}
+                                className="col-span-3 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-yellow-500/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/5 to-transparent" />
+                                <div className="p-6 flex flex-col h-full">
+                                    <div className="p-3 bg-slate-900 rounded-xl w-fit mb-auto group-hover:scale-110 transition-transform">
+                                        <CalendarIcon className="h-6 w-6 text-yellow-500" />
                                     </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className={labelClass}>Fixture</span>
-                                    </div>
-                                </button>
+                                    <h4 className="text-lg font-black text-white mb-1 uppercase tracking-tighter">Fixture</h4>
+                                    <p className="text-slate-500 text-[10px] uppercase font-black leading-none">Calendario de juegos</p>
+                                </div>
+                            </div>
 
-                                <button
-                                    onClick={() => navigate('/standings')}
-                                    className={gridItemClass}
-                                >
-                                    <div className={iconContainerClass}>
-                                        <span className="text-xl group-hover:scale-110 transition-transform inline-block">🏆</span>
+                            {/* STANDINGS CARD (MEDIUM) */}
+                            <div
+                                onClick={() => navigate('/standings')}
+                                className="col-span-3 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-cyan-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-t from-cyan-400/5 to-transparent" />
+                                <div className="p-6 flex flex-col h-full">
+                                    <div className="p-3 bg-slate-900 rounded-xl w-fit mb-auto group-hover:scale-110 transition-transform">
+                                        <span className="text-2xl">🏆</span>
                                     </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className={labelClass}>Tabla</span>
-                                    </div>
-                                </button>
+                                    <h4 className="text-lg font-black text-white mb-1 uppercase tracking-tighter">Tabla</h4>
+                                    <p className="text-slate-500 text-[10px] uppercase font-black leading-none">Posiciones & Playoffs</p>
+                                </div>
+                            </div>
 
+                            {/* TEAMS CARD (SMALL) */}
+                            <div
+                                onClick={user ? onManageTeamsClick : onLogin}
+                                className="col-span-3 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-blue-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+                            >
+                                <div className="p-5 flex items-center gap-4 h-full">
+                                    <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-blue-500/10 transition-colors">
+                                        <UsersIcon className="h-5 w-5 text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h5 className="font-black text-white uppercase tracking-tighter">Equipos</h5>
+                                        {!user && <span className="text-[9px] text-slate-600 block flex items-center gap-1 font-bold"><LockIcon className="h-2 w-2" /> REQUERIDO</span>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* HISTORY CARD (SMALL) */}
+                            <div
+                                onClick={user ? onLoadGameClick : onLogin}
+                                className="col-span-3 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-emerald-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+                            >
+                                <div className="p-5 flex items-center gap-4 h-full">
+                                    <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-emerald-500/10 transition-colors">
+                                        <CloudDownloadIcon className="h-5 w-5 text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <h5 className="font-black text-white uppercase tracking-tighter">Historial</h5>
+                                        {!user && <span className="text-[9px] text-slate-600 block flex items-center gap-1 font-bold"><LockIcon className="h-2 w-2" /> REQUERIDO</span>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* PWA INSTALL (SMALL / WIDE) */}
+                            <div className="col-span-6">
                                 <InstallApp variant="card" />
-
                             </div>
                         </div>
                     </div>
@@ -412,22 +464,30 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     </div>
                 </div>
 
-                {/* FEATURE HIGHLIGHTS (Mini) */}
-                <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-80">
-                    <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 flex flex-col items-center text-center">
-                        <FeatureTapIcon className="h-10 w-10 text-emerald-400 mb-3" />
-                        <h3 className="font-bold text-white mb-2">Fácil de usar</h3>
-                        <p className="text-sm text-slate-400">Interfaz diseñada con botones grandes para no perder detalle del juego.</p>
+                {/* FEATURE HIGHLIGHTS */}
+                <div className="mt-32 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="group bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-800/50 flex flex-col items-center text-center transition-all duration-500 hover:bg-slate-800/40 hover:-translate-y-2">
+                        <div className="w-16 h-16 bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-6 ring-1 ring-emerald-500/20 group-hover:ring-emerald-500/40 transition-all duration-500">
+                            <FeatureTapIcon className="h-8 w-8 text-emerald-400" />
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-4 tracking-tight">Experiencia Fluida</h3>
+                        <p className="text-slate-400 leading-relaxed">Interfaz optimizada para un registro táctil veloz sin despegar la vista de la jugada.</p>
                     </div>
-                    <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 flex flex-col items-center text-center">
-                        <FeatureTrophyIcon className="h-10 w-10 text-amber-400 mb-3" />
-                        <h3 className="font-bold text-white mb-2">Reportes Pro</h3>
-                        <p className="text-sm text-slate-400">Genera imágenes con las estadísticas listas para compartir en WhatsApp.</p>
+
+                    <div className="group bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-800/50 flex flex-col items-center text-center transition-all duration-500 hover:bg-slate-800/40 hover:-translate-y-2">
+                        <div className="w-16 h-16 bg-cyan-500/10 rounded-3xl flex items-center justify-center mb-6 ring-1 ring-cyan-500/20 group-hover:ring-cyan-500/40 transition-all duration-500">
+                            <span className="text-3xl">🏆</span>
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-4 tracking-tight">Reportes de Elite</h3>
+                        <p className="text-slate-400 leading-relaxed">Genera automáticamente resúmenes visuales de impacto listos para compartir.</p>
                     </div>
-                    <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 flex flex-col items-center text-center">
-                        <FeatureMapIcon className="h-10 w-10 text-purple-400 mb-3" />
-                        <h3 className="font-bold text-white mb-2">Análisis Táctico</h3>
-                        <p className="text-sm text-slate-400">Mapas de calor y gráficos de zonas para entender dónde tira tu equipo.</p>
+
+                    <div className="group bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-800/50 flex flex-col items-center text-center transition-all duration-500 hover:bg-slate-800/40 hover:-translate-y-2">
+                        <div className="w-16 h-16 bg-purple-500/10 rounded-3xl flex items-center justify-center mb-6 ring-1 ring-purple-500/20 group-hover:ring-purple-500/40 transition-all duration-500">
+                            <FeatureMapIcon className="h-8 w-8 text-purple-400" />
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-4 tracking-tight">Foco Táctico</h3>
+                        <p className="text-slate-400 leading-relaxed">Entiende el flujo de tu equipo con mapas de calor y zonas de efectividad precisas.</p>
                     </div>
                 </div>
 

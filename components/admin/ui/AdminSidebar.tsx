@@ -13,7 +13,7 @@ interface AdminSidebarProps {
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, isOwner }) => {
-    
+
     // Desktop Classes
     const desktopContainer = "hidden lg:flex w-64 bg-slate-800 border-r border-slate-700 flex-col py-6 gap-2 h-full";
     const desktopBtnBase = "flex items-center gap-4 px-6 py-3 mx-2 rounded-lg transition-all w-auto text-left";
@@ -30,7 +30,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
         { id: 'dashboard' as AdminTab, label: 'Resumen', icon: <ChartBarIcon className="h-6 w-6" /> },
         ...(isOwner ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-6 w-6" /> }] : []),
         { id: 'tournaments' as AdminTab, label: 'Torneos', icon: <TrophyIcon rank={1} /> },
-        { id: 'games' as AdminTab, label: 'Partidos', icon: <CalendarIcon className="h-6 w-6" /> },
+        { id: 'fixture' as AdminTab, label: 'Resultados', icon: <CalendarIcon className="h-6 w-6" /> },
+        { id: 'games' as AdminTab, label: 'En Vivo', icon: <div className="relative"><CalendarIcon className="h-6 w-6" /><span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span></div> },
     ];
 
     return (
@@ -38,7 +39,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
             {/* Desktop View */}
             <div className={desktopContainer}>
                 {tabs.map(tab => (
-                    <button 
+                    <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`${desktopBtnBase} ${activeTab === tab.id ? desktopActive : desktopInactive}`}
@@ -52,7 +53,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
             {/* Mobile View */}
             <div className={mobileContainer}>
                 {tabs.map(tab => (
-                    <button 
+                    <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`${mobileBtnBase} ${activeTab === tab.id ? mobileActive : mobileInactive}`}

@@ -56,6 +56,7 @@ interface GameMainContentProps {
     startEditingHeader: () => void;
     handlePlayerChange: (p: string) => void;
     activePlayers: string[];
+    availablePlayers: string[];
     setIsSubstitutionModalOpen: (v: boolean) => void;
     filteredLoggerTabShots: Shot[];
     handleCourtClick: (pos: ShotPosition) => void;

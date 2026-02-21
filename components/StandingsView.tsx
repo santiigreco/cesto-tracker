@@ -1,5 +1,5 @@
-
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useFixture } from '../hooks/useFixture';
 import { useStandings, StandingsEntry, BracketRound } from '../hooks/useStandings';
 import Loader from './Loader';
@@ -271,9 +271,50 @@ const Legend = () => (
 
 // ── Main Component ──────────────────────────────────────────────────────────
 const StandingsView: React.FC = () => {
+    const { year, tournament: tournamentParam, category: categoryParam } = useParams();
+    const navigate = useNavigate();
     const { matches, loading, activeSeason, changeSeason } = useFixture();
+
     const [filterTournament, setFilterTournament] = useState('Todos');
     const [filterCategory, setFilterCategory] = useState('Todas');
+
+    // 1. Sync activeSeason with URL parameter :year
+    useEffect(() => {
+        if (year && year !== activeSeason) {
+            changeSeason(year);
+        }
+    }, [year, activeSeason, changeSeason]);
+
+    // 2. Sync local filter state with URL parameters
+    useEffect(() => {
+        const t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
+        const c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera A';
+
+        setFilterTournament(t);
+        setFilterCategory(c);
+    }, [tournamentParam, categoryParam]);
+
+    // 3. Navigation helpers
+    const handleYearChange = (newYear: string) => {
+        navigate(`/standings/${newYear}`);
+    };
+
+    const handleTournamentChange = (t: string) => {
+        if (t === 'Todos') {
+            navigate(`/standings/${activeSeason}`);
+        } else {
+            navigate(`/standings/${activeSeason}/${encodeURIComponent(t)}`);
+        }
+    };
+
+    const handleCategoryChange = (c: string) => {
+        const t = filterTournament === 'Todos' ? 'Todos' : filterTournament;
+        if (c === 'Todas') {
+            navigate(`/standings/${activeSeason}/${encodeURIComponent(t)}`);
+        } else {
+            navigate(`/standings/${activeSeason}/${encodeURIComponent(t)}/${encodeURIComponent(c)}`);
+        }
+    };
 
     const availableYears = ['2026', '2025', '2024', '2023', '2022', '2021', '2019', '2018'];
 
@@ -311,17 +352,17 @@ const StandingsView: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
-                    <select value={activeSeason} onChange={e => changeSeason(e.target.value)}
+                    <select value={activeSeason} onChange={e => handleYearChange(e.target.value)}
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0">
                         {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                     <select value={filterTournament}
-                        onChange={e => { setFilterTournament(e.target.value); setFilterCategory('Todas'); }}
+                        onChange={e => handleTournamentChange(e.target.value)}
                         disabled={availableTournaments.length <= 1}
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[140px] truncate disabled:opacity-50">
                         {availableTournaments.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+                    <select value={filterCategory} onChange={e => handleCategoryChange(e.target.value)}
                         disabled={availableCategories.length <= 1}
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[120px] truncate disabled:opacity-50">
                         {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}

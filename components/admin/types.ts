@@ -2,7 +2,7 @@
 import React from 'react';
 import { IdentityRole, PermissionRole } from '../../types';
 
-export type AdminTab = 'dashboard' | 'users' | 'tournaments' | 'games';
+export type AdminTab = 'dashboard' | 'users' | 'tournaments' | 'games' | 'fixture';
 
 export interface AdminProfile {
     id: string;

@@ -7,8 +7,8 @@ import TeamLogo from './TeamLogo';
 import { CameraIcon } from './icons';
 import { useProfile } from '../hooks/useProfile';
 import { TEAMS_CONFIG } from '../constants';
+import { useNavigate } from 'react-router-dom';
 import { IdentityRole } from '../types';
-import AdminDashboard from './AdminDashboard'; // Import AdminDashboard
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -30,6 +30,7 @@ const IDENTITY_ROLES: { value: IdentityRole; label: string; emoji: string }[] = 
 
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user, onLogout, onLoadGame }) => {
     const { profile, loading: profileLoading, updateProfile, uploadAvatar } = useProfile();
+    const navigate = useNavigate();
 
     // Form State
     const [fullName, setFullName] = useState('');
@@ -214,8 +215,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                             onClick={handleSave}
                             disabled={isSaving || profileLoading}
                             className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all transform active:scale-95 ${saveSuccess
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
                                 }`}
                         >
                             {isSaving ? <Loader className="h-5 w-5 text-white" /> : (
@@ -226,10 +227,10 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                         {/* Admin Button (Secret - Visible for Owner and Admins) */}
                         {canAccessAdminPanel && (
                             <button
-                                onClick={() => setShowAdmin(true)}
+                                onClick={() => { navigate('/admin'); onClose(); }}
                                 className="w-full py-2 bg-red-900/20 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
                             >
-                                🛡️ Abrir Panel Admin {isOwner ? '(Owner)' : ''}
+                                🛡️ Ir al Panel Admin {isOwner ? '(Owner)' : ''}
                             </button>
                         )}
 
@@ -244,19 +245,6 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                     </div>
                 </div>
             </div>
-
-            {/* Render Admin Dashboard on top if active, passing isOwner prop */}
-            <AdminDashboard
-                isOpen={showAdmin}
-                onClose={() => setShowAdmin(false)}
-                isOwner={isOwner}
-                onLoadGame={(id, asOwner) => {
-                    // Close both modals and trigger load
-                    setShowAdmin(false);
-                    onClose();
-                    onLoadGame(id, asOwner);
-                }}
-            />
         </>
     );
 };
