@@ -1,12 +1,13 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { XIcon } from './icons';
-import TeamLogo from './TeamLogo';
 import { CalendarIcon } from './icons';
 import { PencilIcon } from './icons';
 import { CheckIcon } from './icons';
 import { PlusIcon } from './icons';
 import { TrashIcon } from './icons';
+import { ChevronDownIcon } from './icons';
+import TeamLogo from './TeamLogo';
 import Loader from './Loader';
 import { useFixture, Match } from '../hooks/useFixture';
 import { TEAMS_CONFIG } from '../constants';
@@ -17,40 +18,250 @@ interface FixtureViewProps {
     isAdmin: boolean;
 }
 
-const LocationIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-4 w-4"} viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-    </svg>
+// ── Hook: current time updated every 30s ──
+const useNow = () => {
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 30_000);
+        return () => clearInterval(id);
+    }, []);
+    return now;
+};
+
+// ── Compute effective match status based on system clock ──
+// Cestoball match duration ≈ 60 minutes
+const MATCH_DURATION_MS = 60 * 60 * 1000;
+
+const computeEffectiveStatus = (
+    match: Match,
+    now: Date
+): 'scheduled' | 'live' | 'finished' => {
+    // If a score is already recorded, always show as finished
+    const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
+    if (hasScore) return 'finished';
+
+    // If DB explicitly marks it finished, respect that
+    if (match.status === 'finished') return 'finished';
+
+    // Try to parse the scheduled start time
+    // match.time is HH:MM, match.date is YYYY-MM-DD
+    const startStr = `${match.date}T${match.time.length === 5 ? match.time : '00:00'}:00`;
+    const startTime = new Date(startStr);
+    if (isNaN(startTime.getTime())) return match.status || 'scheduled';
+
+    const endTime = new Date(startTime.getTime() + MATCH_DURATION_MS);
+
+    if (now >= startTime && now < endTime) return 'live';
+    if (now >= endTime) return 'finished';
+    return 'scheduled';
+};
+
+// --- Status Badge ---
+const StatusBadge: React.FC<{ match: Match; now: Date }> = ({ match, now }) => {
+    const effectiveStatus = computeEffectiveStatus(match, now);
+    const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
+
+    if (effectiveStatus === 'live') {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block"></span>En Vivo
+            </span>
+        );
+    }
+    if (effectiveStatus === 'finished') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400">
+                Finalizado
+            </span>
+        );
+    }
+    // scheduled
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-cyan-300 bg-cyan-900/20 border border-cyan-800/40">
+            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {match.time}
+        </span>
+    );
+};
+
+// --- Score Display ---
+const ScoreDisplay: React.FC<{ match: Match }> = ({ match }) => {
+    const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
+    const homeWon = hasScore && Number(match.scoreHome) > Number(match.scoreAway);
+    const awayWon = hasScore && Number(match.scoreAway) > Number(match.scoreHome);
+
+    if (!hasScore) {
+        return <span className="text-slate-500 font-bold text-sm tracking-widest">- : -</span>;
+    }
+
+    return (
+        <div className="flex items-center justify-center gap-1">
+            <span className={`text-lg font-black tabular-nums ${homeWon ? 'text-white' : 'text-slate-500'}`}>
+                {match.scoreHome}
+            </span>
+            <span className="text-slate-600 text-sm font-bold">:</span>
+            <span className={`text-lg font-black tabular-nums ${awayWon ? 'text-white' : 'text-slate-500'}`}>
+                {match.scoreAway}
+            </span>
+        </div>
+    );
+};
+
+// --- Match Row ---
+const MatchRow: React.FC<{
+    match: Match;
+    isEven: boolean;
+    isEditMode: boolean;
+    now: Date;
+    onUpdate: (id: string, field: keyof Match, value: unknown) => void;
+    onDelete: (id: string) => void;
+    onClick: (match: Match) => void;
+}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick }) => {
+    const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
+    const homeWon = hasScore && Number(match.scoreHome) > Number(match.scoreAway);
+    const awayWon = hasScore && Number(match.scoreAway) > Number(match.scoreHome);
+
+    if (match.isRest) {
+        return (
+            <div className={`flex items-center justify-center gap-3 py-3 px-4 ${isEven ? 'bg-slate-900' : 'bg-slate-900/60'} border-b border-slate-800`}>
+                <TeamLogo teamName={match.homeTeam} className="h-6 w-6 opacity-60 grayscale" />
+                <span className="text-slate-500 text-sm font-semibold">{match.homeTeam}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600 border border-slate-700 px-2 py-0.5 rounded">
+                    Fecha Libre
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className={`group relative flex items-center gap-2 sm:gap-3 px-3 py-2 border-b border-slate-800 cursor-pointer transition-colors duration-150
+                ${isEven ? 'bg-slate-900' : 'bg-slate-800/40'}
+                ${!isEditMode ? 'hover:bg-slate-700/50' : ''}`}
+            onClick={() => !isEditMode && onClick(match)}
+        >
+            {/* Status */}
+            <div className="w-16 sm:w-20 flex-shrink-0 flex justify-center">
+                <StatusBadge match={match} now={now} />
+            </div>
+
+            {/* Home Team */}
+            <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                <span className={`text-xs sm:text-sm font-semibold truncate text-right leading-tight
+                    ${homeWon ? 'text-white font-bold' : 'text-slate-400'}`}>
+                    {match.homeTeam}
+                </span>
+                <TeamLogo teamName={match.homeTeam} className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" />
+            </div>
+
+            {/* Score / Center */}
+            <div className="w-20 sm:w-24 flex-shrink-0 flex flex-col items-center justify-center">
+                {isEditMode ? (
+                    <div className="flex items-center gap-1">
+                        <input
+                            type="number"
+                            value={match.scoreHome ?? ''}
+                            onClick={e => e.stopPropagation()}
+                            onChange={(e) => onUpdate(match.id, 'scoreHome', e.target.value)}
+                            className="w-8 h-8 bg-slate-800 text-center text-white font-bold border border-slate-600 rounded text-sm focus:border-cyan-500 outline-none"
+                        />
+                        <span className="text-slate-600 font-bold">:</span>
+                        <input
+                            type="number"
+                            value={match.scoreAway ?? ''}
+                            onClick={e => e.stopPropagation()}
+                            onChange={(e) => onUpdate(match.id, 'scoreAway', e.target.value)}
+                            className="w-8 h-8 bg-slate-800 text-center text-white font-bold border border-slate-600 rounded text-sm focus:border-cyan-500 outline-none"
+                        />
+                    </div>
+                ) : (
+                    <ScoreDisplay match={match} />
+                )}
+                {match.location && (
+                    <span className="text-[9px] text-slate-600 truncate max-w-[80px] hidden sm:block mt-0.5">{match.location}</span>
+                )}
+            </div>
+
+            {/* Away Team */}
+            <div className="flex-1 flex items-center justify-start gap-2 min-w-0">
+                <TeamLogo teamName={match.awayTeam} className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" />
+                <span className={`text-xs sm:text-sm font-semibold truncate text-left leading-tight
+                    ${awayWon ? 'text-white font-bold' : 'text-slate-400'}`}>
+                    {match.awayTeam}
+                </span>
+            </div>
+
+            {/* Edit Controls */}
+            {isEditMode && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(match.id); }}
+                    className="flex-shrink-0 p-1.5 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                >
+                    <TrashIcon className="h-4 w-4" />
+                </button>
+            )}
+
+            {/* Hover arrow (read mode) */}
+            {!isEditMode && match.matchUrl && (
+                <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg className="h-4 w-4 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- Round Group Header ---
+const RoundHeader: React.FC<{
+    label: string;
+    count: number;
+    isCollapsed: boolean;
+    onToggle: () => void;
+    roundNumber: number | null;
+}> = ({ label, count, isCollapsed, onToggle, roundNumber }) => (
+    <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-2 bg-slate-800 hover:bg-slate-700/80 border-b border-slate-700 transition-colors group"
+    >
+        <div className="flex items-center gap-2">
+            {roundNumber !== null && (
+                <span className="w-6 h-6 rounded-full bg-cyan-600/20 border border-cyan-600/40 flex items-center justify-center text-[10px] font-black text-cyan-400">
+                    {roundNumber}
+                </span>
+            )}
+            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{label}</span>
+            <span className="text-[10px] text-slate-600 font-medium">{count} partido{count !== 1 ? 's' : ''}</span>
+        </div>
+        <ChevronDownIcon className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+    </button>
 );
 
-const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-4 w-4"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
-
-const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) => {
+// --- Main Component ---
+const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
+    const now = useNow(); // Ticks every 30s — drives automatic live/finished status
     const { matches, tournaments, loading, updateMatch, addMatch, deleteMatch, activeSeason, changeSeason, loadMore, hasMore } = useFixture();
     const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+    const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
 
-    // --- ESTADOS DE FILTROS EN CASCADA ---
     const [filterTournament, setFilterTournament] = useState<string>('Todos');
-    const [filterCategory, setFilterCategory] = useState<string>('Primera A'); // Default: Primera A
+    const [filterCategory, setFilterCategory] = useState<string>('Primera A');
 
-    // Al cambiar la temporada (que ahora viene del hook), reseteamos los filtros hijos
     useEffect(() => {
         setFilterTournament('Todos');
-        setFilterCategory('Primera A'); // Reset a Primera A al cambiar de año
+        setFilterCategory('Primera A');
     }, [activeSeason]);
 
     useEffect(() => {
-        setFilterCategory('Primera A'); // Al cambiar torneo, intentar mantener Primera A
+        setFilterCategory('Primera A');
     }, [filterTournament]);
-
 
     const [isAddingMatch, setIsAddingMatch] = useState(false);
     const [isCustomTournament, setIsCustomTournament] = useState(false);
-
     const [newMatchData, setNewMatchData] = useState({
         tournament: '',
         date: new Date().toISOString().split('T')[0],
@@ -59,70 +270,95 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
         awayTeam: ''
     });
 
-    // --- LÓGICA DE FILTROS CASCADA ---
-
-    // 1. Años Disponibles: Lista estática
-    // 2020 eliminado por pandemia
     const availableYears = ['2026', '2025', '2024', '2023', '2022', '2021', '2019', '2018'];
 
-    // 2. Torneos Disponibles (Depende de los partidos cargados, que ya son de la temporada seleccionada)
     const availableTournaments = useMemo(() => {
-        // Los partidos ya vienen filtrados por año (o limitados) desde el hook
         const unique = new Set(matches.map(m => m.tournament).filter(Boolean));
         return ['Todos', ...Array.from(unique).sort()];
     }, [matches]);
 
-    // 3. Categorías Disponibles (Depende del Torneo seleccionado)
     const availableCategories = useMemo(() => {
         let filtered = matches;
-        if (filterTournament !== 'Todos') {
-            filtered = filtered.filter(m => m.tournament === filterTournament);
-        }
+        if (filterTournament !== 'Todos') filtered = filtered.filter(m => m.tournament === filterTournament);
         const unique = new Set(filtered.map(m => m.category).filter(Boolean));
-        const categories = Array.from(unique).sort();
-        // Asegurar que 'Todas' esté primero, seguido de las demás
-        return ['Todas', ...categories];
+        return ['Todas', ...Array.from(unique).sort()];
     }, [matches, filterTournament]);
 
-    // 4. Partidos Filtrados Finales (Solo aplicamos filtros locales de torneo y categoría)
     const filteredMatches = useMemo(() => {
         return matches.filter(m => {
             if (filterTournament !== 'Todos' && m.tournament !== filterTournament) return false;
-            // Si la categoría seleccionada es 'Todas', no filtramos. Si no, debe coincidir.
             if (filterCategory !== 'Todas' && m.category !== filterCategory) return false;
             return true;
         });
     }, [matches, filterTournament, filterCategory]);
 
-    const groupedMatches = useMemo(() => {
-        return filteredMatches.reduce((acc, match) => {
-            const key = match.date;
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(match);
-            return acc;
-        }, {} as Record<string, Match[]>);
+    // Group by round (jornada) first, then by date within each round
+    const groupedByRound = useMemo(() => {
+        const groups: Record<string, Match[]> = {};
+        filteredMatches.forEach(match => {
+            const key = match.round || match.date;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(match);
+        });
+        // Sort rounds: if they're numeric (Fecha 1, Jornada 1), sort numerically
+        return Object.entries(groups).sort(([a], [b]) => {
+            const numA = parseInt(a.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.replace(/\D/g, '')) || 0;
+            if (numA && numB) return numB - numA; // Descending (latest first)
+            return b.localeCompare(a); // Fallback: string compare descending
+        });
     }, [filteredMatches]);
 
     const availableTournamentsForCreation = useMemo(() => {
         return tournaments.filter(t => t.status === 'active');
     }, [tournaments]);
 
+    const formatRoundLabel = (key: string, matches: Match[]): { label: string; roundNum: number | null } => {
+        if (!key) return { label: 'Fecha a confirmar', roundNum: null };
+        // If key looks like a date (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+            const date = new Date(`${key}T00:00:00`);
+            const label = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                .replace(/^\w/, c => c.toUpperCase());
+            return { label, roundNum: null };
+        }
+        // Extract number from round string like "Fecha 3", "Jornada 5"
+        const numMatch = key.match(/(\d+)/);
+        const roundNum = numMatch ? parseInt(numMatch[1]) : null;
+        return { label: key, roundNum };
+    };
 
+    const toggleRound = (key: string) => {
+        setCollapsedRounds(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
 
-    const handleUpdateMatch = (id: string, field: keyof Match, value: any) => {
-        updateMatch(id, { [field]: value });
+    const handleUpdateMatch = (id: string, field: keyof Match, value: unknown) => {
+        updateMatch(id, { [field]: value } as Partial<Match>);
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("¿Estás seguro de eliminar este partido?")) {
+        if (confirm('¿Estás seguro de eliminar este partido?')) {
             await deleteMatch(id);
+        }
+    };
+
+    const handleMatchClick = (match: Match) => {
+        if (match.matchUrl) {
+            window.open(match.matchUrl, '_blank');
+        } else {
+            setSelectedMatch(match);
         }
     };
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMatchData.tournament || !newMatchData.homeTeam || !newMatchData.awayTeam) {
-            alert("Completa todos los campos obligatorios");
+            alert('Completa todos los campos obligatorios');
             return;
         }
         await addMatch({ ...newMatchData });
@@ -130,242 +366,257 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
         setNewMatchData(prev => ({ ...prev, homeTeam: '', awayTeam: '' }));
     };
 
-    const getScoreStyle = (scoreHome: number | '', scoreAway: number | '', isHome: boolean) => {
-        if (scoreHome === '' || scoreAway === '') return 'text-slate-300';
-        const home = Number(scoreHome);
-        const away = Number(scoreAway);
-        if (isHome) return home > away ? 'text-green-400 font-extrabold' : 'text-slate-400';
-        return away > home ? 'text-green-400 font-extrabold' : 'text-slate-400';
-    };
-
-    const formatDateFriendly = (dateString: string) => {
-        if (!dateString) return 'Fecha a confirmar';
-        const date = new Date(`${dateString}T00:00:00`);
-        const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-        return date.toLocaleDateString('es-AR', options).replace(/^\w/, (c) => c.toUpperCase());
-    };
-
     return (
         <div className="w-full flex-grow flex flex-col bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mt-8 shadow-2xl">
-            {/* Sticky Header */}
-            <div className="sticky top-0 bg-slate-800 border-b border-slate-700 shadow-xl z-20">
-                <div className="p-4 pb-2">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                            <CalendarIcon className="h-6 w-6 text-cyan-400" />
-                            <h1 className="text-xl font-bold text-white tracking-wide">FIXTURE</h1>
-                        </div>
+
+            {/* ── Sticky Header ── */}
+            <div className="sticky top-0 z-20 bg-slate-900 border-b border-slate-700 shadow-xl">
+
+                {/* Title Bar */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-5 w-5 text-cyan-400" />
+                        <h1 className="text-base font-black text-white tracking-widest uppercase">Fixture</h1>
+                        <span className="text-[10px] font-bold text-slate-600 border border-slate-700 px-1.5 rounded">
+                            {activeSeason}
+                        </span>
+                    </div>
+                    {isAdmin && (
                         <div className="flex items-center gap-2">
-                            {isAdmin && (
-                                <>
-                                    <button onClick={() => setIsAddingMatch(true)} className="p-2 bg-cyan-600 rounded-lg text-white">
-                                        <PlusIcon className="h-5 w-5" />
-                                    </button>
-                                    <button onClick={() => setIsEditMode(!isEditMode)} className={`p-2 rounded-lg ${isEditMode ? 'bg-green-600 text-white' : 'bg-slate-700 text-cyan-400'}`}>
-                                        {isEditMode ? <CheckIcon className="h-5 w-5" /> : <PencilIcon className="h-5 w-5" />}
-                                    </button>
-                                </>
-                            )}
+                            <button
+                                onClick={() => setIsAddingMatch(true)}
+                                className="p-1.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white transition-colors"
+                                title="Agregar partido"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => setIsEditMode(!isEditMode)}
+                                className={`p-1.5 rounded-lg transition-colors ${isEditMode ? 'bg-green-600 text-white' : 'bg-slate-700 text-cyan-400 hover:bg-slate-600'}`}
+                                title={isEditMode ? 'Guardar' : 'Editar resultados'}
+                            >
+                                {isEditMode ? <CheckIcon className="h-4 w-4" /> : <PencilIcon className="h-4 w-4" />}
+                            </button>
                         </div>
-                    </div>
-
-                    {/* --- FILTROS INTUITIVOS --- */}
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700 mb-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 mb-2 block tracking-wider">Filtrar por:</span>
-                        <div className="grid grid-cols-3 gap-2">
-
-                            {/* 1. Año / Temporada */}
-                            <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-400 mb-1 ml-1">Periodo</label>
-                                <select
-                                    value={activeSeason}
-                                    onChange={(e) => changeSeason(e.target.value)}
-                                    className="w-full bg-slate-800 text-white text-xs font-bold py-2 px-2 rounded-lg border border-slate-600 focus:border-cyan-500 outline-none"
-                                >
-                                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                            </div>
-
-                            {/* 2. Torneo */}
-                            <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-400 mb-1 ml-1">Torneo</label>
-                                <select
-                                    value={filterTournament}
-                                    onChange={(e) => setFilterTournament(e.target.value)}
-                                    className="w-full bg-slate-800 text-white text-xs font-bold py-2 px-2 rounded-lg border border-slate-600 focus:border-cyan-500 outline-none truncate"
-                                    disabled={availableTournaments.length <= 1 && availableTournaments[0] === 'Todos'}
-                                >
-                                    {availableTournaments.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                            </div>
-
-                            {/* 3. Categoría */}
-                            <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-400 mb-1 ml-1">Categoría</label>
-                                <select
-                                    value={filterCategory}
-                                    onChange={(e) => setFilterCategory(e.target.value)}
-                                    className="w-full bg-slate-800 text-white text-xs font-bold py-2 px-2 rounded-lg border border-slate-600 focus:border-cyan-500 outline-none truncate"
-                                >
-                                    {/* Muestra las categorías disponibles. Si 'Primera A' no está en los datos filtrados, aparecerá en el select pero podría no mostrar partidos */}
-                                    {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
-            </div>
 
-            {/* Listado de Partidos */}
-            <div className="flex-grow p-2 sm:p-4 max-w-3xl mx-auto w-full space-y-6">
+                {/* Filter Bar */}
+                <div className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
+                    <select
+                        value={activeSeason}
+                        onChange={(e) => changeSeason(e.target.value)}
+                        className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0"
+                    >
+                        {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+
+                    <select
+                        value={filterTournament}
+                        onChange={(e) => setFilterTournament(e.target.value)}
+                        disabled={availableTournaments.length <= 1}
+                        className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[140px] truncate disabled:opacity-50"
+                    >
+                        {availableTournaments.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+
+                    <select
+                        value={filterCategory}
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                        className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[120px] truncate"
+                    >
+                        {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+
                 {isEditMode && (
-                    <div className="bg-cyan-900/20 border border-cyan-500/30 p-3 rounded-lg text-cyan-200 text-xs text-center">
-                        ✏️ Modo Edición: Cambios se guardan automáticamente.
+                    <div className="px-3 py-1.5 bg-cyan-900/20 border-t border-cyan-800/30 text-cyan-400 text-[10px] font-bold uppercase tracking-wider text-center">
+                        ✏️ Modo edición activo — cambios se guardan automáticamente
                     </div>
                 )}
+            </div>
 
+            {/* ── Content ── */}
+            <div className="flex-grow overflow-y-auto">
                 {loading && matches.length === 0 ? (
                     <div className="flex justify-center py-20"><Loader /></div>
                 ) : matches.length === 0 ? (
-                    <div className="text-center text-slate-500 py-10">No hay partidos cargados para {activeSeason}.</div>
-                ) : Object.keys(groupedMatches).length === 0 ? (
-                    <div className="text-center text-slate-500 py-10">No hay partidos con estos filtros.</div>
+                    <div className="text-center text-slate-500 py-16">
+                        <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p>No hay partidos para {activeSeason}</p>
+                    </div>
+                ) : groupedByRound.length === 0 ? (
+                    <div className="text-center text-slate-500 py-12">No hay partidos con estos filtros.</div>
                 ) : (
-                    Object.entries(groupedMatches).map(([dateKey, groupMatches]) => (
-                        <div key={dateKey} className="rounded-xl overflow-hidden border border-slate-700 shadow-lg bg-slate-900">
-                            {/* Date Header */}
-                            <div className="bg-slate-800/80 backdrop-blur-sm p-2 sm:p-3 border-b border-slate-700 flex justify-between items-center sticky top-0 z-10">
-                                <span className="font-bold text-cyan-400 text-xs sm:text-sm uppercase tracking-wider pl-1">
-                                    {formatDateFriendly(dateKey)}
-                                </span>
-                            </div>
+                    <div>
+                        {groupedByRound.map(([roundKey, roundMatches]) => {
+                            const isCollapsed = collapsedRounds.has(roundKey);
+                            const { label, roundNum } = formatRoundLabel(roundKey, roundMatches);
 
-                            <div className="divide-y divide-slate-800">
-                                {(groupMatches as Match[]).map(match => (
-                                    <div key={match.id} className={`flex flex-col p-3 transition-colors relative ${isEditMode ? 'bg-slate-800/30' : 'hover:bg-slate-800/30'}`}>
+                            return (
+                                <div key={roundKey} className="border-b border-slate-800">
+                                    <RoundHeader
+                                        label={label}
+                                        count={roundMatches.length}
+                                        isCollapsed={isCollapsed}
+                                        onToggle={() => toggleRound(roundKey)}
+                                        roundNumber={roundNum}
+                                    />
 
-                                        {/* Metadata Row: Category | Round | Location | Time */}
-                                        <div className="flex justify-between items-center mb-2 text-[10px] text-slate-500 uppercase font-bold tracking-wide">
-                                            <div className="flex gap-2 items-center flex-wrap">
-                                                {match.category && <span className="text-cyan-600 bg-cyan-900/10 px-1.5 rounded">{match.category}</span>}
-                                                {match.round && <span className="text-slate-400">{match.round}</span>}
-                                                {match.stageGroup && <span className="text-slate-500 border border-slate-700 px-1 rounded">Gr. {match.stageGroup}</span>}
-                                                {/* Show tournament name if viewing 'Todos' to clarify context */}
-                                                {filterTournament === 'Todos' && <span className="text-slate-600 border-l border-slate-700 pl-2">{match.tournament}</span>}
-                                            </div>
+                                    {!isCollapsed && (
+                                        <div>
+                                            {/* Sub-group by date if round contains multiple dates */}
+                                            {(() => {
+                                                const byDate: Record<string, Match[]> = {};
+                                                roundMatches.forEach(m => {
+                                                    if (!byDate[m.date]) byDate[m.date] = [];
+                                                    byDate[m.date].push(m);
+                                                });
+                                                const dates = Object.keys(byDate).sort().reverse();
+                                                const showDateSub = dates.length > 1;
 
-                                            <div className="flex items-center gap-3">
-                                                {/* Time */}
-                                                <div className="flex items-center gap-1 text-slate-400">
-                                                    <ClockIcon className="h-3 w-3" />
-                                                    <span>{match.time}</span>
-                                                </div>
-
-                                                {/* Location */}
-                                                {match.location && (
-                                                    <div className="flex items-center gap-1 text-slate-500 max-w-[80px] sm:max-w-[120px] truncate">
-                                                        <LocationIcon className="h-3 w-3" />
-                                                        <span className="truncate">{match.location}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Conditional Render: Rest Date (Fecha Libre) OR Normal Match */}
-                                        {match.isRest ? (
-                                            <div className="flex items-center justify-center gap-4 py-2 relative">
-                                                <TeamLogo teamName={match.homeTeam} className="h-10 w-10 opacity-80" />
-                                                <div className="text-center">
-                                                    <span className="block font-bold text-slate-300 text-sm mb-1">{match.homeTeam}</span>
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 border border-slate-700 px-2 py-1 rounded bg-slate-800">
-                                                        Fecha Libre
-                                                    </span>
-                                                </div>
-                                                {isEditMode && (
-                                                    <button onClick={() => handleDelete(match.id)} className="absolute right-0 bg-red-900/30 text-red-400 p-2 rounded-lg hover:bg-red-900/50">
-                                                        <TrashIcon className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-between">
-
-                                                {/* Home */}
-                                                <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                                                    <span className={`font-semibold ${getScoreStyle(match.scoreHome, match.scoreAway, true)} text-xs sm:text-sm leading-tight`}>
-                                                        {match.homeTeam}
-                                                    </span>
-                                                    <TeamLogo teamName={match.homeTeam} className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0" />
-                                                </div>
-
-                                                {/* Center Info */}
-                                                <div className="w-24 sm:w-32 flex flex-col items-center justify-center px-1 relative">
-                                                    {isEditMode ? (
-                                                        <div className="flex flex-col gap-1 w-full z-20">
-                                                            <div className="flex justify-center gap-1">
-                                                                <input type="number" value={match.scoreHome} onChange={(e) => handleUpdateMatch(match.id, 'scoreHome', e.target.value)} className="w-8 h-8 bg-slate-800 text-center text-white font-bold border border-slate-600 rounded text-sm" />
-                                                                <input type="number" value={match.scoreAway} onChange={(e) => handleUpdateMatch(match.id, 'scoreAway', e.target.value)} className="w-8 h-8 bg-slate-800 text-center text-white font-bold border border-slate-600 rounded text-sm" />
+                                                return dates.map(date => (
+                                                    <div key={date}>
+                                                        {showDateSub && (
+                                                            <div className="px-4 py-1 bg-slate-800/30 border-b border-slate-800">
+                                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                                                    {new Date(`${date}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/^\w/, c => c.toUpperCase())}
+                                                                </span>
                                                             </div>
-                                                            <input type="text" placeholder="Video URL" value={match.matchUrl || ''} onChange={(e) => handleUpdateMatch(match.id, 'matchUrl', e.target.value)} className="w-full bg-slate-800 text-[10px] text-white border border-slate-600 rounded px-1" />
-                                                            <button onClick={() => handleDelete(match.id)} className="bg-red-600 text-white text-[10px] rounded px-1 mt-1">Borrar</button>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            {match.scoreHome !== '' && match.scoreAway !== '' ? (
-                                                                <div className="flex items-center justify-center gap-2 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
-                                                                    <span className={`text-xl font-black ${getScoreStyle(match.scoreHome, match.scoreAway, true)}`}>{match.scoreHome}</span>
-                                                                    <span className="text-slate-600 text-[10px] font-bold">-</span>
-                                                                    <span className={`text-xl font-black ${getScoreStyle(match.scoreHome, match.scoreAway, false)}`}>{match.scoreAway}</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="text-cyan-400 font-bold text-sm bg-slate-800/50 px-2 rounded border border-slate-700">{match.time}</div>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </div>
+                                                        )}
+                                                        {byDate[date].map((match, idx) => (
+                                                            <MatchRow
+                                                                key={match.id}
+                                                                match={match}
+                                                                isEven={idx % 2 === 0}
+                                                                isEditMode={isEditMode}
+                                                                now={now}
+                                                                onUpdate={handleUpdateMatch}
+                                                                onDelete={handleDelete}
+                                                                onClick={handleMatchClick}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
 
-                                                {/* Away */}
-                                                <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                                                    <TeamLogo teamName={match.awayTeam} className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0" />
-                                                    <span className={`font-semibold ${getScoreStyle(match.scoreHome, match.scoreAway, false)} text-xs sm:text-sm leading-tight`}>
-                                                        {match.awayTeam}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                        {/* Load More */}
+                        {hasMore && !loading && (
+                            <div className="flex justify-center py-5">
+                                <button
+                                    onClick={loadMore}
+                                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold py-2 px-6 rounded-full border border-slate-700 transition-all text-sm"
+                                >
+                                    <PlusIcon className="h-4 w-4" /> Cargar más fechas
+                                </button>
                             </div>
-                        </div>
-                    ))
-                )}
-
-                {/* Load More Button */}
-                {hasMore && !loading && matches.length > 0 && (
-                    <div className="flex justify-center pt-4 pb-8">
-                        <button
-                            onClick={loadMore}
-                            className="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold py-2 px-6 rounded-full border border-slate-600 transition-all shadow-lg flex items-center gap-2"
-                        >
-                            <PlusIcon className="h-4 w-4" /> Cargar más partidos
-                        </button>
+                        )}
+                        {loading && matches.length > 0 && (
+                            <div className="flex justify-center py-4"><Loader /></div>
+                        )}
+                        <div className="h-16" />
                     </div>
                 )}
-
-                {loading && matches.length > 0 && (
-                    <div className="flex justify-center py-4"><Loader /></div>
-                )}
-
-                <div className="h-12"></div>
             </div>
 
-            {/* Add Match Modal */}
+            {/* ── Match Detail Modal ── */}
+            {selectedMatch && (
+                <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in" onClick={() => setSelectedMatch(null)}>
+                    <div
+                        className="bg-slate-900 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-slate-700 shadow-2xl overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Handle */}
+                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                            <div className="w-10 h-1 bg-slate-700 rounded-full"></div>
+                        </div>
+
+                        {/* Match Header */}
+                        <div className="p-5 border-b border-slate-800">
+                            <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                    <StatusBadge match={selectedMatch} now={now} />
+                                    {selectedMatch.category && (
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">{selectedMatch.category}</span>
+                                    )}
+                                </div>
+                                <button onClick={() => setSelectedMatch(null)} className="text-slate-500 hover:text-white p-1">
+                                    <XIcon className="h-5 w-5" />
+                                </button>
+                            </div>
+                            {selectedMatch.round && (
+                                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-3">{selectedMatch.round}</p>
+                            )}
+
+                            {/* Teams */}
+                            <div className="flex items-center justify-between mt-4 gap-2">
+                                <div className="flex-1 flex flex-col items-center gap-2 text-center">
+                                    <TeamLogo teamName={selectedMatch.homeTeam} className="h-14 w-14" />
+                                    <span className="text-sm font-bold text-white leading-tight">{selectedMatch.homeTeam}</span>
+                                </div>
+
+                                <div className="flex flex-col items-center gap-1 px-4">
+                                    <ScoreDisplay match={selectedMatch} />
+                                    {selectedMatch.location && (
+                                        <span className="text-[10px] text-slate-600 text-center">{selectedMatch.location}</span>
+                                    )}
+                                </div>
+
+                                <div className="flex-1 flex flex-col items-center gap-2 text-center">
+                                    <TeamLogo teamName={selectedMatch.awayTeam} className="h-14 w-14" />
+                                    <span className="text-sm font-bold text-white leading-tight">{selectedMatch.awayTeam}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Meta Info */}
+                        <div className="px-5 py-4 space-y-2">
+                            <div className="flex justify-between text-xs text-slate-500">
+                                <span>📅 Fecha</span>
+                                <span className="text-slate-300 font-medium">
+                                    {new Date(`${selectedMatch.date}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-xs text-slate-500">
+                                <span>🕐 Hora</span>
+                                <span className="text-slate-300 font-medium">{selectedMatch.time}hs</span>
+                            </div>
+                            {selectedMatch.tournament && (
+                                <div className="flex justify-between text-xs text-slate-500">
+                                    <span>🏆 Torneo</span>
+                                    <span className="text-slate-300 font-medium">{selectedMatch.tournament}</span>
+                                </div>
+                            )}
+                            {selectedMatch.matchUrl && (
+                                <a
+                                    href={selectedMatch.matchUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-3 w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 rounded-lg text-sm transition-colors"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    📹 Ver partido
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Add Match Modal ── */}
             {isAddingMatch && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4">
-                    <div className="bg-slate-800 rounded-xl w-full max-w-md p-6 border border-slate-700">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-white">Nuevo Partido</h2>
-                            <button onClick={() => setIsAddingMatch(false)} className="text-slate-400 hover:text-white"><XIcon /></button>
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
+                    <div className="bg-slate-800 rounded-xl w-full max-w-md p-6 border border-slate-700 shadow-2xl">
+                        <div className="flex justify-between items-center mb-5">
+                            <h2 className="text-lg font-bold text-white">Nuevo Partido</h2>
+                            <button onClick={() => setIsAddingMatch(false)} className="text-slate-400 hover:text-white">
+                                <XIcon />
+                            </button>
                         </div>
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div>
@@ -375,48 +626,50 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isOpen, onClose, isAdmin }) =
                                         value={newMatchData.tournament}
                                         onChange={(e) => {
                                             if (e.target.value === 'custom') { setIsCustomTournament(true); setNewMatchData(p => ({ ...p, tournament: '' })); }
-                                            else { setIsCustomTournament(false); setNewMatchData(p => ({ ...p, tournament: e.target.value })); }
+                                            else { setNewMatchData(p => ({ ...p, tournament: e.target.value })); }
                                         }}
-                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none"
+                                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white outline-none focus:border-cyan-500"
                                     >
                                         <option value="">Seleccionar...</option>
                                         {availableTournamentsForCreation.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                                        <option value="custom" className="text-cyan-400">+ Otro</option>
+                                        <option value="custom" className="text-cyan-400">+ Otro torneo</option>
                                     </select>
                                 ) : (
                                     <div className="flex gap-2">
-                                        <input type="text" value={newMatchData.tournament} onChange={e => setNewMatchData({ ...newMatchData, tournament: e.target.value })} placeholder="Nombre del torneo" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" autoFocus />
-                                        <button type="button" onClick={() => setIsCustomTournament(false)} className="px-3 bg-slate-700 rounded text-slate-300">Cancelar</button>
+                                        <input type="text" value={newMatchData.tournament} onChange={e => setNewMatchData({ ...newMatchData, tournament: e.target.value })} placeholder="Nombre del torneo" className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none" autoFocus />
+                                        <button type="button" onClick={() => setIsCustomTournament(false)} className="px-3 bg-slate-700 rounded-lg text-slate-300 text-sm">✕</button>
                                     </div>
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha</label>
-                                    <input type="date" value={newMatchData.date} onChange={e => setNewMatchData({ ...newMatchData, date: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
+                                    <input type="date" value={newMatchData.date} onChange={e => setNewMatchData({ ...newMatchData, date: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hora</label>
-                                    <input type="time" value={newMatchData.time} onChange={e => setNewMatchData({ ...newMatchData, time: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
+                                    <input type="time" value={newMatchData.time} onChange={e => setNewMatchData({ ...newMatchData, time: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Local</label>
-                                    <select value={newMatchData.homeTeam} onChange={e => setNewMatchData({ ...newMatchData, homeTeam: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                                    <select value={newMatchData.homeTeam} onChange={e => setNewMatchData({ ...newMatchData, homeTeam: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none">
                                         <option value="">Elegir...</option>
                                         {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Visitante</label>
-                                    <select value={newMatchData.awayTeam} onChange={e => setNewMatchData({ ...newMatchData, awayTeam: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                                    <select value={newMatchData.awayTeam} onChange={e => setNewMatchData({ ...newMatchData, awayTeam: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:border-cyan-500 outline-none">
                                         <option value="">Elegir...</option>
                                         {TEAMS_CONFIG.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 rounded-lg mt-2">Crear Partido</button>
+                            <button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg text-sm transition-colors mt-2">
+                                ✅ Crear Partido
+                            </button>
                         </form>
                     </div>
                 </div>

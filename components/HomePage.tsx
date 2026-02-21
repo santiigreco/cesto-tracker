@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { RosterPlayer } from '../types';
+import { useNavigate } from 'react-router-dom';
 import PhoneMockup from './PhoneMockup';
 import { FeatureMapIcon } from './icons';
 import { FeatureTrophyIcon } from './icons';
@@ -14,7 +15,6 @@ import { CalendarIcon } from './icons';
 import UserProfileModal from './UserProfileModal';
 import { supabase } from '../utils/supabaseClient';
 import { useProfile } from '../hooks/useProfile';
-import FixtureView from './FixtureView';
 import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
@@ -91,9 +91,9 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame }) => {
+    const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [isFixtureOpen, setIsFixtureOpen] = useState(false);
 
     // New state for direct team selection flow
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
@@ -110,7 +110,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     };
 
     const handleFixtureClick = () => {
-        setIsFixtureOpen(true);
+        navigate('/fixture');
     };
 
     const handleStartClick = () => {
@@ -359,13 +359,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 />
             )}
 
-            {isFixtureOpen && (
-                <FixtureView
-                    isOpen={isFixtureOpen}
-                    onClose={() => setIsFixtureOpen(false)}
-                    isAdmin={canEditFixture ? true : false}
-                />
-            )}
 
             {isTeamSelectorOpen && (
                 <TeamSelectorModal
