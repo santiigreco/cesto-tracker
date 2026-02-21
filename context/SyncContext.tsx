@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import { useGameContext } from './GameContext';
+import { useGameContext, initialPlayerTally, initialGameState } from './GameContext';
 import { useUI } from './UIContext';
 import { GamePeriod } from '../types';
 
@@ -24,7 +24,7 @@ interface SyncContextType {
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
 
 export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { gameState, setGameState, initialPlayerTally, initialGameState } = useGameContext();
+    const { gameState, setGameState } = useGameContext();
     const { showToast } = useUI();
     const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' });
     const [isAutoSaving, setIsAutoSaving] = useState(false);

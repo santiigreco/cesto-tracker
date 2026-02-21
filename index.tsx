@@ -19,11 +19,11 @@ root.render(
     <BrowserRouter>
       <AuthProvider>
         <GameProvider>
-          <SyncProvider>
-            <UIProvider>
+          <UIProvider>
+            <SyncProvider>
               <App />
-            </UIProvider>
-          </SyncProvider>
+            </SyncProvider>
+          </UIProvider>
         </GameProvider>
       </AuthProvider>
     </BrowserRouter>
