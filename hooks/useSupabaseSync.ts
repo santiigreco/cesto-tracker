@@ -125,7 +125,7 @@ export const useSupabaseSync = () => {
         }
     }, [gameState, setGameState]);
 
-    const handleLoadGame = async (gameId: string, enableEditing: boolean = false) => {
+    const handleLoadGame = async (gameId: string, enableEditing: boolean = false): Promise<string | null> => {
         setIsLoading(true);
         try {
             const [gameRes, shotsRes, tallyRes] = await Promise.all([
@@ -168,10 +168,12 @@ export const useSupabaseSync = () => {
                 tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
             };
 
+            const loadedGameMode: string = gameData.game_mode;
+
             const loadedGameState: GameState = {
                 ...initialGameState,
                 gameId: gameData.id,
-                gameMode: gameData.game_mode,
+                gameMode: loadedGameMode as GameState['gameMode'],
                 isSetupComplete: true,
                 hasSeenHomepage: true,
                 settings: enrichedSettings,
@@ -191,9 +193,11 @@ export const useSupabaseSync = () => {
             // If loaded for editing, set lastSaved to now to start clean
             if (enableEditing) setLastSaved(new Date());
 
+            return loadedGameMode;
+
         } catch (error: any) {
             console.error('Error loading game:', error);
-            alert(`No se pudo cargar el partido: ${error.message}`);
+            throw error; // Let the caller handle the UI notification
         } finally {
             setIsLoading(false);
         }

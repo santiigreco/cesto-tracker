@@ -35,12 +35,24 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const isAutoSave = (typeof gameNameInput === 'boolean') ? gameNameInput : (isAutoSaveInput === true);
 
         // Build a standardized game name: "Equipo vs Rival · DD MMM YYYY"
-        const myTeam = gameState.settings.myTeam?.trim() || 'Mi Equipo';
+        const myTeam = gameState.settings.myTeam?.trim() || '';
         const rival = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
             ? gameNameInput.trim()
-            : (gameState.settings.gameName?.trim() || 'Rival');
+            : (gameState.settings.gameName?.trim() || '');
         const dateStr = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-        const gameName = `${myTeam} vs ${rival} · ${dateStr}`;
+
+        // Build the label only with what's available — no placeholder fallbacks
+        let gameNameLabel: string;
+        if (myTeam && rival) {
+            gameNameLabel = `${myTeam} vs ${rival}`;
+        } else if (myTeam) {
+            gameNameLabel = myTeam;
+        } else if (rival) {
+            gameNameLabel = `vs ${rival}`;
+        } else {
+            gameNameLabel = 'Partido';
+        }
+        const gameName = `${gameNameLabel} · ${dateStr}`;
 
         if (isAutoSave) {
             setIsAutoSaving(true);

@@ -39,14 +39,7 @@ interface AppModalsProps {
 import { useSync } from '../context/SyncContext';
 
 const AppModals: React.FC<AppModalsProps> = (props) => {
-    const {
-        activeTab, setActiveTab,
-        modals, closeModal,
-        actionToAssign, setActionToAssign,
-        notificationPopup, setNotificationPopup,
-        toast,
-        handleShare
-    } = useUI();
+    const { activeTab, setActiveTab, modals, closeModal, actionToAssign, setActionToAssign, notificationPopup, setNotificationPopup, toast, handleShare, showToast } = useUI();
 
     const { user, handleLogout, handleLogin } = useAuth();
     const { gameState, setGameState } = useGameContext();
@@ -144,8 +137,13 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     onClose={() => closeModal('loadGame')}
                     onLoadGame={async (id) => {
                         closeModal('loadGame');
-                        await handleLoadGame(id, false);
-                        setActiveTab('statistics');
+                        try {
+                            const gameMode = await handleLoadGame(id, false);
+                            // Navigate to correct tab based on mode
+                            setActiveTab(gameMode === 'stats-tally' ? 'tally' : 'logger');
+                        } catch (err: any) {
+                            showToast(`No se pudo cargar el partido: ${err.message}`, 'error');
+                        }
                     }}
                     user={user}
                 />
@@ -275,9 +273,14 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     user={user}
                     onLogout={handleLogout}
                     onLoadGame={async (id, asOwner) => {
-                        await handleLoadGame(id, asOwner);
-                        closeModal('profile');
-                        setActiveTab('logger');
+                        try {
+                            const gameMode = await handleLoadGame(id, asOwner);
+                            closeModal('profile');
+                            // Navigate to correct tab based on game mode
+                            setActiveTab(gameMode === 'stats-tally' ? 'tally' : 'logger');
+                        } catch (err: any) {
+                            showToast(`No se pudo cargar el partido: ${err.message}`, 'error');
+                        }
                     }}
                 />
             )}
