@@ -86,7 +86,7 @@ const GameMainContent: React.FC<GameMainContentProps> = (props) => {
 
     return (
         <main className="flex flex-col gap-6">
-            {gameMode === 'stats-tally' && activeTab === 'logger' && (
+            {gameMode === 'stats-tally' && (activeTab === 'logger' || activeTab === 'tally') && (
                 <>
                     <div className="flex flex-col gap-6">
 
