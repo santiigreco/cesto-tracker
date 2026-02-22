@@ -34,5 +34,9 @@ export const faqData = [
   {
     question: "¿Qué es el Fixture?",
     answer: "El Fixture muestra el calendario oficial de partidos de la temporada. Podés ver las fechas, horarios y resultados de todos los equipos. Si iniciás sesión, podés vincular tu planilla directamente con el partido del fixture para que quede registrado en el historial de la app."
+  },
+  {
+    question: "¿Cómo puedo colaborar con el proyecto?",
+    answer: "¡Hay muchas formas de sumarte! Podés colaborar como <strong>administrador</strong> cargando fixtures y resultados oficiales, o aportando <strong>ideas y feedback</strong> para que sigamos mejorando. Cesto Tracker crece gracias al aporte de toda la comunidad."
   }
 ];

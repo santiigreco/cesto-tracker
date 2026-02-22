@@ -10,8 +10,7 @@ import { ChevronDownIcon } from './icons';
 import { WhatsappIcon } from './icons';
 import { faqData } from './faqData';
 import { GoogleIcon } from './icons';
-import { UsersIcon } from './icons';
-import { CalendarIcon } from './icons';
+import { UsersIcon, CalendarIcon, CoffeeIcon } from './icons';
 import UserProfileModal from './UserProfileModal';
 import { supabase } from '../utils/supabaseClient';
 import { useProfile } from '../hooks/useProfile';
@@ -626,12 +625,15 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             Cesto Tracker es un proyecto independiente desarrollado para jerarquizar el deporte.
                             Sin sponsors ni publicidades, solo código y pasión. Si te sirve el proyecto, ¡compartilo en tu club!
                         </p>
-                        <div className="flex justify-center gap-6">
+                        <div className="flex flex-wrap justify-center gap-6">
+                            <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Quiero%20sumarme%20para%20ayudar%20a%20administrar%20fixtures..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                                <span>🛠️</span> Sumate como Admin
+                            </a>
+                            <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20idea%20o%20comentario%20sobre%20la%20app..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                                <WhatsappIcon className="h-4 w-4" /> Ideas & Feedback
+                            </a>
                             <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
                                 <InstagramIcon className="h-4 w-4" /> Instagram
-                            </a>
-                            <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Te%20escribo%20porque%20me%20encant%C3%B3%20la%20app..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
-                                <WhatsappIcon className="h-4 w-4" /> Feedback
                             </a>
                         </div>
                     </div>
