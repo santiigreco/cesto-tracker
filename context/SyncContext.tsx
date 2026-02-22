@@ -77,6 +77,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 tournament_id: gameState.settings.tournamentId || null,
                 my_team_name: gameState.settings.myTeam || null,
                 opponent_name: gameName.trim(),
+                fixture_id: gameState.settings.fixture_id || null,
                 user_id: user.id,
             };
 

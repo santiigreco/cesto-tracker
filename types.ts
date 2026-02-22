@@ -32,6 +32,7 @@ export interface Settings {
   myTeam?: string;
   tournamentId?: string; // ID del torneo en base de datos
   tournamentName?: string; // Nombre para mostrar en UI
+  fixture_id?: string | null; // Vincula el partido al fixture oficial
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
   isManoFriaEnabled: boolean;

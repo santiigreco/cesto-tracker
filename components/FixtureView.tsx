@@ -119,7 +119,8 @@ const MatchRow: React.FC<{
     onUpdate: (id: string, field: keyof Match, value: unknown) => void;
     onDelete: (id: string) => void;
     onClick: (match: Match) => void;
-}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick }) => {
+    linkedGameId?: string;
+}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick, linkedGameId }) => {
     const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
     const homeWon = hasScore && Number(match.scoreHome) > Number(match.scoreAway);
     const awayWon = hasScore && Number(match.scoreAway) > Number(match.scoreHome);
@@ -212,6 +213,19 @@ const MatchRow: React.FC<{
                     </svg>
                 </div>
             )}
+
+            {/* Linked game stats button */}
+            {!isEditMode && linkedGameId && (
+                <a
+                    href={`/match/${linkedGameId}`}
+                    onClick={e => e.stopPropagation()}
+                    className="flex-shrink-0 flex items-center gap-1 bg-cyan-900/30 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                    title="Ver estadísticas del partido"
+                >
+                    <span>📊</span>
+                    <span className="hidden sm:inline">Stats</span>
+                </a>
+            )}
         </div>
     );
 };
@@ -250,6 +264,28 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
     const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
+    const [linkedGamesMap, setLinkedGamesMap] = useState<Record<string, string>>({}); // fixture_id -> game_id
+
+    // Fetch all games that have a fixture_id so we can show 'Ver Estadísticas'
+    useEffect(() => {
+        let cancelled = false;
+        import('../utils/supabaseClient').then(({ supabase }) => {
+            supabase
+                .from('games')
+                .select('id, fixture_id')
+                .not('fixture_id', 'is', null)
+                .then(({ data }) => {
+                    if (!cancelled && data) {
+                        const map: Record<string, string> = {};
+                        data.forEach((g: { id: string; fixture_id: string }) => {
+                            map[g.fixture_id] = g.id;
+                        });
+                        setLinkedGamesMap(map);
+                    }
+                });
+        });
+        return () => { cancelled = true; };
+    }, []);
 
     // Local filter state (synced from URL)
     const [filterTournament, setFilterTournament] = useState<string>('Todos');
@@ -614,6 +650,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                                                             onUpdate={handleUpdateMatch}
                                                                             onDelete={handleDelete}
                                                                             onClick={handleMatchClick}
+                                                                            linkedGameId={linkedGamesMap[match.id]}
                                                                         />
                                                                     ))}
                                                                 </div>

@@ -10,6 +10,7 @@ import TeamSelectorModal from './TeamSelectorModal';
 import TournamentSelectorModal from './TournamentSelectorModal';
 import TeamRosterModal from './TeamRosterModal';
 import { supabase } from '../utils/supabaseClient';
+import { useFixtureSuggestion } from '../hooks/useFixtureSuggestion';
 
 const LAST_TEAM_STORAGE_KEY = 'cesto_last_team_setup';
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
@@ -23,6 +24,83 @@ const defaultSettings: Settings = {
     manoCalienteThreshold: 5,
     isManoFriaEnabled: true,
     manoFriaThreshold: 5,
+};
+
+// ── Fixture Suggestion Banner ─────────────────────────────────────────────────
+interface FixtureSuggestionBannerProps {
+    myTeam?: string;
+    rival?: string;
+    dismissed: boolean;
+    linked: boolean;
+    onLink: (fixtureId: string) => void;
+    onUnlink: () => void;
+    onDismiss: () => void;
+}
+
+const FixtureSuggestionBanner: React.FC<FixtureSuggestionBannerProps> = ({
+    myTeam, rival, dismissed, linked, onLink, onUnlink, onDismiss
+}) => {
+    const { suggestion, loading } = useFixtureSuggestion(myTeam, rival);
+
+    if (!myTeam || !rival || dismissed || loading || !suggestion) return null;
+
+    const matchDate = new Date(`${suggestion.date}T00:00:00`);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((matchDate.getTime() - today.getTime()) / 86_400_000);
+    const dayLabel = diffDays === 0 ? 'HOY' : diffDays === 1 ? 'MAÑANA'
+        : diffDays < 0 ? `hace ${Math.abs(diffDays)}d`
+            : matchDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+
+    if (linked) {
+        return (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-2">
+                <span className="text-lg shrink-0">🔗</span>
+                <div className="flex-grow min-w-0">
+                    <p className="text-xs font-black text-emerald-400 uppercase tracking-wider">Vinculado al fixture</p>
+                    <p className="text-sm text-white font-bold truncate">
+                        {suggestion.homeTeam} vs {suggestion.awayTeam}
+                        {suggestion.round ? ` · ${suggestion.round}` : ''}
+                    </p>
+                </div>
+                <button
+                    onClick={onUnlink}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline shrink-0"
+                >
+                    Desvincular
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 mb-2">
+            <span className="text-lg shrink-0">📅</span>
+            <div className="flex-grow min-w-0">
+                <p className="text-[10px] font-black text-cyan-400 uppercase tracking-wider">
+                    Partido encontrado en fixture · {dayLabel}{suggestion.time ? ` · ${suggestion.time}hs` : ''}
+                </p>
+                <p className="text-sm text-white font-bold truncate">
+                    {suggestion.homeTeam} vs {suggestion.awayTeam}
+                    {suggestion.round ? ` · ${suggestion.round}` : ''}
+                </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+                <button
+                    onClick={() => onLink(suggestion.id)}
+                    className="text-xs font-black bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                >
+                    Vincular
+                </button>
+                <button
+                    onClick={onDismiss}
+                    className="text-slate-500 hover:text-slate-300 text-lg leading-none"
+                    aria-label="Ignorar"
+                >
+                    ✕
+                </button>
+            </div>
+        </div>
+    );
 };
 
 interface PlayerSetupProps {
@@ -92,6 +170,8 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
         } catch (e) { /* ignore */ }
         return initialSettings;
     });
+    const [fixtureLinked, setFixtureLinked] = useState(false); // User confirmed the fixture link
+    const [fixtureDismissed, setFixtureDismissed] = useState(false);
 
     // Force default tournament if not set (fixing the issue where previous state might have empty tournament)
     useEffect(() => {
@@ -300,6 +380,23 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         </button>
                     </div>
                 </div>
+
+                {/* ── Fixture Suggestion Banner ── */}
+                <FixtureSuggestionBanner
+                    myTeam={settings.myTeam}
+                    rival={settings.gameName}
+                    dismissed={fixtureDismissed}
+                    linked={fixtureLinked}
+                    onLink={(fixtureId) => {
+                        setSettings(prev => ({ ...prev, fixture_id: fixtureId }));
+                        setFixtureLinked(true);
+                    }}
+                    onUnlink={() => {
+                        setSettings(prev => ({ ...prev, fixture_id: null }));
+                        setFixtureLinked(false);
+                    }}
+                    onDismiss={() => setFixtureDismissed(true)}
+                />
 
                 {/* Player Selection - Express Mode */}
                 <div className="mb-8">
