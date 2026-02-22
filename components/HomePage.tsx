@@ -19,6 +19,7 @@ import InstallApp from './InstallApp';
 import TeamSelectorModal from './TeamSelectorModal';
 import TeamLogo from './TeamLogo';
 import { useNextMatch } from '../hooks/useNextMatch';
+import { useCommunityStats } from '../hooks/useCommunityStats';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="currentColor">
@@ -225,7 +226,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     // New state for direct team selection flow
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
-
+    const communityStats = useCommunityStats();
     const { profile } = useProfile();
     // Permissions: use DB-sourced is_admin
     const isOwner = user && profile?.is_admin === true;
@@ -336,7 +337,71 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 Estadísticas en vivo, mapas de calor y gestión profesional. <br className="hidden sm:block" />
                                 <span className="text-slate-200">Creado por y para la comunidad del Cesto.</span>
                             </p>
-                        </div>
+
+                            {/* ── Option C: Animated counters ── */}
+                            {communityStats.totalGames !== null && communityStats.totalGames > 0 && (
+                                <div className="flex flex-wrap gap-3 pt-2 justify-center lg:justify-start">
+                                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20">
+                                        <span className="text-xl font-black text-cyan-400 tabular-nums">
+                                            {communityStats.totalGames.toLocaleString('es-AR')}
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-bold">partidos registrados 🏐</span>
+                                    </div>
+                                    {communityStats.topTeams.length > 0 && (
+                                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                            <span className="text-xl font-black text-emerald-400">{communityStats.topTeams.length}</span>
+                                            <span className="text-xs text-slate-400 font-bold">equipos activos esta semana</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Option B: Latest registered game ── */}
+                            {communityStats.latestGame && (
+                                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-800/40 border border-slate-700/40 max-w-sm mx-auto lg:mx-0">
+                                    <span className="text-slate-500 shrink-0 text-xs">⚡ Último registro</span>
+                                    <TeamLogo teamName={communityStats.latestGame.myTeam} className="h-6 w-6 shrink-0" />
+                                    <span className="text-sm font-bold text-slate-300 truncate">
+                                        {communityStats.latestGame.myTeam}
+                                        <span className="text-slate-500 font-normal"> vs </span>
+                                        {communityStats.latestGame.opponentName}
+                                    </span>
+                                    <span className="text-[10px] text-slate-600 shrink-0 ml-auto">
+                                        {(() => {
+                                            const d = new Date(communityStats.latestGame.createdAt);
+                                            const diffH = Math.round((Date.now() - d.getTime()) / 3_600_000);
+                                            return diffH < 1 ? 'hace menos de 1h' : diffH < 24 ? `hace ${diffH}h` : `hace ${Math.round(diffH / 24)}d`;
+                                        })()}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* ── Option D: Top teams this week ── */}
+                            {communityStats.topTeams.length > 0 && (
+                                <div className="space-y-2 max-w-sm mx-auto lg:mx-0">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">🏆 Equipo más activo esta semana</p>
+                                    {communityStats.topTeams.map((team, idx) => (
+                                        <div key={team.teamName} className="flex items-center gap-3">
+                                            <span className="text-sm w-5 shrink-0 text-center">
+                                                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                                            </span>
+                                            <TeamLogo teamName={team.teamName} className="h-6 w-6 shrink-0" />
+                                            <span className="text-sm font-bold text-slate-300 flex-grow truncate">{team.teamName}</span>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <div
+                                                    className="h-1.5 bg-cyan-500/50 rounded-full"
+                                                    style={{ width: `${Math.max(24, (team.gameCount / communityStats.topTeams[0].gameCount) * 64)}px` }}
+                                                />
+                                                <span className="text-[10px] text-slate-500 font-bold w-12 text-right">
+                                                    {team.gameCount} {team.gameCount === 1 ? 'partido' : 'partidos'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                        </div>{/* end Welcome Header */}
 
                         {/* ── Next Match / Last Game Widget ── */}
                         <NextMatchWidget
@@ -545,7 +610,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                         </a>
                     </div>
                 </section>
-            </main>
+            </main >
 
             <footer className="w-full py-8 text-center text-slate-600 text-xs border-t border-slate-800 bg-slate-950">
                 <div className="flex justify-center gap-4 mb-3">
@@ -554,26 +619,30 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 <p>Santiago Greco - Gresolutions © 2026</p>
             </footer>
 
-            {user && (
-                <UserProfileModal
-                    isOpen={isProfileOpen}
-                    onClose={() => setIsProfileOpen(false)}
-                    user={user}
-                    onLogout={handleLogout}
-                    onLoadGame={onLoadGame}
-                />
-            )}
+            {
+                user && (
+                    <UserProfileModal
+                        isOpen={isProfileOpen}
+                        onClose={() => setIsProfileOpen(false)}
+                        user={user}
+                        onLogout={handleLogout}
+                        onLoadGame={onLoadGame}
+                    />
+                )
+            }
 
 
-            {isTeamSelectorOpen && (
-                <TeamSelectorModal
-                    isOpen={isTeamSelectorOpen}
-                    onClose={handleCloseTeamSelector}
-                    onSelectTeam={handleTeamSelected}
-                    currentTeam={profile?.favorite_club || ''}
-                />
-            )}
-        </div>
+            {
+                isTeamSelectorOpen && (
+                    <TeamSelectorModal
+                        isOpen={isTeamSelectorOpen}
+                        onClose={handleCloseTeamSelector}
+                        onSelectTeam={handleTeamSelected}
+                        currentTeam={profile?.favorite_club || ''}
+                    />
+                )
+            }
+        </div >
     );
 });
 
