@@ -578,45 +578,71 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 </div>
 
                 {/* FAQ SECTION */}
-                <section className="mt-24 max-w-3xl mx-auto w-full">
-                    <h2 className="text-2xl font-bold text-white mb-8 text-center">Preguntas Frecuentes</h2>
+                <section className="mt-24 max-w-3xl mx-auto w-full px-4">
+                    <h2 className="text-2xl font-black text-white mb-8 text-center uppercase tracking-tight">Preguntas Frecuentes</h2>
                     <div className="space-y-3">
-                        {faqData.slice(0, 6).map((faq, index) => (
-                            <div key={index} className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
+                        {faqData.slice(0, 5).map((faq, index) => (
+                            <div key={index} className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden transition-all hover:border-slate-600">
                                 <button
                                     onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                                    className="w-full flex justify-between items-center text-left p-4 font-medium text-slate-200 hover:bg-slate-800 transition-colors"
+                                    className="w-full flex justify-between items-center text-left p-4 font-bold text-slate-200 hover:bg-slate-800/50 transition-colors"
                                 >
-                                    <span>{faq.question}</span>
-                                    <ChevronDownIcon className={`h-5 w-5 text-slate-500 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
+                                    <span className="text-sm">{faq.question}</span>
+                                    <ChevronDownIcon className={`h-4 w-4 text-slate-500 transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
                                 </button>
                                 {openFaq === index && (
-                                    <div className="p-4 pt-0 text-sm text-slate-400 border-t border-slate-700/50 mt-2">
+                                    <div className="px-4 pb-4 text-sm text-slate-400 leading-relaxed border-t border-slate-700/30 pt-3">
                                         <div dangerouslySetInnerHTML={{ __html: faq.answer }}></div>
                                     </div>
                                 )}
                             </div>
                         ))}
                     </div>
-                    <div className="mt-8 text-center">
+                    <div className="mt-8 flex flex-col items-center gap-4">
+                        <button
+                            onClick={() => navigate('/faq')}
+                            className="text-cyan-400 hover:text-cyan-300 font-black text-xs uppercase tracking-widest bg-cyan-900/20 border border-cyan-500/20 px-6 py-3 rounded-full transition-all"
+                        >
+                            Ver FAQ Completa
+                        </button>
                         <a
                             href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20consulta..."
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-green-400 hover:text-green-300 font-semibold text-sm"
+                            className="inline-flex items-center gap-2 text-green-400 hover:text-green-300 font-bold text-xs uppercase tracking-wide"
                         >
                             <WhatsappIcon className="h-4 w-4" />
-                            Tienes dudas? Escríbeme
+                            ¿Tenés dudas? Escribinos
                         </a>
+                    </div>
+                </section>
+
+                {/* HECHO A PULMON SECTION */}
+                <section className="mt-32 max-w-2xl mx-auto px-6 text-center">
+                    <div className="p-8 rounded-[2.5rem] bg-gradient-to-b from-slate-800/40 to-transparent border border-slate-800/50">
+                        <span className="text-4xl mb-4 block">🏐❤️</span>
+                        <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tighter">Hecho a pulmón para el Cestoball</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                            Cesto Tracker es un proyecto independiente desarrollado para jerarquizar el deporte.
+                            Sin sponsors ni publicidades, solo código y pasión. Si te sirve el proyecto, ¡compartilo en tu club!
+                        </p>
+                        <div className="flex justify-center gap-6">
+                            <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                                <InstagramIcon className="h-4 w-4" /> Instagram
+                            </a>
+                            <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Te%20escribo%20porque%20me%20encant%C3%B3%20la%20app..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                                <WhatsappIcon className="h-4 w-4" /> Feedback
+                            </a>
+                        </div>
                     </div>
                 </section>
             </main >
 
-            <footer className="w-full py-8 text-center text-slate-600 text-xs border-t border-slate-800 bg-slate-950">
-                <div className="flex justify-center gap-4 mb-3">
-                    <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors" aria-label="Instagram"><InstagramIcon className="h-5 w-5" /></a>
-                </div>
-                <p>Santiago Greco - Gresolutions © 2026</p>
+            <footer className="w-full py-12 text-center border-t border-slate-800/50 bg-slate-950/50 backdrop-blur-md">
+                <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Cesto Tracker © 2026</p>
+                <p className="text-slate-500 text-[10px] items-center justify-center gap-1 hidden sm:flex">
+                    Desarrollado con pasión por <a href="https://instagram.com/gresolutions" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition-colors underline decoration-slate-700 underline-offset-4">Gresolutions</a>
+                </p>
             </footer>
 
             {

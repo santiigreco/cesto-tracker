@@ -6,6 +6,7 @@ import MatchRoute from './pages/MatchRoute';
 import FixtureRoute from './pages/FixtureRoute';
 import StandingsRoute from './pages/StandingsRoute';
 import AdminRoute from './pages/AdminRoute';
+import FaqRoute from './pages/FaqRoute';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
       <Route path="/standings/:year/:tournament/:category" element={<StandingsRoute />} />
 
       <Route path="/admin" element={<AdminRoute />} />
+      <Route path="/faq" element={<FaqRoute />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
