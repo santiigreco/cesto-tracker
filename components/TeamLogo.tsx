@@ -73,7 +73,7 @@ const Logos: Record<string, React.FC> = {
     "Hacoaj": () => (
         <ShieldShape fill="#1E3A8A"> {/* Navy Blue */}
             <circle cx="50" cy="40" r="15" stroke="white" strokeWidth="6" fill="none" />
-            <path d="M50 55 V85 M35 70 H65" stroke="white" strokeWidth="6" strokeLinecap="round"/>
+            <path d="M50 55 V85 M35 70 H65" stroke="white" strokeWidth="6" strokeLinecap="round" />
             <path d="M0 60 Q25 50 50 60 T100 60 V100 H0 Z" fill="white" />
             <path d="M0 70 Q25 60 50 70 T100 70 V100 H0 Z" fill="#3B82F6" />
         </ShieldShape>
@@ -87,7 +87,7 @@ const Logos: Record<string, React.FC> = {
     ),
     "Avellaneda": () => (
         <ShieldShape fill="#16A34A"> {/* Green Left */}
-             <rect x="50" width="50" height="100" fill="#38BDF8" /> {/* Celeste Right */}
+            <rect x="50" width="50" height="100" fill="#38BDF8" /> {/* Celeste Right */}
         </ShieldShape>
     ),
     "CEF": () => (
@@ -95,14 +95,33 @@ const Logos: Record<string, React.FC> = {
             <circle cx="50" cy="50" r="30" fill="none" stroke="white" strokeWidth="8" />
             <text x="50" y="58" fontSize="25" textAnchor="middle" fill="white" fontWeight="bold">CEF</text>
         </ShieldShape>
+    ),
+    "Lanús": () => (
+        <ShieldShape fill="#5D1B24"> {/* Granate / Brownish */}
+            <circle cx="50" cy="50" r="30" stroke="white" strokeWidth="4" fill="none" />
+            <text x="50" y="62" fontSize="30" textAnchor="middle" fill="white" fontWeight="black">L</text>
+        </ShieldShape>
     )
 };
 
 const TeamLogo: React.FC<TeamLogoProps> = ({ teamName, className = "h-12 w-12", fallbackClassName }) => {
-    // Normalize string slightly for matching (case insensitive, trim)
     const safeTeamName = teamName || '';
-    const normalizedName = Object.keys(Logos).find(key => key.toLowerCase() === safeTeamName.trim().toLowerCase());
-    
+
+    // Logic to find logo: exact match first, then check if it's a "B" team
+    const findLogoKey = (name: string) =>
+        Object.keys(Logos).find(key => key.toLowerCase() === name.trim().toLowerCase());
+
+    let normalizedName = findLogoKey(safeTeamName);
+
+    // Fallback for "Team B" -> "Team"
+    if (!normalizedName) {
+        const trimmed = safeTeamName.trim();
+        if (trimmed.toUpperCase().endsWith(' B')) {
+            const baseName = trimmed.substring(0, trimmed.length - 2).trim();
+            normalizedName = findLogoKey(baseName);
+        }
+    }
+
     const LogoComponent = normalizedName ? Logos[normalizedName] : null;
 
     if (LogoComponent) {
