@@ -120,8 +120,10 @@ const MatchRow: React.FC<{
     onUpdate: (id: string, field: keyof Match, value: unknown) => void;
     onDelete: (id: string) => void;
     onClick: (match: Match) => void;
+    onStartStats?: (match: Match) => void;
     linkedGameId?: string;
-}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick, linkedGameId }) => {
+    isAdmin?: boolean;
+}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick, onStartStats, linkedGameId, isAdmin }) => {
     const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
     const homeWon = hasScore && Number(match.scoreHome) > Number(match.scoreAway);
     const awayWon = hasScore && Number(match.scoreAway) > Number(match.scoreHome);
@@ -220,12 +222,24 @@ const MatchRow: React.FC<{
                 <a
                     href={`/match/${linkedGameId}`}
                     onClick={e => e.stopPropagation()}
-                    className="flex-shrink-0 flex items-center gap-1 bg-cyan-900/30 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                    className="flex-shrink-0 flex items-center gap-1 bg-emerald-900/30 hover:bg-emerald-900/60 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
                     title="Ver estadísticas del partido"
                 >
                     <span>📊</span>
                     <span className="hidden sm:inline">Stats</span>
                 </a>
+            )}
+
+            {/* Quick Start Stats Button */}
+            {!isEditMode && !linkedGameId && isAdmin && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onStartStats?.(match); }}
+                    className="flex-shrink-0 flex items-center gap-1 bg-cyan-900/30 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                    title="Iniciar planilla de estadísticas"
+                >
+                    <span>🗒️</span>
+                    <span className="hidden sm:inline">Planilla</span>
+                </button>
             )}
 
             {/* Tournament/Stage Info (Declarative) */}
@@ -520,6 +534,18 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         }
     };
 
+    const handleStartStats = (match: Match) => {
+        navigate('/setup', {
+            state: {
+                fixtureId: match.id,
+                teamName: match.homeTeam,
+                rivalName: match.awayTeam,
+                tournamentName: match.tournament,
+                category: match.category
+            }
+        });
+    };
+
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMatchData.tournament || !newMatchData.homeTeam || !newMatchData.awayTeam) {
@@ -693,7 +719,9 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                                                             onUpdate={handleUpdateMatch}
                                                                             onDelete={handleDelete}
                                                                             onClick={handleMatchClick}
+                                                                            onStartStats={handleStartStats}
                                                                             linkedGameId={linkedGamesMap[match.id]}
+                                                                            isAdmin={isAdmin}
                                                                         />
                                                                     ))}
                                                             </div>
@@ -789,11 +817,29 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                         href={selectedMatch.matchUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 rounded-lg text-sm transition-colors"
+                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-lg text-sm border border-slate-700 transition-colors"
                                         onClick={e => e.stopPropagation()}
                                     >
                                         📹 Ver partido
                                     </a>
+                                )}
+
+                                {isAdmin && !linkedGamesMap[selectedMatch.id] && (
+                                    <button
+                                        onClick={() => handleStartStats(selectedMatch)}
+                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-black py-3 rounded-xl text-sm transition-all shadow-lg shadow-cyan-900/20 uppercase tracking-widest"
+                                    >
+                                        <span>🗒️</span> Cargar Planilla
+                                    </button>
+                                )}
+
+                                {linkedGamesMap[selectedMatch.id] && (
+                                    <button
+                                        onClick={() => navigate(`/match/${linkedGamesMap[selectedMatch.id]}`)}
+                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-900/20 uppercase tracking-widest"
+                                    >
+                                        <span>📊</span> Ver Estadísticas
+                                    </button>
                                 )}
                             </div>
                         </div>

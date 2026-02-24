@@ -170,7 +170,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
         } catch (e) { /* ignore */ }
         return initialSettings;
     });
-    const [fixtureLinked, setFixtureLinked] = useState(false); // User confirmed the fixture link
+    const [fixtureLinked, setFixtureLinked] = useState(!!initialSettings.fixture_id); // User confirmed the fixture link
     const [fixtureDismissed, setFixtureDismissed] = useState(false);
 
     // Force default tournament if not set (fixing the issue where previous state might have empty tournament)
