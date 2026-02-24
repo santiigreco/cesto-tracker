@@ -82,133 +82,6 @@ const TallyMockup = () => (
     </PhoneMockup>
 );
 
-
-// ── Next Match / Last Game Widget ──────────────────────────────────────
-const NextMatchWidget: React.FC<{
-    user: HomePageProps['user'];
-    onFixtureClick: () => void;
-    onLoadGameClick: () => void;
-    onLoadGame: (id: string) => void;
-}> = ({ user, onFixtureClick, onLoadGameClick, onLoadGame }) => {
-    const { nextMatch, lastGame, loading } = useNextMatch(user?.id);
-
-    if (loading) {
-        return (
-            <div className="h-20 rounded-2xl bg-slate-800/50 border border-slate-700/50 animate-pulse" />
-        );
-    }
-
-    // ── Próximo partido del fixture ──
-    if (nextMatch) {
-        const matchDate = new Date(`${nextMatch.date}T00:00:00`);
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const diffDays = Math.round((matchDate.getTime() - today.getTime()) / 86_400_000);
-
-        const hasScore = nextMatch.scoreHome !== '' && nextMatch.scoreAway !== '';
-        const isFinished = hasScore || nextMatch.status === 'finished';
-        const isToday = diffDays === 0;
-        const isTomorrow = diffDays === 1;
-
-        const dayLabel = isToday ? '🔴 Hoy'
-            : isTomorrow ? '📅 Mañana'
-                : `📅 ${matchDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
-
-        return (
-            <button
-                onClick={onFixtureClick}
-                className="group w-full text-left bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-[2rem] p-5 transition-all duration-300 backdrop-blur-md shadow-xl overflow-hidden relative"
-            >
-                <div className="absolute top-0 right-10 w-20 h-20 bg-cyan-500/5 blur-2xl rounded-full"></div>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        {isToday && <span className="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>}
-                        <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isToday ? 'text-red-400' : 'text-slate-500'}`}>
-                            {isFinished ? 'Finalizado' : `${dayLabel} • ${nextMatch.time}hs`}
-                        </span>
-                    </div>
-                    {nextMatch.round && (
-                        <span className="text-[10px] text-slate-500 font-bold bg-slate-900/50 px-2 py-0.5 rounded-full border border-slate-700/50">{nextMatch.round}</span>
-                    )}
-                </div>
-
-                <div className="flex items-center justify-between gap-4 py-2">
-                    {/* Local */}
-                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                        <TeamLogo teamName={nextMatch.homeTeam} className="h-12 w-12 flex-shrink-0 drop-shadow-lg group-hover:scale-110 transition-transform duration-300" />
-                        <span className="text-xs font-black text-slate-200 truncate w-full text-center uppercase tracking-tighter">
-                            {nextMatch.homeTeam}
-                        </span>
-                    </div>
-
-                    {/* Score / vs */}
-                    <div className="flex-shrink-0 flex flex-col items-center justify-center">
-                        {isFinished ? (
-                            <div className="flex items-center gap-2">
-                                <span className="text-3xl font-black text-white px-2">
-                                    {nextMatch.scoreHome}
-                                </span>
-                                <span className="text-slate-700 font-black">:</span>
-                                <span className="text-3xl font-black text-white px-2">
-                                    {nextMatch.scoreAway}
-                                </span>
-                            </div>
-                        ) : (
-                            <div className="bg-slate-900/80 px-4 py-1.5 rounded-2xl border border-slate-700 font-black text-[10px] text-slate-500 tracking-[0.3em]">VS</div>
-                        )}
-                    </div>
-
-                    {/* Visitante */}
-                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                        <TeamLogo teamName={nextMatch.awayTeam} className="h-12 w-12 flex-shrink-0 drop-shadow-lg group-hover:scale-110 transition-transform duration-300" />
-                        <span className="text-xs font-black text-slate-200 truncate w-full text-center uppercase tracking-tighter">
-                            {nextMatch.awayTeam}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-700/30">
-                    <span className="text-[10px] text-slate-600 font-bold tracking-wider truncate max-w-[70%]">{nextMatch.tournament}</span>
-                    <span className="text-[10px] text-cyan-400 font-black uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-                        Fixture →
-                    </span>
-                </div>
-            </button>
-        );
-    }
-
-    // ── Último partido guardado del usuario (fallback) ──
-    if (lastGame && user) {
-        const relDate = new Date(lastGame.createdAt).toLocaleDateString('es-AR', {
-            day: 'numeric', month: 'short'
-        });
-        return (
-            <button
-                onClick={() => onLoadGame(lastGame.id)}
-                className="group w-full text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-2xl p-4 transition-all duration-200"
-            >
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
-                        🕐 Último partido guardado
-                    </span>
-                    <span className="text-[10px] text-slate-600">{relDate}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <TeamLogo teamName={lastGame.myTeam} className="h-8 w-8 flex-shrink-0" />
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{lastGame.gameName}</p>
-                        <p className="text-xs text-slate-500">{lastGame.myTeam || 'Sin equipo'}</p>
-                    </div>
-                    <span className="ml-auto text-[10px] text-emerald-400 font-bold group-hover:text-emerald-300">
-                        Retomar →
-                    </span>
-                </div>
-            </button>
-        );
-    }
-
-    return null; // No data yet
-};
-
 interface HomePageProps {
     onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
     onLoadGameClick: () => void;
@@ -218,16 +91,102 @@ interface HomePageProps {
     onLoadGame: (gameId: string, asOwner: boolean) => void;
 }
 
+// ── Next Match / Last Game Widget ──────────────────────────────────────
+const NextMatchWidget: React.FC<{
+    user: HomePageProps['user'];
+    onFixtureClick: () => void;
+    onLoadGameClick: () => void;
+    onLoadGame: (id: string) => void;
+}> = ({ user, onFixtureClick, onLoadGameClick, onLoadGame }) => {
+    const { nextMatches, lastGame, loading } = useNextMatch(user?.id);
+
+    if (loading) {
+        return (
+            <div className="h-40 rounded-2xl bg-slate-800/50 border border-slate-700/50 animate-pulse" />
+        );
+    }
+
+    if (nextMatches && nextMatches.length > 0) {
+        return (
+            <div className="flex flex-col gap-4">
+                {nextMatches.map((match, idx) => {
+                    const matchDate = new Date(`${match.date}T00:00:00`);
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
+                    const diffDays = Math.round((matchDate.getTime() - today.getTime()) / 86_400_000);
+                    const isToday = diffDays === 0;
+                    const isTomorrow = diffDays === 1;
+                    const dayLabel = isToday ? '🔴 Hoy' : isTomorrow ? '📅 Mañana' : `📅 ${matchDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+                    const isFirst = idx === 0;
+
+                    return (
+                        <button
+                            key={match.id}
+                            onClick={onFixtureClick}
+                            className={`group w-full text-left bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-[2rem] transition-all duration-300 backdrop-blur-md shadow-xl overflow-hidden relative ${isFirst ? 'p-5' : 'p-4 scale-[0.97]'}`}
+                        >
+                            <div className="flex items-center justify-between mb-3">
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-red-400' : 'text-slate-500'}`}>
+                                    {dayLabel} • {match.time}hs
+                                </span>
+                                {match.location && (
+                                    <span className="text-[9px] text-slate-500 font-bold bg-slate-900/50 px-2 py-0.5 rounded-full border border-slate-700/50 truncate max-w-[120px]">
+                                        📍 {match.location}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <TeamLogo teamName={match.homeTeam} className={`${isFirst ? 'h-10 w-10' : 'h-8 w-8'} flex-shrink-0 drop-shadow-lg`} />
+                                    <span className={`${isFirst ? 'text-sm' : 'text-xs'} font-black text-slate-200 truncate uppercase tracking-tighter`}>{match.homeTeam}</span>
+                                </div>
+                                <div className="text-[10px] font-black text-slate-600 px-2 tracking-widest">VS</div>
+                                <div className="flex items-center justify-end gap-3 flex-1 min-w-0">
+                                    <span className={`${isFirst ? 'text-sm' : 'text-xs'} font-black text-slate-200 truncate uppercase tracking-tighter text-right`}>{match.awayTeam}</span>
+                                    <TeamLogo teamName={match.awayTeam} className={`${isFirst ? 'h-10 w-10' : 'h-8 w-8'} flex-shrink-0 drop-shadow-lg`} />
+                                </div>
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    if (lastGame && user) {
+        const relDate = new Date(lastGame.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+        return (
+            <button
+                onClick={() => onLoadGame(lastGame.id)}
+                className="group w-full text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-2xl p-4 transition-all duration-200"
+            >
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">🕐 Último partido guardado</span>
+                    <span className="text-[10px] text-slate-600">{relDate}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <TeamLogo teamName={lastGame.myTeam} className="h-8 w-8 flex-shrink-0" />
+                    <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{lastGame.gameName}</p>
+                        <p className="text-xs text-slate-500">{lastGame.myTeam || 'Sin equipo'}</p>
+                    </div>
+                    <span className="ml-auto text-[10px] text-emerald-400 font-bold group-hover:text-emerald-300">Retomar →</span>
+                </div>
+            </button>
+        );
+    }
+
+    return null;
+};
+
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame }) => {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-    // New state for direct team selection flow
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
     const communityStats = useCommunityStats();
     const { profile } = useProfile();
-    // Permissions: use DB-sourced is_admin
     const isOwner = user && profile?.is_admin === true;
     const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
@@ -251,26 +210,17 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     const handleCloseTeamSelector = () => {
         setIsTeamSelectorOpen(false);
-        // If the user closes the modal without selecting, default to their favorite club if available.
         onStart(profile?.favorite_club || undefined);
     };
 
-    // --- ANIMATIONS & STYLES ---
-    const gridItemClass = "flex flex-col items-center justify-center gap-2 p-5 rounded-3xl bg-slate-800/40 border border-slate-700/50 hover:border-cyan-500/40 hover:bg-slate-800/60 backdrop-blur-md transition-all duration-300 group active:scale-95 cursor-pointer shadow-xl relative overflow-hidden";
-    const iconContainerClass = "p-4 bg-slate-950/50 rounded-2xl group-hover:bg-slate-900/50 transition-all duration-300 ring-1 ring-slate-800 group-hover:ring-cyan-500/30";
-    const labelClass = "text-sm font-black text-slate-400 group-hover:text-white tracking-wide uppercase transition-colors";
-
     return (
         <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
-
-            {/* ── Background Glows ── */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
                 <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/10 blur-[120px] rounded-full animate-float"></div>
                 <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 blur-[100px] rounded-full"></div>
             </div>
 
-            {/* Navbar */}
             <nav className="sticky top-0 z-50 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <span className="text-2xl">🏐</span>
@@ -312,11 +262,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
             <main className="flex-grow flex flex-col relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
-
-                    {/* LEFT COLUMN: User Dashboard / CTA */}
                     <div className="flex-1 w-full max-w-lg mx-auto lg:mx-0 flex flex-col gap-8">
-
-                        {/* Welcome Header */}
                         <div className="text-center lg:text-left space-y-4">
                             {user && profile && (
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-2">
@@ -336,8 +282,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 Estadísticas en vivo, mapas de calor y gestión profesional. <br className="hidden sm:block" />
                                 <span className="text-slate-200">Creado por y para la comunidad del Cesto.</span>
                             </p>
-
-                            {/* ── Option C: Animated counters ── */}
                             {communityStats.totalGames !== null && communityStats.totalGames > 0 && (
                                 <div className="flex flex-wrap gap-3 pt-2 justify-center lg:justify-start">
                                     <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20">
@@ -354,55 +298,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     )}
                                 </div>
                             )}
+                        </div>
 
-                            {/* ── Option B: Latest registered game ── */}
-                            {communityStats.latestGame && (
-                                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-800/40 border border-slate-700/40 max-w-sm mx-auto lg:mx-0">
-                                    <span className="text-slate-500 shrink-0 text-xs">⚡ Último registro</span>
-                                    <TeamLogo teamName={communityStats.latestGame.myTeam} className="h-6 w-6 shrink-0" />
-                                    <span className="text-sm font-bold text-slate-300 truncate">
-                                        {communityStats.latestGame.myTeam}
-                                        <span className="text-slate-500 font-normal"> vs </span>
-                                        {communityStats.latestGame.opponentName}
-                                    </span>
-                                    <span className="text-[10px] text-slate-600 shrink-0 ml-auto">
-                                        {(() => {
-                                            const d = new Date(communityStats.latestGame.createdAt);
-                                            const diffH = Math.round((Date.now() - d.getTime()) / 3_600_000);
-                                            return diffH < 1 ? 'hace menos de 1h' : diffH < 24 ? `hace ${diffH}h` : `hace ${Math.round(diffH / 24)}d`;
-                                        })()}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* ── Option D: Top teams this week ── */}
-                            {communityStats.topTeams.length > 0 && (
-                                <div className="space-y-2 max-w-sm mx-auto lg:mx-0">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">🏆 Equipo más activo esta semana</p>
-                                    {communityStats.topTeams.map((team, idx) => (
-                                        <div key={team.teamName} className="flex items-center gap-3">
-                                            <span className="text-sm w-5 shrink-0 text-center">
-                                                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                                            </span>
-                                            <TeamLogo teamName={team.teamName} className="h-6 w-6 shrink-0" />
-                                            <span className="text-sm font-bold text-slate-300 flex-grow truncate">{team.teamName}</span>
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <div
-                                                    className="h-1.5 bg-cyan-500/50 rounded-full"
-                                                    style={{ width: `${Math.max(24, (team.gameCount / communityStats.topTeams[0].gameCount) * 64)}px` }}
-                                                />
-                                                <span className="text-[10px] text-slate-500 font-bold w-12 text-right">
-                                                    {team.gameCount} {team.gameCount === 1 ? 'partido' : 'partidos'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                        </div>{/* end Welcome Header */}
-
-                        {/* ── Next Match / Last Game Widget ── */}
                         <NextMatchWidget
                             user={user}
                             onFixtureClick={handleFixtureClick}
@@ -410,7 +307,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             onLoadGame={(id) => onLoadGame(id, true)}
                         />
 
-                        {/* --- NEW STRIKING ACTION CENTER --- */}
                         <div className="w-full grid grid-cols-6 gap-3 sm:gap-4 mt-4">
                             <div className="col-span-6 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 mb-2 shadow-sm pointer-events-none">
                                 <div className="flex-shrink-0 w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
@@ -427,14 +323,12 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            {/* NEW MATCH CARD (MAIN CTA) */}
                             <div
                                 onClick={handleStartClick}
                                 className="col-span-6 group relative h-40 rounded-[2.5rem] bg-slate-900 border border-slate-700/50 hover:border-cyan-500/50 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-cyan-500/10 blur-3xl group-hover:bg-cyan-500/20 transition-all duration-500"></div>
-
                                 <div className="relative h-full flex flex-col justify-center px-8">
                                     <div className="flex items-center gap-4 mb-2">
                                         <div className="p-3 bg-cyan-500 rounded-2xl shadow-lg shadow-cyan-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -454,7 +348,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            {/* FIXTURE CARD (MEDIUM) */}
                             <div
                                 onClick={handleFixtureClick}
                                 className="col-span-3 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-yellow-500/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
@@ -469,7 +362,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            {/* STANDINGS CARD (MEDIUM) */}
                             <div
                                 onClick={() => navigate('/standings')}
                                 className="col-span-3 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-cyan-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
@@ -484,7 +376,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            {/* TEAMS CARD (SMALL) */}
                             <div
                                 onClick={user ? onManageTeamsClick : onLogin}
                                 className="col-span-3 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-blue-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
@@ -500,7 +391,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            {/* HISTORY CARD (SMALL) */}
                             <div
                                 onClick={user ? onLoadGameClick : onLogin}
                                 className="col-span-3 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-emerald-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
@@ -516,18 +406,14 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            {/* PWA INSTALL (SMALL / WIDE) */}
                             <div className="col-span-6">
                                 <InstallApp variant="card" />
                             </div>
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Visuals (Desktop only or stacked below) */}
                     <div className="flex-1 w-full flex flex-col items-center lg:items-end mt-8 lg:mt-0 relative">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
-
-                        {/* This section disappears on small screens to prioritize the dashboard grid */}
                         <div className="hidden lg:block relative transition-transform duration-500 ease-out hover:scale-105 cursor-pointer">
                             <TallyMockup />
                             <div className="absolute -right-12 top-20 bg-slate-800/90 backdrop-blur-md p-4 rounded-2xl border border-slate-600/50 shadow-2xl flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
@@ -540,8 +426,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
                         </div>
-
-                        {/* Mobile PWA Text */}
                         <div className="lg:hidden mt-8 w-full bg-slate-800/50 border border-slate-700/50 p-6 rounded-2xl text-center backdrop-blur-sm">
                             <p className="text-slate-200 font-bold text-lg mb-1">Planilla digital y mapa de calor en tu bolsillo.</p>
                             <p className="text-cyan-400 text-sm font-medium">PWA · Sin instalar desde la tienda.</p>
@@ -549,7 +433,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     </div>
                 </div>
 
-                {/* FEATURE HIGHLIGHTS */}
                 <div className="mt-32 grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="group bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-800/50 flex flex-col items-center text-center transition-all duration-500 hover:bg-slate-800/40 hover:-translate-y-2">
                         <div className="w-16 h-16 bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-6 ring-1 ring-emerald-500/20 group-hover:ring-emerald-500/40 transition-all duration-500">
@@ -576,7 +459,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     </div>
                 </div>
 
-                {/* FAQ SECTION */}
                 <section className="mt-24 max-w-3xl mx-auto w-full px-4">
                     <h2 className="text-2xl font-black text-white mb-8 text-center uppercase tracking-tight">Preguntas Frecuentes</h2>
                     <div className="space-y-3">
@@ -616,7 +498,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     </div>
                 </section>
 
-                {/* HECHO A PULMON SECTION */}
                 <section className="mt-32 max-w-2xl mx-auto px-6 text-center">
                     <div className="p-8 rounded-[2.5rem] bg-gradient-to-b from-slate-800/40 to-transparent border border-slate-800/50">
                         <span className="text-4xl mb-4 block">🏐❤️</span>
@@ -638,7 +519,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                         </div>
                     </div>
                 </section>
-            </main >
+            </main>
 
             <footer className="w-full py-12 text-center border-t border-slate-800/50 bg-slate-950/50 backdrop-blur-md">
                 <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Cesto Tracker © 2026</p>
@@ -647,30 +528,25 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                 </p>
             </footer>
 
-            {
-                user && (
-                    <UserProfileModal
-                        isOpen={isProfileOpen}
-                        onClose={() => setIsProfileOpen(false)}
-                        user={user}
-                        onLogout={handleLogout}
-                        onLoadGame={onLoadGame}
-                    />
-                )
-            }
+            {user && (
+                <UserProfileModal
+                    isOpen={isProfileOpen}
+                    onClose={() => setIsProfileOpen(false)}
+                    user={user}
+                    onLogout={handleLogout}
+                    onLoadGame={onLoadGame}
+                />
+            )}
 
-
-            {
-                isTeamSelectorOpen && (
-                    <TeamSelectorModal
-                        isOpen={isTeamSelectorOpen}
-                        onClose={handleCloseTeamSelector}
-                        onSelectTeam={handleTeamSelected}
-                        currentTeam={profile?.favorite_club || ''}
-                    />
-                )
-            }
-        </div >
+            {isTeamSelectorOpen && (
+                <TeamSelectorModal
+                    isOpen={isTeamSelectorOpen}
+                    onClose={handleCloseTeamSelector}
+                    onSelectTeam={handleTeamSelected}
+                    currentTeam={profile?.favorite_club || ''}
+                />
+            )}
+        </div>
     );
 });
 

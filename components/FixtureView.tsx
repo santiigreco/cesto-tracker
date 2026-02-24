@@ -396,7 +396,12 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
     const filteredMatches = useMemo(() => {
         return matches.filter(m => {
             if (filterTournament !== 'Todos' && m.tournament !== filterTournament) return false;
-            if (filterCategory !== 'Todas' && m.category !== filterCategory) return false;
+            // 'Todas' can be 'Todas' or 'Primera' (legacy fallback in Standings)
+            if (filterCategory !== 'Todas' && filterCategory !== 'Primera' && m.category !== filterCategory) return false;
+            // If user explicitly selected 'Todas', we don't filter by category
+            if (filterCategory === 'Todas') { /* skip category filter */ }
+            else if (m.category !== filterCategory) return false;
+
             if (filterGender !== 'Todos' && m.gender !== filterGender) return false;
             return true;
         });
@@ -411,12 +416,12 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
             roundMap[rKey].push(m);
         });
 
-        // Sort rounds: DESCENDING (most recent first)
+        // Sort rounds: ASCENDING chronological (oldest first) so that adding matches goes to the bottom
+        // But the user wants "most recent first" but described "if a day is posterior go below".
+        // Let's use DESCENDING (recent first) but ensure adding a future day keeps it consistent.
+        // Actually, if a day is "posterior" (later), and we want it "below", the order must be ASCENDING.
         const sorted = Object.entries(roundMap).sort(([a], [b]) => {
-            const nA = parseInt(a.replace(/\D/g, '')) || 0;
-            const nB = parseInt(b.replace(/\D/g, '')) || 0;
-            if (nA && nB) return nB - nA;
-            return b.localeCompare(a);
+            return a.localeCompare(b); // Ascending dates
         });
 
         return sorted;

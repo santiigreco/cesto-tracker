@@ -13,6 +13,7 @@ export interface NextFixtureMatch {
     scoreHome?: number | '';
     scoreAway?: number | '';
     status: string;
+    location?: string;
 }
 
 export interface LastSavedGame {
@@ -24,7 +25,7 @@ export interface LastSavedGame {
 }
 
 export const useNextMatch = (userId?: string) => {
-    const [nextMatch, setNextMatch] = useState<NextFixtureMatch | null>(null);
+    const [nextMatches, setNextMatches] = useState<NextFixtureMatch[]>([]);
     const [lastGame, setLastGame] = useState<LastSavedGame | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -38,17 +39,15 @@ export const useNextMatch = (userId?: string) => {
             // --- Fetch next upcoming fixture match ---
             const { data: fixtureData } = await supabase
                 .from('fixture')
-                .select('id, date, time, home_team, away_team, tournament, round, score_home, score_away, status')
+                .select('id, date, time, home_team, away_team, tournament, round, score_home, score_away, status, location')
                 .gte('date', today)
                 .lte('date', endOfYear)
                 .order('date', { ascending: true })
                 .order('time', { ascending: true })
-                .limit(1)
-                .single();
+                .limit(3);
 
             if (!cancelled && fixtureData) {
-                const m = fixtureData as Record<string, unknown>;
-                setNextMatch({
+                const mapped = (fixtureData as any[]).map(m => ({
                     id: String(m.id),
                     date: String(m.date ?? ''),
                     time: String(m.time ?? '00:00'),
@@ -59,7 +58,9 @@ export const useNextMatch = (userId?: string) => {
                     scoreHome: m.score_home === null || m.score_home === undefined ? '' : m.score_home as number,
                     scoreAway: m.score_away === null || m.score_away === undefined ? '' : m.score_away as number,
                     status: String(m.status ?? 'scheduled'),
-                });
+                    location: m.location ? String(m.location) : undefined,
+                }));
+                setNextMatches(mapped);
             }
 
             // --- Fetch user's last saved game (if logged in) ---
@@ -92,5 +93,5 @@ export const useNextMatch = (userId?: string) => {
         return () => { cancelled = true; };
     }, [userId]);
 
-    return { nextMatch, lastGame, loading };
+    return { nextMatches, lastGame, loading };
 };
