@@ -121,9 +121,9 @@ const MatchRow: React.FC<{
     onDelete: (id: string) => void;
     onClick: (match: Match) => void;
     onStartStats?: (match: Match) => void;
-    linkedGameId?: string;
+    linkedGames?: { id: string, team: string }[];
     isAdmin?: boolean;
-}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick, onStartStats, linkedGameId, isAdmin }) => {
+}> = ({ match, isEven, isEditMode, now, onUpdate, onDelete, onClick, onStartStats, linkedGames, isAdmin }) => {
     const hasScore = match.scoreHome !== '' && match.scoreAway !== '';
     const homeWon = hasScore && Number(match.scoreHome) > Number(match.scoreAway);
     const awayWon = hasScore && Number(match.scoreAway) > Number(match.scoreHome);
@@ -218,20 +218,28 @@ const MatchRow: React.FC<{
             )}
 
             {/* Linked game stats button */}
-            {!isEditMode && linkedGameId && (
-                <a
-                    href={`/match/${linkedGameId}`}
-                    onClick={e => e.stopPropagation()}
-                    className="flex-shrink-0 flex items-center gap-1 bg-emerald-900/30 hover:bg-emerald-900/60 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
-                    title="Ver estadísticas del partido"
-                >
-                    <span>📊</span>
-                    <span className="hidden sm:inline">Stats</span>
-                </a>
+            {!isEditMode && linkedGames && linkedGames.length > 0 && (
+                <div className="flex flex-col gap-1 items-end">
+                    {linkedGames.length === 1 ? (
+                        <a
+                            href={`/match/${linkedGames[0].id}`}
+                            onClick={e => e.stopPropagation()}
+                            className="flex-shrink-0 flex items-center gap-1 bg-emerald-900/30 hover:bg-emerald-900/60 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                            title={`Ver estadísticas de ${linkedGames[0].team}`}
+                        >
+                            <span>📊</span>
+                            <span className="hidden sm:inline">Stats</span>
+                        </a>
+                    ) : (
+                        <div className="flex items-center gap-1 bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase">
+                            <span>📊</span> {linkedGames.length} Planillas
+                        </div>
+                    )}
+                </div>
             )}
 
-            {/* Quick Start Stats Button */}
-            {!isEditMode && !linkedGameId && isAdmin && (
+            {/* Quick Start Stats Button (Always available for everyone if no local edit mode) */}
+            {!isEditMode && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onStartStats?.(match); }}
                     className="flex-shrink-0 flex items-center gap-1 bg-cyan-900/30 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
@@ -294,7 +302,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
     const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
-    const [linkedGamesMap, setLinkedGamesMap] = useState<Record<string, string>>({}); // fixture_id -> game_id
+    const [linkedGamesMap, setLinkedGamesMap] = useState<Record<string, { id: string, team: string }[]>>({}); // fixture_id -> games list
 
     // Fetch all games that have a fixture_id so we can show 'Ver Estadísticas'
     useEffect(() => {
@@ -302,13 +310,17 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         import('../utils/supabaseClient').then(({ supabase }) => {
             supabase
                 .from('games')
-                .select('id, fixture_id')
+                .select('id, fixture_id, my_team_name')
                 .not('fixture_id', 'is', null)
                 .then(({ data }) => {
                     if (!cancelled && data) {
-                        const map: Record<string, string> = {};
-                        data.forEach((g: { id: string; fixture_id: string }) => {
-                            map[g.fixture_id] = g.id;
+                        const map: Record<string, { id: string, team: string }[]> = {};
+                        data.forEach((g: any) => {
+                            if (!map[g.fixture_id]) map[g.fixture_id] = [];
+                            map[g.fixture_id].push({
+                                id: g.id,
+                                team: g.my_team_name || 'Sin nombre'
+                            });
                         });
                         setLinkedGamesMap(map);
                     }
@@ -720,7 +732,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                                                             onDelete={handleDelete}
                                                                             onClick={handleMatchClick}
                                                                             onStartStats={handleStartStats}
-                                                                            linkedGameId={linkedGamesMap[match.id]}
+                                                                            linkedGames={linkedGamesMap[match.id]}
                                                                             isAdmin={isAdmin}
                                                                         />
                                                                     ))}
@@ -824,23 +836,33 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                     </a>
                                 )}
 
-                                {isAdmin && !linkedGamesMap[selectedMatch.id] && (
+                                <div className="mt-4 space-y-3">
+                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Planillas del partido</h4>
+
+                                    {linkedGamesMap[selectedMatch.id]?.map((game) => (
+                                        <button
+                                            key={game.id}
+                                            onClick={() => navigate(`/match/${game.id}`)}
+                                            className="w-full flex items-center justify-between gap-3 bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-500/30 hover:border-emerald-500/50 p-3 rounded-xl transition-all"
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-lg flex-shrink-0">📊</span>
+                                                <div className="text-left min-w-0">
+                                                    <p className="text-xs font-black text-emerald-400 uppercase truncate">Planilla {game.team}</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold">Ver estadísticas completas</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-emerald-400 text-xs font-black whitespace-nowrap">ABRIR →</span>
+                                        </button>
+                                    ))}
+
                                     <button
                                         onClick={() => handleStartStats(selectedMatch)}
-                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-black py-3 rounded-xl text-sm transition-all shadow-lg shadow-cyan-900/20 uppercase tracking-widest"
+                                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-black py-4 rounded-xl text-sm transition-all shadow-lg shadow-cyan-900/20 uppercase tracking-widest border border-cyan-400/30"
                                     >
-                                        <span>🗒️</span> Cargar Planilla
+                                        <span>🗒️</span> Nueva Planilla
                                     </button>
-                                )}
-
-                                {linkedGamesMap[selectedMatch.id] && (
-                                    <button
-                                        onClick={() => navigate(`/match/${linkedGamesMap[selectedMatch.id]}`)}
-                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-900/20 uppercase tracking-widest"
-                                    >
-                                        <span>📊</span> Ver Estadísticas
-                                    </button>
-                                )}
+                                </div>
                             </div>
                         </div>
                     </div>
