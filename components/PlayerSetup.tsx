@@ -11,6 +11,9 @@ import TournamentSelectorModal from './TournamentSelectorModal';
 import TeamRosterModal from './TeamRosterModal';
 import { supabase } from '../utils/supabaseClient';
 import { useFixtureSuggestion } from '../hooks/useFixtureSuggestion';
+import { useTeamManager } from '../hooks/useTeamManager';
+import { TEAMS_CONFIG } from '../constants';
+import { findBestTeamMatch } from '../utils/teamUtils';
 
 const LAST_TEAM_STORAGE_KEY = 'cesto_last_team_setup';
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
@@ -112,7 +115,7 @@ interface PlayerSetupProps {
     initialPlayerNames?: Record<string, string>;
 }
 
-const PlayerSetup: React.FC<PlayerSetupProps> = ({
+export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     onSetupComplete,
     onBack,
     initialSelectedPlayers = [],
@@ -120,19 +123,15 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
     initialGameMode = null,
     initialPlayerNames = {}
 }) => {
-    // Pre-select players: use last saved team for new games, or existing selection for corrections
+    // ── State ──
     const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(() => {
-        if (initialSelectedPlayers.length > 0) {
-            return new Set(initialSelectedPlayers);
-        }
-        // Try to restore last team from localStorage
+        if (initialSelectedPlayers.length > 0) return new Set(initialSelectedPlayers);
+        // Restore players from last saved team
         try {
             const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (parsed.players && Array.isArray(parsed.players) && parsed.players.length > 0) {
-                    return new Set(parsed.players);
-                }
+                if (parsed.players) return new Set(parsed.players);
             }
         } catch (e) { /* ignore */ }
         return new Set(allPlayers);
@@ -151,6 +150,8 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
         } catch (e) { /* ignore */ }
         return {};
     });
+
+    const { teams: savedTeams, fetchTeams } = useTeamManager();
 
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
@@ -173,7 +174,30 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
     const [fixtureLinked, setFixtureLinked] = useState(!!initialSettings.fixture_id); // User confirmed the fixture link
     const [fixtureDismissed, setFixtureDismissed] = useState(false);
 
-    // Force default tournament if not set (fixing the issue where previous state might have empty tournament)
+
+    // Unified handler for loading a team (either from "My Teams" modal or "Team Selector")
+    const applyTeamRoster = (name: string, players: RosterPlayer[]) => {
+        // 1. Set Team Name
+        setSettings(prev => ({ ...prev, myTeam: name }));
+
+        // 2. Set Players
+        const newSelected = new Set<string>();
+        const newNames: Record<string, string> = {};
+
+        players.forEach(p => {
+            newSelected.add(p.number);
+            if (p.name) newNames[p.number] = p.name;
+        });
+
+        setSelectedPlayers(newSelected);
+        setLocalPlayerNames(newNames);
+    };
+
+    // ── Smart Team Mapping ──
+    useEffect(() => {
+        fetchTeams();
+    }, []);
+
     useEffect(() => {
         if (!settings.tournamentName) {
             setSettings(prev => ({
@@ -181,7 +205,57 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 tournamentName: defaultSettings.tournamentName
             }));
         }
-    }, []); // Run once on mount
+    }, [settings.tournamentName]);
+
+    // Apply smart mapping once teams are loaded
+    useEffect(() => {
+        if (savedTeams.length === 0 && TEAMS_CONFIG.length === 0) return;
+
+        // This effect should only run once to initialize from fixture names
+        // or when savedTeams are first loaded.
+
+        let nextMyTeam = settings.myTeam;
+        let nextGameName = settings.gameName;
+        let teamToApply: SavedTeam | null = null;
+        let mappingChanged = false;
+
+        // 1. Resolve My Team
+        if (settings.myTeam) {
+            const savedMatch = findBestTeamMatch<SavedTeam>(settings.myTeam, savedTeams);
+            if (savedMatch) {
+                nextMyTeam = savedMatch.name;
+                mappingChanged = true;
+                // Auto-apply roster if empty or default
+                if (selectedPlayers.size === 0 || selectedPlayers.size === allPlayers.length) {
+                    teamToApply = savedMatch as SavedTeam;
+                }
+            } else {
+                const leagueMatch = findBestTeamMatch(settings.myTeam, TEAMS_CONFIG);
+                if (leagueMatch) {
+                    nextMyTeam = leagueMatch.name;
+                    mappingChanged = true;
+                }
+            }
+        }
+
+        // 2. Resolve Rival Team
+        if (settings.gameName) {
+            const leagueMatch = findBestTeamMatch(settings.gameName, TEAMS_CONFIG);
+            if (leagueMatch) {
+                nextGameName = leagueMatch.name;
+                mappingChanged = true;
+            }
+        }
+
+        if (mappingChanged) {
+            setSettings(prev => ({ ...prev, myTeam: nextMyTeam, gameName: nextGameName }));
+        }
+
+        if (teamToApply) {
+            applyTeamRoster(teamToApply.name, teamToApply.players);
+        }
+
+    }, [savedTeams, initialSettings.myTeam, initialSettings.gameName]);
 
     // Default to 'stats-tally' (Anotador) if no mode provided
     const [selectedMode, setSelectedMode] = useState<GameMode>(initialGameMode || 'stats-tally');
@@ -235,24 +309,6 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
         }
     };
 
-    // Unified handler for loading a team (either from "My Teams" modal or "Team Selector")
-    const applyTeamRoster = (name: string, players: RosterPlayer[]) => {
-        // 1. Set Team Name
-        setSettings(prev => ({ ...prev, myTeam: name }));
-
-        // 2. Set Players
-        const newSelected = new Set<string>();
-        const newNames: Record<string, string> = {};
-
-        players.forEach(p => {
-            newSelected.add(p.number);
-            if (p.name) newNames[p.number] = p.name;
-        });
-
-        setSelectedPlayers(newSelected);
-        setLocalPlayerNames(newNames);
-    };
-
     const handleTeamLoadedFromManager = (team: SavedTeam) => {
         applyTeamRoster(team.name, team.players);
         setIsRosterModalOpen(false);
@@ -298,241 +354,294 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
             {/* ── Background Glows ── */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
-                <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/10 blur-[120px] rounded-full animate-float"></div>
-                <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 blur-[100px] rounded-full"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full animate-pulse-slow opacity-50"></div>
             </div>
 
-            <div className="w-full max-w-2xl bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl text-center relative z-10">
-                {!isCorrection && (
-                    <button
-                        onClick={onBack}
-                        className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-1.5 text-xs font-black uppercase tracking-widest transition-all bg-slate-950/50 px-3 py-1.5 rounded-full border border-slate-800 hover:border-slate-600 shadow-lg"
-                    >
-                        <UndoIcon className="h-3 w-3" /> Volver
-                    </button>
-                )}
-
-                <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tighter mb-4 mt-8 sm:mt-4 leading-tight">
-                    {isCorrection ? 'Editar' : 'Nuevo'} <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-[length:200%_auto] animate-text-shimmer">
-                        {isCorrection ? 'Equipo' : 'Partido'}
-                    </span>
-                </h1>
-
-                {/* Last team restored hint */}
-                {!isCorrection && settings.myTeam && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4 text-xs font-bold text-emerald-400">
-                        <span>🔄</span> Equipo anterior restaurado: <span className="text-white">{settings.myTeam}</span>
+            <div className="w-full max-w-xl z-10 space-y-6">
+                {/* ── Header ── */}
+                <div className="text-center space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                        </span>
+                        Configuración del Encuentro
                     </div>
-                )}
-
-                <div className="mb-6 space-y-4 max-w-sm mx-auto">
-                    {/* Tournament Selector */}
-                    <div className="text-left">
-                        <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Torneo / Temporada</label>
-                        <button
-                            onClick={() => setIsTournamentSelectorOpen(true)}
-                            className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group"
-                        >
-                            <span className={`text-base ${settings.tournamentName ? 'text-cyan-300 font-bold' : 'text-slate-500'}`}>
-                                {settings.tournamentName || 'Seleccionar Torneo...'}
-                            </span>
-                            <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
-                        </button>
-                    </div>
-
-                    {/* Team Selector Trigger & Roster Manager */}
-                    <div className="text-left">
-                        <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-semibold text-slate-400 ml-1 uppercase tracking-wide">Tu Equipo</label>
-                            {user && (
-                                <button
-                                    onClick={() => setIsRosterModalOpen(true)}
-                                    className="text-xs flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-bold bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/30 hover:bg-cyan-900/50 transition-colors"
-                                >
-                                    <UsersIcon className="h-3 w-3" /> Editar Mis Planteles
-                                </button>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setIsTeamSelectorOpen(true)}
-                            className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group"
-                        >
-                            <span className={`text-lg ${settings.myTeam ? 'text-white font-bold' : 'text-slate-500'}`}>
-                                {settings.myTeam || 'Seleccionar Equipo...'}
-                            </span>
-                            <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
-                        </button>
-                    </div>
-
-                    {/* Rival / Game Name Input - Now a Button Selector */}
-                    <div className="text-left">
-                        <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase tracking-wide">Rival</label>
-                        <button
-                            onClick={() => setIsRivalSelectorOpen(true)}
-                            className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group"
-                        >
-                            <span className={`text-lg ${settings.gameName ? 'text-white font-bold' : 'text-slate-500'}`}>
-                                {settings.gameName || 'Seleccionar Rival...'}
-                            </span>
-                            <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
-                        </button>
-                    </div>
+                    <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                        {isCorrection ? 'Editar Partido' : 'Nuevo Partido'}
+                    </h1>
+                    <p className="text-slate-500 text-sm sm:text-base font-medium">
+                        Define los equipos y jugadores para comenzar.
+                    </p>
                 </div>
 
-                {/* ── Fixture Suggestion Banner ── */}
-                <FixtureSuggestionBanner
-                    myTeam={settings.myTeam}
-                    rival={settings.gameName}
-                    dismissed={fixtureDismissed}
-                    linked={fixtureLinked}
-                    onLink={(fixtureId) => {
-                        setSettings(prev => ({ ...prev, fixture_id: fixtureId }));
-                        setFixtureLinked(true);
-                    }}
-                    onUnlink={() => {
-                        setSettings(prev => ({ ...prev, fixture_id: null }));
-                        setFixtureLinked(false);
-                    }}
-                    onDismiss={() => setFixtureDismissed(true)}
-                />
-
-                {/* Player Selection - Express Mode */}
-                <div className="mb-8">
-                    <p className="text-sm text-slate-400 mb-4">Marca los jugadores que participan ({selectedPlayers.size} seleccionados)</p>
-
-                    <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                        {allPlayers.map(num => (
-                            <JerseyIcon
-                                key={num}
-                                number={num}
-                                name={localPlayerNames[num]}
-                                isSelected={selectedPlayers.has(num)}
-                                onClick={togglePlayer}
-                            />
-                        ))}
+                {/* ── Main Setup Card ── */}
+                <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-slate-700/50 p-6 sm:p-8 shadow-2xl space-y-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+                        <JerseyIcon className="w-32 h-32 rotate-12" />
                     </div>
-                </div>
 
-                {/* Big Start Button */}
-                <button
-                    onClick={handleStart}
-                    className="w-full max-w-sm bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_20px_rgba(6,182,212,0.3)] text-xl mb-6"
-                >
-                    {isCorrection ? 'Guardar Cambios' : 'INICIAR PARTIDO'}
-                </button>
+                    <FixtureSuggestionBanner
+                        myTeam={settings.myTeam}
+                        rival={settings.gameName}
+                        dismissed={fixtureDismissed}
+                        linked={fixtureLinked}
+                        onLink={(fixtureId) => {
+                            setSettings(prev => ({ ...prev, fixture_id: fixtureId }));
+                            setFixtureLinked(true);
+                        }}
+                        onUnlink={() => {
+                            setSettings(prev => ({ ...prev, fixture_id: undefined }));
+                            setFixtureLinked(false);
+                        }}
+                        onDismiss={() => setFixtureDismissed(true)}
+                    />
 
-                {/* Advanced Options Collapsible */}
-                <div className="border-t border-slate-700 pt-4">
+                    {/* ── Advanced Settings Trigger ── */}
                     <button
                         onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                        className="flex items-center justify-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors mx-auto"
-                        aria-expanded={isAdvancedOpen}
+                        className="absolute top-6 right-6 p-2 rounded-xl bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all border border-slate-700/50 z-20"
+                        title="Opciones Avanzadas"
                     >
-                        <span>Opciones Avanzadas</span>
-                        <ChevronDownIcon className={`h-4 w-4 transition-transform duration-300 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isAdvancedOpen ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
-                        <div className="bg-slate-700/30 p-4 rounded-xl text-left space-y-4 border border-slate-600/30">
-
-                            {/* Game Mode — Premium Lock for non-admins */}
-                            {isAdmin ? (
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-white font-semibold">Modo Mapa de Tiros</h3>
-                                        <p className="text-xs text-slate-400">Registrar posición exacta en cancha (Avanzado)</p>
-                                    </div>
-                                    <ToggleSwitch
-                                        isEnabled={selectedMode === 'shot-chart'}
-                                        onToggle={() => setSelectedMode(prev => prev === 'shot-chart' ? 'stats-tally' : 'shot-chart')}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700/50 opacity-75">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-slate-300 font-semibold">Modo Mapa de Tiros</h3>
-                                            <span className="text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full uppercase tracking-widest">Próximamente</span>
+                    {/* ── Advanced Settings Panel ── */}
+                    {isAdvancedOpen && (
+                        <div className="space-y-6 animate-slide-down bg-slate-800/30 p-5 rounded-2xl border border-slate-700/30 mb-8 mt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Mano Caliente</label>
+                                    <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-700/50 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-300">Activar detección</span>
+                                            <ToggleSwitch
+                                                checked={settings.isManoCalienteEnabled}
+                                                onChange={(val) => setSettings({ ...settings, isManoCalienteEnabled: val })}
+                                            />
                                         </div>
-                                        <p className="text-xs text-slate-500">Registrar posición exacta en cancha</p>
+                                        {settings.isManoCalienteEnabled && (
+                                            <div className="flex items-center justify-between gap-4 animate-fade-in">
+                                                <span className="text-[10px] font-medium text-slate-400">Umbral (goles)</span>
+                                                <input
+                                                    type="number"
+                                                    value={settings.manoCalienteThreshold}
+                                                    onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
+                                                    className="w-16 bg-slate-800 text-center text-cyan-400 font-black rounded-lg py-1 border border-slate-700 focus:border-cyan-500 outline-none"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className="text-2xl">🔒</span>
                                 </div>
-                            )}
 
-                            <div className="h-px bg-slate-600/50"></div>
-
-                            {/* Hand Hot/Cold Settings */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-slate-300">Alerta Mano Caliente 🔥</span>
-                                    <ToggleSwitch
-                                        isEnabled={settings.isManoCalienteEnabled}
-                                        onToggle={() => setSettings({ ...settings, isManoCalienteEnabled: !settings.isManoCalienteEnabled })}
-                                    />
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-slate-300">Alerta Mano Fría ❄️</span>
-                                    <ToggleSwitch
-                                        isEnabled={settings.isManoFriaEnabled}
-                                        onToggle={() => setSettings({ ...settings, isManoFriaEnabled: !settings.isManoFriaEnabled })}
-                                    />
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Mano Fría</label>
+                                    <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-700/50 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-300">Activar detección</span>
+                                            <ToggleSwitch
+                                                checked={settings.isManoFriaEnabled}
+                                                onChange={(val) => setSettings({ ...settings, isManoFriaEnabled: val })}
+                                            />
+                                        </div>
+                                        {settings.isManoFriaEnabled && (
+                                            <div className="flex items-center justify-between gap-4 animate-fade-in">
+                                                <span className="text-[10px] font-medium text-slate-400">Umbral (fallos)</span>
+                                                <input
+                                                    type="number"
+                                                    value={settings.manoFriaThreshold}
+                                                    onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
+                                                    className="w-16 bg-slate-800 text-center text-blue-400 font-black rounded-lg py-1 border border-slate-700 focus:border-blue-500 outline-none"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-
                         </div>
+                    )}
+
+
+                    {/* ── Teams Selection ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Tu Equipo</label>
+                            <div className="relative group/field">
+                                <button
+                                    onClick={() => setIsTeamSelectorOpen(true)}
+                                    className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all group-hover/field:border-cyan-500/50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-cyan-900/30 rounded-xl text-cyan-400">
+                                            <JerseyIcon className="h-5 w-5" />
+                                        </div>
+                                        <span className="font-bold text-sm sm:text-base">{settings.myTeam || 'Selecciona equipo'}</span>
+                                    </div>
+                                    <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+                                </button>
+                                {user && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setIsRosterModalOpen(true); }}
+                                        className="mt-2 w-full flex items-center justify-center gap-2 text-[10px] font-black text-cyan-500 hover:text-cyan-400 uppercase tracking-widest py-2 rounded-xl bg-cyan-500/5 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-all"
+                                    >
+                                        <UsersIcon className="h-3 w-3" /> Mis Planteles
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Rival</label>
+                            <button
+                                onClick={() => setIsRivalSelectorOpen(true)}
+                                className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all group-hover/field:border-cyan-500/50"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-slate-900/80 rounded-xl text-slate-500">
+                                        <span className="text-xl">🛡️</span>
+                                    </div>
+                                    <span className="font-bold text-sm sm:text-base truncate max-w-[150px]">{settings.gameName || 'Nombre del Rival'}</span>
+                                </div>
+                                <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+                            </button>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="O escribe nombre personalizado..."
+                                    value={settings.gameName}
+                                    onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
+                                    className="w-full bg-transparent border-b border-slate-800 text-xs text-slate-500 px-4 py-2 focus:border-cyan-500 outline-none transition-colors"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Tournament Selection ── */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Competencia / Torneo</label>
+                        <button
+                            onClick={() => setIsTournamentSelectorOpen(true)}
+                            className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all group-hover:border-cyan-500/50"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl">🏆</span>
+                                <span className="font-bold text-sm sm:text-base">{settings.tournamentName || 'Todos'}</span>
+                            </div>
+                            <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+                        </button>
+                    </div>
+
+                    {/* ── Mode Selection ── */}
+                    <div className="space-y-4">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 block text-center">Modo de Seguimiento</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => setSelectedMode('stats-tally')}
+                                className={`flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all gap-2 relative group-mode ${selectedMode === 'stats-tally'
+                                    ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400'
+                                    : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400'
+                                    }`}
+                            >
+                                <span className="text-2xl sm:text-3xl">🗒️</span>
+                                <span className="font-black text-[10px] sm:text-xs uppercase tracking-wider">Anotador</span>
+                                {selectedMode === 'stats-tally' && <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-cyan-500"></span>}
+                            </button>
+
+                            <button
+                                onClick={() => setSelectedMode('shot-chart')}
+                                className={`flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all gap-2 relative group-mode ${selectedMode === 'shot-chart'
+                                    ? 'bg-purple-500/10 border-purple-500 text-purple-400'
+                                    : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400'
+                                    }`}
+                            >
+                                <span className="text-2xl sm:text-3xl">🎯</span>
+                                <span className="font-black text-[10px] sm:text-xs uppercase tracking-wider group-mode-hover:text-purple-400">Tiro a Tiro</span>
+                                {selectedMode === 'shot-chart' && <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-purple-500"></span>}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Player Selection ── */}
+                    <div className="space-y-4 pt-4">
+                        <div className="flex items-center justify-between px-1">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                Jugadores ({selectedPlayers.size})
+                            </label>
+                            <button
+                                onClick={() => setSelectedPlayers(new Set())}
+                                className="text-[10px] font-bold text-red-500/70 hover:text-red-400 flex items-center gap-1.5 transition-colors"
+                            >
+                                <UndoIcon className="h-3 w-3" /> Limpiar
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-3">
+                            {allPlayers.map((num) => (
+                                <button
+                                    key={num}
+                                    onClick={() => togglePlayer(num)}
+                                    className={`aspect-square sm:h-12 flex flex-col items-center justify-center rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all border shadow-sm ${selectedPlayers.has(num)
+                                        ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50 scale-105'
+                                        : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600'
+                                        }`}
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Start Button ── */}
+                    <div className="pt-6">
+                        <button
+                            onClick={handleStart}
+                            className="w-full py-4 sm:py-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-sm sm:text-base uppercase tracking-[0.2em] shadow-xl shadow-cyan-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 group/start"
+                        >
+                            {isCorrection ? 'Guardar Cambios' : 'Comenzar Seguimiento'}
+                            <span className="group-hover/start:translate-x-1 transition-transform">→</span>
+                        </button>
+                        <button
+                            onClick={onBack}
+                            className="w-full py-3 text-slate-500 hover:text-slate-300 font-bold text-xs uppercase tracking-widest transition-colors mt-2"
+                        >
+                            Cancelar
+                        </button>
                     </div>
                 </div>
             </div>
-            <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">
-                Santiago Greco - Gresolutions © 2026
-            </footer>
 
-            {isTeamSelectorOpen && (
-                <TeamSelectorModal
-                    isOpen={isTeamSelectorOpen}
-                    onClose={() => setIsTeamSelectorOpen(false)}
-                    onSelectTeam={handleTeamSelectedFromDropdown}
-                    currentTeam={settings.myTeam || ''}
-                />
-            )}
+            {/* ── Modals ── */}
+            <TeamSelectorModal
+                isOpen={isTeamSelectorOpen}
+                onClose={() => setIsTeamSelectorOpen(false)}
+                onSelectTeam={handleTeamSelectedFromDropdown}
+                currentTeam={settings.myTeam || ''}
+            />
 
-            {isRivalSelectorOpen && (
-                <TeamSelectorModal
-                    isOpen={isRivalSelectorOpen}
-                    onClose={() => setIsRivalSelectorOpen(false)}
-                    onSelectTeam={(team) => {
-                        setSettings(prev => ({ ...prev, gameName: team }));
-                        setIsRivalSelectorOpen(false);
-                    }}
-                    currentTeam={settings.gameName || ''}
-                />
-            )}
+            <TeamSelectorModal
+                isOpen={isRivalSelectorOpen}
+                onClose={() => setIsRivalSelectorOpen(false)}
+                onSelectTeam={(name) => {
+                    setSettings({ ...settings, gameName: name });
+                    setIsRivalSelectorOpen(false);
+                }}
+                currentTeam={settings.gameName || ''}
+            />
 
-            {isTournamentSelectorOpen && (
-                <TournamentSelectorModal
-                    isOpen={isTournamentSelectorOpen}
-                    onClose={() => setIsTournamentSelectorOpen(false)}
-                    onSelectTournament={(id, name) => setSettings(prev => ({ ...prev, tournamentId: id, tournamentName: name }))}
-                    currentTournamentId={settings.tournamentId}
-                />
-            )}
+            <TournamentSelectorModal
+                isOpen={isTournamentSelectorOpen}
+                onClose={() => setIsTournamentSelectorOpen(false)}
+                onSelectTournament={(id, name) => {
+                    setSettings({ ...settings, tournamentId: id, tournamentName: name });
+                    setIsTournamentSelectorOpen(false);
+                }}
+                currentTournamentId={settings.tournamentId}
+            />
 
-            {isRosterModalOpen && (
-                <TeamRosterModal
-                    isOpen={isRosterModalOpen}
-                    onClose={() => setIsRosterModalOpen(false)}
-                    onLoadTeam={handleTeamLoadedFromManager}
-                    currentSelection={{
-                        name: settings.myTeam || '',
-                        players: Array.from(selectedPlayers)
-                    }}
-                />
-            )}
+            <TeamRosterModal
+                isOpen={isRosterModalOpen}
+                onClose={() => setIsRosterModalOpen(false)}
+                onSelectTeam={handleTeamLoadedFromManager}
+            />
         </div>
     );
 };
-
-export default PlayerSetup;
