@@ -278,6 +278,19 @@ const StandingsView: React.FC = () => {
     const [filterTournament, setFilterTournament] = useState('Todos');
     const [filterCategory, setFilterCategory] = useState('Todas');
 
+    const availableTournaments = useMemo(() => {
+        const u = new Set(matches.map(m => m.tournament).filter(Boolean));
+        return ['Todos', ...Array.from(u).sort()];
+    }, [matches]);
+
+    const availableCategories = useMemo(() => {
+        let f = matches;
+        if (filterTournament !== 'Todos') f = f.filter(m => m.tournament === filterTournament);
+        const u = new Set(f.map(m => m.category).filter(Boolean));
+        return ['Todas', ...Array.from(u).sort()];
+    }, [matches, filterTournament]);
+
+
     // 1. Sync activeSeason with URL parameter :year
     useEffect(() => {
         if (year && year !== activeSeason) {
@@ -287,12 +300,17 @@ const StandingsView: React.FC = () => {
 
     // 2. Sync local filter state with URL parameters
     useEffect(() => {
-        const t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
-        const c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera A';
+        let t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
+        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Todas';
+
+        // Auto-select Pretemporada if no tournament param is provided
+        if (!tournamentParam && availableTournaments.includes('Pretemporada')) {
+            t = 'Pretemporada';
+        }
 
         setFilterTournament(t);
         setFilterCategory(c);
-    }, [tournamentParam, categoryParam]);
+    }, [tournamentParam, categoryParam, availableTournaments]);
 
     // 3. Navigation helpers
     const handleYearChange = (newYear: string) => {
@@ -318,17 +336,6 @@ const StandingsView: React.FC = () => {
 
     const availableYears = ['2026', '2025', '2024', '2023', '2022', '2021', '2019', '2018'];
 
-    const availableTournaments = useMemo(() => {
-        const u = new Set(matches.map(m => m.tournament).filter(Boolean));
-        return ['Todos', ...Array.from(u).sort()];
-    }, [matches]);
-
-    const availableCategories = useMemo(() => {
-        let f = matches;
-        if (filterTournament !== 'Todos') f = f.filter(m => m.tournament === filterTournament);
-        const u = new Set(f.map(m => m.category).filter(Boolean));
-        return ['Todas', ...Array.from(u).sort()];
-    }, [matches, filterTournament]);
 
     const groups = useStandings(matches, filterTournament, filterCategory);
     const hasContent = groups.some(g => g.subGroups.some(sg => sg.entries.length > 0) || g.bracketRounds.length > 0);
