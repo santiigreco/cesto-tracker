@@ -230,7 +230,10 @@ const MatchRow: React.FC<{
 
             {/* Tournament/Stage Info (Declarative) */}
             {!match.isRest && (
-                <div className="absolute -bottom-0 right-1.5 flex gap-1 opacity-60">
+                <div className="absolute -bottom-0 right-1.5 flex gap-1.5 items-center opacity-60">
+                    {match.category && (
+                        <span className="text-[8px] font-black text-white bg-slate-700 px-1 rounded-sm uppercase">{match.category}</span>
+                    )}
                     {match.tournament && match.tournament !== 'Todos' && (
                         <span className="text-[8px] font-bold text-slate-500 uppercase">{match.tournament}</span>
                     )}
@@ -303,6 +306,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
     // Local filter state (synced from URL)
     const [filterTournament, setFilterTournament] = useState<string>('Todos');
     const [filterCategory, setFilterCategory] = useState<string>('Primera A');
+    const [filterGender, setFilterGender] = useState<string>('Femenino');
 
     // 1. Sync activeSeason with URL parameter :year
     useEffect(() => {
@@ -323,10 +327,15 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         return ['Todas', ...Array.from(unique).sort()];
     }, [matches, filterTournament]);
 
+    const availableGenders = useMemo(() => {
+        const unique = new Set(matches.map(m => m.gender).filter(Boolean));
+        return ['Todos', ...Array.from(unique).sort()];
+    }, [matches]);
+
     // 2. Sync local filter state with URL parameters
     useEffect(() => {
         let t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
-        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Todas';
+        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera A';
 
         // Auto-select Pretemporada if no tournament param is provided
         if (!tournamentParam && availableTournaments.includes('Pretemporada')) {
@@ -335,6 +344,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
 
         setFilterTournament(t);
         setFilterCategory(c);
+        // Gender is kept as 'Femenino' by default or updated via UI
     }, [tournamentParam, categoryParam, availableTournaments]);
 
     const [viewMode, setViewMode] = useState<'list' | 'bracket'>('list');
@@ -387,9 +397,10 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         return matches.filter(m => {
             if (filterTournament !== 'Todos' && m.tournament !== filterTournament) return false;
             if (filterCategory !== 'Todas' && m.category !== filterCategory) return false;
+            if (filterGender !== 'Todos' && m.gender !== filterGender) return false;
             return true;
         });
-    }, [matches, filterTournament, filterCategory]);
+    }, [matches, filterTournament, filterCategory, filterGender]);
 
     // ── Simplified grouping: round → matches ──
     const groupedByRound = useMemo(() => {
@@ -400,14 +411,25 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
             roundMap[rKey].push(m);
         });
 
-        // Sort rounds: numeric sort (Fecha 1 < Fecha 2) then alphanumeric, descending
-        return Object.entries(roundMap).sort(([a], [b]) => {
+        // Sort rounds: DESCENDING (most recent first)
+        const sorted = Object.entries(roundMap).sort(([a], [b]) => {
             const nA = parseInt(a.replace(/\D/g, '')) || 0;
             const nB = parseInt(b.replace(/\D/g, '')) || 0;
             if (nA && nB) return nB - nA;
             return b.localeCompare(a);
         });
+
+        return sorted;
     }, [filteredMatches]);
+
+    // 4. Initial Collapse Logic (Expand first, collapse others)
+    useEffect(() => {
+        if (groupedByRound.length > 0) {
+            const firstRound = groupedByRound[0][0];
+            const allElse = groupedByRound.slice(1).map(([key]) => key);
+            setCollapsedRounds(new Set(allElse));
+        }
+    }, [groupedByRound]);
 
     const formatRoundLabel = (key: string): { label: string; roundNum: number | null } => {
         if (!key) return { label: 'Fecha a confirmar', roundNum: null };
@@ -582,6 +604,16 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                         className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0 max-w-[120px] truncate"
                     >
                         {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+
+                    <select
+                        value={filterGender}
+                        onChange={(e) => setFilterGender(e.target.value)}
+                        className="bg-slate-800 text-white text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-700 focus:border-cyan-500 outline-none flex-shrink-0"
+                    >
+                        {availableGenders.map(g => (
+                            <option key={g} value={g}>{g === 'Todos' ? 'Ambos Sexos' : g}</option>
+                        ))}
                     </select>
                 </div>
 
