@@ -227,6 +227,18 @@ const MatchRow: React.FC<{
                     <span className="hidden sm:inline">Stats</span>
                 </a>
             )}
+
+            {/* Tournament/Stage Info (Declarative) */}
+            {!match.isRest && (
+                <div className="absolute -bottom-0 right-1.5 flex gap-1 opacity-60">
+                    {match.tournament && match.tournament !== 'Todos' && (
+                        <span className="text-[8px] font-bold text-slate-500 uppercase">{match.tournament}</span>
+                    )}
+                    {match.stageGroup && (
+                        <span className="text-[8px] font-bold text-cyan-600 uppercase">/ {match.stageGroup}</span>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -349,27 +361,6 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         }
     };
 
-    // Auto-collapse all rounds except the active one when data loads
-    useEffect(() => {
-        if (!activeRoundKey || matches.length === 0) return;
-
-        // Find which stage the active round belongs to
-        const activeMatch = matches.find(m => (m.round?.trim() || m.date) === activeRoundKey);
-        const activeStage = activeMatch?.stageGroup?.trim() || '__';
-
-        // Collapse all stages except the active one
-        const allStageKeys = new Set(matches.map(m => m.stageGroup?.trim() || '__'));
-        allStageKeys.delete(activeStage);
-        setCollapsedStages(allStageKeys);
-
-        // Collapse all rounds except the active one (scoped by stage)
-        const allScopedRoundKeys = new Set<string>();
-        matches.forEach(m => {
-            allScopedRoundKeys.add(`${m.stageGroup?.trim() || '__'}::${m.round?.trim() || m.date}`);
-        });
-        allScopedRoundKeys.delete(`${activeStage}::${activeRoundKey}`);
-        setCollapsedRounds(allScopedRoundKeys);
-    }, [activeRoundKey]); // only on initial active-round detection
 
     const [isAddingMatch, setIsAddingMatch] = useState(false);
     const [isCustomTournament, setIsCustomTournament] = useState(false);
@@ -400,48 +391,22 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         });
     }, [matches, filterTournament, filterCategory]);
 
-    // ── Two-level grouping: stage_group → round → matches ──
-    const groupedByStage = useMemo(() => {
-        // Step 1: Group by stage_group (use '__' sentinel for matches with no stage)
-        const stageMap: Record<string, Match[]> = {};
+    // ── Simplified grouping: round → matches ──
+    const groupedByRound = useMemo(() => {
+        const roundMap: Record<string, Match[]> = {};
         filteredMatches.forEach(m => {
-            const key = m.stageGroup?.trim() || '__';
-            if (!stageMap[key]) stageMap[key] = [];
-            stageMap[key].push(m);
+            const rKey = m.round?.trim() || m.date;
+            if (!roundMap[rKey]) roundMap[rKey] = [];
+            roundMap[rKey].push(m);
         });
 
-        return Object.entries(stageMap)
-            .map(([stageKey, stageMatches]) => {
-                // Step 2: Within stage, group by round (fallback to date)
-                const roundMap: Record<string, Match[]> = {};
-                stageMatches.forEach(m => {
-                    const rKey = m.round?.trim() || m.date;
-                    if (!roundMap[rKey]) roundMap[rKey] = [];
-                    roundMap[rKey].push(m);
-                });
-
-                // Sort rounds: numeric sort (Fecha 1 < Fecha 2) then alphanumeric, descending
-                const sortedRounds = Object.entries(roundMap).sort(([a], [b]) => {
-                    const nA = parseInt(a.replace(/\D/g, '')) || 0;
-                    const nB = parseInt(b.replace(/\D/g, '')) || 0;
-                    if (nA && nB) return nB - nA;
-                    return b.localeCompare(a);
-                });
-
-                // Use the latest match date within this stage to sort stages
-                const latestDate = stageMatches
-                    .map(m => m.date).filter(Boolean).sort().reverse()[0] || '';
-
-                return { stageKey, sortedRounds, latestDate };
-            })
-            // Sort stages by their latest date, descending
-            .sort((a, b) => b.latestDate.localeCompare(a.latestDate));
-    }, [filteredMatches]);
-
-    // Whether to show stage headers at all (only when there are 2+ distinct stage groups)
-    const showStageHeaders = useMemo(() => {
-        const stages = new Set(filteredMatches.map(m => m.stageGroup?.trim() || '__'));
-        return stages.size > 1;
+        // Sort rounds: numeric sort (Fecha 1 < Fecha 2) then alphanumeric, descending
+        return Object.entries(roundMap).sort(([a], [b]) => {
+            const nA = parseInt(a.replace(/\D/g, '')) || 0;
+            const nB = parseInt(b.replace(/\D/g, '')) || 0;
+            if (nA && nB) return nB - nA;
+            return b.localeCompare(a);
+        });
     }, [filteredMatches]);
 
     const formatRoundLabel = (key: string): { label: string; roundNum: number | null } => {
@@ -454,18 +419,6 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
         }
         const numMatch = key.match(/(\d+)/);
         return { label: key, roundNum: numMatch ? parseInt(numMatch[1]) : null };
-    };
-
-    // Two separate collapse sets: one for stage groups, one for rounds
-    // Round keys are scoped as `${stageKey}::${roundKey}` to avoid collisions
-    const [collapsedStages, setCollapsedStages] = useState<Set<string>>(new Set());
-
-    const toggleStage = (stageKey: string) => {
-        setCollapsedStages(prev => {
-            const next = new Set(prev);
-            next.has(stageKey) ? next.delete(stageKey) : next.add(stageKey);
-            return next;
-        });
     };
 
     const toggleRound = (scopedKey: string) => {
@@ -648,7 +601,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                         <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
                         <p>No hay partidos para {activeSeason}</p>
                     </div>
-                ) : groupedByStage.length === 0 ? (
+                ) : groupedByRound.length === 0 ? (
                     <div className="text-center text-slate-500 py-12">No hay partidos con estos filtros.</div>
                 ) : (
                     <div>
@@ -656,87 +609,61 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                             <GraphicalBracket matches={filteredMatches} isAdmin={isAdmin} onUpdateMatch={handleUpdateMatch} />
                         ) : (
                             <div>
-                                {groupedByStage.map(({ stageKey, sortedRounds }) => {
-                                    const isStageCollapsed = collapsedStages.has(stageKey);
+                                {groupedByRound.map(([roundKey, roundMatches]) => {
+                                    const isRoundCollapsed = collapsedRounds.has(roundKey);
+                                    const { label, roundNum } = formatRoundLabel(roundKey);
 
                                     return (
-                                        <div key={stageKey}>
-                                            {/* ── Stage Group Header (only when multiple stages exist) ── */}
-                                            {showStageHeaders && (
-                                                <button
-                                                    onClick={() => toggleStage(stageKey)}
-                                                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-800 hover:bg-slate-700/80 border-b border-t border-slate-600 transition-colors group"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                                            {stageKey === '__' ? 'Fase Regular' : stageKey}
-                                                        </span>
-                                                        <span className="text-[9px] text-slate-600">
-                                                            {sortedRounds.reduce((acc, [, ms]) => acc + ms.length, 0)} partidos
-                                                        </span>
-                                                    </div>
-                                                    <ChevronDownIcon className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isStageCollapsed ? '-rotate-90' : ''}`} />
-                                                </button>
-                                            )}
+                                        <div key={roundKey} className="border-b border-slate-800">
+                                            <RoundHeader
+                                                label={label}
+                                                count={roundMatches.length}
+                                                isCollapsed={isRoundCollapsed}
+                                                onToggle={() => toggleRound(roundKey)}
+                                                roundNumber={roundNum}
+                                            />
 
-                                            {/* ── Rounds within this stage ── */}
-                                            {!isStageCollapsed && sortedRounds.map(([roundKey, roundMatches]) => {
-                                                const scopedKey = `${stageKey}::${roundKey}`;
-                                                const isRoundCollapsed = collapsedRounds.has(scopedKey);
-                                                const { label, roundNum } = formatRoundLabel(roundKey);
+                                            {!isRoundCollapsed && (() => {
+                                                // Sub-group by date within the round
+                                                const byDate: Record<string, Match[]> = {};
+                                                roundMatches.forEach(m => {
+                                                    if (!byDate[m.date]) byDate[m.date] = [];
+                                                    byDate[m.date].push(m);
+                                                });
+                                                const dates = Object.keys(byDate).sort().reverse();
+                                                const showDateSub = dates.length > 1;
 
                                                 return (
-                                                    <div key={scopedKey} className="border-b border-slate-800">
-                                                        <RoundHeader
-                                                            label={label}
-                                                            count={roundMatches.length}
-                                                            isCollapsed={isRoundCollapsed}
-                                                            onToggle={() => toggleRound(scopedKey)}
-                                                            roundNumber={roundNum}
-                                                        />
-
-                                                        {!isRoundCollapsed && (() => {
-                                                            // Sub-group by date within the round
-                                                            const byDate: Record<string, Match[]> = {};
-                                                            roundMatches.forEach(m => {
-                                                                if (!byDate[m.date]) byDate[m.date] = [];
-                                                                byDate[m.date].push(m);
-                                                            });
-                                                            const dates = Object.keys(byDate).sort().reverse();
-                                                            const showDateSub = dates.length > 1;
-
-                                                            return (
-                                                                <div>
-                                                                    {dates.map(date => (
-                                                                        <div key={date}>
-                                                                            {showDateSub && (
-                                                                                <div className="px-4 py-1 bg-slate-800/30 border-b border-slate-800">
-                                                                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                                                        {new Date(`${date}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/^\w/, c => c.toUpperCase())}
-                                                                                    </span>
-                                                                                </div>
-                                                                            )}
-                                                                            {byDate[date].map((match, idx) => (
-                                                                                <MatchRow
-                                                                                    key={match.id}
-                                                                                    match={match}
-                                                                                    isEven={idx % 2 === 0}
-                                                                                    isEditMode={isEditMode}
-                                                                                    now={now}
-                                                                                    onUpdate={handleUpdateMatch}
-                                                                                    onDelete={handleDelete}
-                                                                                    onClick={handleMatchClick}
-                                                                                    linkedGameId={linkedGamesMap[match.id]}
-                                                                                />
-                                                                            ))}
-                                                                        </div>
+                                                    <div>
+                                                        {dates.map(date => (
+                                                            <div key={date}>
+                                                                {showDateSub && (
+                                                                    <div className="px-4 py-1 bg-slate-800/30 border-b border-slate-800">
+                                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                                                            {new Date(`${date}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/^\w/, c => c.toUpperCase())}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {byDate[date]
+                                                                    .sort((a, b) => a.time.localeCompare(b.time))
+                                                                    .map((match, idx) => (
+                                                                        <MatchRow
+                                                                            key={match.id}
+                                                                            match={match}
+                                                                            isEven={idx % 2 === 0}
+                                                                            isEditMode={isEditMode}
+                                                                            now={now}
+                                                                            onUpdate={handleUpdateMatch}
+                                                                            onDelete={handleDelete}
+                                                                            onClick={handleMatchClick}
+                                                                            linkedGameId={linkedGamesMap[match.id]}
+                                                                        />
                                                                     ))}
-                                                                </div>
-                                                            );
-                                                        })()}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 );
-                                            })}
+                                            })()}
                                         </div>
                                     );
                                 })}

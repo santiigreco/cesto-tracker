@@ -132,20 +132,6 @@ const GraphicalBracket: React.FC<GraphicalBracketProps> = ({ matches, isAdmin, o
                     </div>
                 ))}
             </div>
-
-            <div className="mt-4 p-4 bg-slate-800/40 border border-slate-700 rounded-lg">
-                <p className="text-[10px] text-slate-500 uppercase font-black mb-2 text-center tracking-widest">Cómo funciona la Llave</p>
-                <ul className="text-[11px] text-slate-400 space-y-1">
-                    <li className="flex items-start gap-2">
-                        <span className="text-cyan-500">✔</span>
-                        <span>La llave se arma automáticamente buscando partidos con "Final", "Semi" o "Cuartos" en su fase.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="text-cyan-500">✔</span>
-                        <span>Cuando cargues el resultado en la lista, el ganador aparecerá automáticamente en la siguiente fase si existe un lugar reservado (Ej: "Ganador Semi 1").</span>
-                    </li>
-                </ul>
-            </div>
         </div>
     );
 };
