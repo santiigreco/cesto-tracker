@@ -113,11 +113,13 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ teamName, className = "h-12 w-12", 
 
     let normalizedName = findLogoKey(safeTeamName);
 
-    // Fallback for "Team B" -> "Team"
+    // Fallback for "Team A" or "Team B" -> "Base Team"
     if (!normalizedName) {
         const trimmed = safeTeamName.trim();
-        if (trimmed.toUpperCase().endsWith(' B')) {
-            const baseName = trimmed.substring(0, trimmed.length - 2).trim();
+        // Check for suffixes like " A", " B", " C"
+        const suffixMatch = trimmed.match(/^(.*)\s+[A-B]$/i);
+        if (suffixMatch) {
+            const baseName = suffixMatch[1].trim();
             normalizedName = findLogoKey(baseName);
         }
     }
