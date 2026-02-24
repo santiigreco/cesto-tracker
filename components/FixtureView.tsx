@@ -335,7 +335,7 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
     // 2. Sync local filter state with URL parameters
     useEffect(() => {
         let t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
-        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera A';
+        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera';
 
         // Auto-select Pretemporada if no tournament param is provided
         if (!tournamentParam && availableTournaments.includes('Pretemporada')) {

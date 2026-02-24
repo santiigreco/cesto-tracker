@@ -276,7 +276,7 @@ const StandingsView: React.FC = () => {
     const { matches, loading, activeSeason, changeSeason } = useFixture();
 
     const [filterTournament, setFilterTournament] = useState('Todos');
-    const [filterCategory, setFilterCategory] = useState('Todas');
+    const [filterCategory, setFilterCategory] = useState('Primera');
 
     const availableTournaments = useMemo(() => {
         const u = new Set(matches.map(m => m.tournament).filter(Boolean));
@@ -301,7 +301,7 @@ const StandingsView: React.FC = () => {
     // 2. Sync local filter state with URL parameters
     useEffect(() => {
         let t = tournamentParam ? decodeURIComponent(tournamentParam) : 'Todos';
-        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Todas';
+        let c = categoryParam ? decodeURIComponent(categoryParam) : 'Primera';
 
         // Auto-select Pretemporada if no tournament param is provided
         if (!tournamentParam && availableTournaments.includes('Pretemporada')) {
