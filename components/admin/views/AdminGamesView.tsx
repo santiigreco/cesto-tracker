@@ -13,32 +13,45 @@ interface AdminGamesViewProps {
 export const AdminGamesView: React.FC<AdminGamesViewProps> = ({ onLoadGame }) => {
     const { games, fetchGames, deleteGame, loading, error } = useAdminGames();
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
         fetchGames();
     }, [fetchGames]);
 
     const filteredGames = useMemo(() => {
-        return games.filter(g => 
+        return games.filter(g =>
             (g.settings?.gameName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (g.settings?.myTeam || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (g.profiles?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [games, searchTerm]);
+        ).sort((a, b) => {
+            const dateA = new Date(a.created_at).getTime();
+            const dateB = new Date(b.created_at).getTime();
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+    }, [games, searchTerm, sortOrder]);
 
     return (
         <div className="flex flex-col h-full animate-fade-in pb-20 lg:pb-0">
-            <div className="mb-4">
-                <div className="relative w-full lg:max-w-md">
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className="relative flex-grow">
                     <SearchIcon className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-                    <input 
-                        type="text" 
-                        placeholder="Buscar por partido, equipo o usuario..." 
+                    <input
+                        type="text"
+                        placeholder="Buscar por partido, equipo o usuario..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-10 pr-4 py-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none"
                     />
                 </div>
+                <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    className="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-cyan-500 font-bold"
+                >
+                    <option value="asc">📅 Antiguos primero</option>
+                    <option value="desc">📅 Recientes primero</option>
+                </select>
             </div>
 
             {error && <div className="text-red-400 mb-2">{error}</div>}
@@ -61,21 +74,21 @@ export const AdminGamesView: React.FC<AdminGamesViewProps> = ({ onLoadGame }) =>
                                         {g.game_mode}
                                     </div>
                                 </div>
-                                
+
                                 <div className="border-t border-slate-700 pt-2 flex items-center justify-between">
                                     <div className="flex flex-col">
                                         <span className="text-[10px] text-slate-500 uppercase">Creado por</span>
                                         <span className="text-sm text-white">{g.profiles?.full_name || 'Anónimo'}</span>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => onLoadGame(g.id, true)} 
+                                        <button
+                                            onClick={() => onLoadGame(g.id, true)}
                                             className="p-2 bg-cyan-900/30 text-cyan-400 rounded-lg border border-cyan-900/50"
                                         >
                                             <EyeIcon className="h-5 w-5" />
                                         </button>
-                                        <button 
-                                            onClick={() => deleteGame(g.id)} 
+                                        <button
+                                            onClick={() => deleteGame(g.id)}
                                             className="p-2 bg-red-900/20 text-red-400 rounded-lg border border-red-900/50"
                                         >
                                             <TrashIcon className="h-5 w-5" />
@@ -84,6 +97,9 @@ export const AdminGamesView: React.FC<AdminGamesViewProps> = ({ onLoadGame }) =>
                                 </div>
                             </div>
                         ))}
+                        {filteredGames.length === 0 && (
+                            <div className="p-8 text-center text-slate-500">No se encontraron partidos.</div>
+                        )}
                     </div>
 
                     {/* --- DESKTOP TABLE --- */}
@@ -120,15 +136,15 @@ export const AdminGamesView: React.FC<AdminGamesViewProps> = ({ onLoadGame }) =>
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-2">
-                                                <button 
-                                                    onClick={() => onLoadGame(g.id, true)} 
+                                                <button
+                                                    onClick={() => onLoadGame(g.id, true)}
                                                     className="p-2 hover:bg-cyan-900/30 rounded-full text-slate-500 hover:text-cyan-400 transition-colors"
                                                     title="Abrir y Editar (Modo Owner)"
                                                 >
                                                     <EyeIcon className="h-5 w-5" />
                                                 </button>
-                                                <button 
-                                                    onClick={() => deleteGame(g.id)} 
+                                                <button
+                                                    onClick={() => deleteGame(g.id)}
                                                     className="p-2 hover:bg-red-900/30 rounded-full text-slate-500 hover:text-red-500 transition-colors"
                                                     title="Eliminar Partido"
                                                 >

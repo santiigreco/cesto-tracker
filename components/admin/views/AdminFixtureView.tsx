@@ -9,6 +9,7 @@ export const AdminFixtureView: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('Todas');
     const [filterTournament, setFilterTournament] = useState('Todos');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Stats
     const totalMatches = matches.length;
@@ -36,8 +37,12 @@ export const AdminFixtureView: React.FC = () => {
             const matchesTournament = filterTournament === 'Todos' || m.tournament === filterTournament;
 
             return matchesSearch && matchesCategory && matchesTournament;
+        }).sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.time || '00:00'}:00`).getTime();
+            const dateB = new Date(`${b.date}T${b.time || '00:00'}:00`).getTime();
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
-    }, [matches, searchTerm, filterCategory, filterTournament]);
+    }, [matches, searchTerm, filterCategory, filterTournament, sortOrder]);
 
     const handleScoreChange = (id: string, side: 'home' | 'away', value: string) => {
         const score = value === '' ? '' : parseInt(value, 10);
@@ -150,6 +155,14 @@ export const AdminFixtureView: React.FC = () => {
                     className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none"
                 >
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none font-bold"
+                >
+                    <option value="asc">📅 Antiguos primero</option>
+                    <option value="desc">📅 Recientes primero</option>
                 </select>
                 <button
                     onClick={refresh}
