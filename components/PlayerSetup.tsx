@@ -645,3 +645,5 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         </div>
     );
 };
+
+export default PlayerSetup;
