@@ -89,11 +89,12 @@ interface HomePageProps {
     user?: any;
     onLogin?: () => void;
     onLoadGame: (gameId: string, asOwner: boolean) => void;
+    canEditFixture: boolean;
 }
 
 // ── Next Match / Last Game Widget ──────────────────────────────────────
 const NextMatchWidget: React.FC<{
-    user: HomePageProps['user'];
+    user: any;
     onFixtureClick: () => void;
     onLoadGameClick: () => void;
     onLoadGame: (id: string) => void;
@@ -179,7 +180,7 @@ const NextMatchWidget: React.FC<{
     return null;
 };
 
-const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame }) => {
+const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame, canEditFixture }) => {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -187,8 +188,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
     const communityStats = useCommunityStats();
     const { profile } = useProfile();
-    const isOwner = user && profile?.is_admin === true;
-    const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
 
     const handleLogout = async () => {
         await (supabase.auth as any).signOut();

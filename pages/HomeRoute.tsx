@@ -4,6 +4,8 @@ import HomePage from '../components/HomePage';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useGameContext } from '../context/GameContext';
+import { useProfile } from '../hooks/useProfile';
+import { useCommunityStats } from '../hooks/useCommunityStats';
 
 export default function HomeRoute() {
     const navigate = useNavigate();
@@ -22,6 +24,11 @@ export default function HomeRoute() {
         navigate(`/match/${id}`);
     };
 
+    const communityStats = useCommunityStats();
+    const { profile } = useProfile();
+    const isOwner = user && profile?.is_admin === true;
+    const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
+
     return (
         <HomePage
             onStart={handleStartApp}
@@ -30,6 +37,7 @@ export default function HomeRoute() {
             user={user}
             onLogin={handleLogin}
             onLoadGame={handleLoadGame}
+            canEditFixture={canEditFixture}
         />
     );
 }
