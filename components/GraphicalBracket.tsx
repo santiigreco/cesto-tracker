@@ -72,9 +72,9 @@ const GraphicalBracket: React.FC<GraphicalBracketProps> = ({ matches, isAdmin, o
 
     return (
         <div className="p-4 overflow-x-auto min-h-[400px]">
-            <div className="flex gap-8 min-w-max pb-8">
+            <div className="flex gap-4 sm:gap-8 min-w-max pb-8">
                 {columns.map((col, colIdx) => (
-                    <div key={col.key} className="flex flex-col gap-6 w-60">
+                    <div key={col.key} className="flex flex-col gap-4 sm:gap-6 w-52 sm:w-60">
                         {/* Column Header */}
                         <div className="text-center">
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-1 px-4">
@@ -95,27 +95,27 @@ const GraphicalBracket: React.FC<GraphicalBracketProps> = ({ matches, isAdmin, o
                                     <div key={match.id} className="relative">
                                         <div className="bg-slate-800/80 border border-slate-700 rounded-lg overflow-hidden shadow-lg hover:border-cyan-500/50 transition-colors">
                                             {/* Home Team */}
-                                            <div className={`flex items-center justify-between px-3 py-2 border-b border-slate-700/50 ${homeWon ? 'bg-cyan-500/10' : ''}`}>
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <TeamLogo teamName={match.homeTeam} className="h-5 w-5 flex-shrink-0" />
-                                                    <span className={`text-xs font-bold truncate ${homeWon ? 'text-white' : 'text-slate-400'}`}>
+                                            <div className={`flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-b border-slate-700/50 ${homeWon ? 'bg-cyan-500/10' : ''}`}>
+                                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                                    <TeamLogo teamName={match.homeTeam} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                                                    <span className={`text-[10px] sm:text-xs font-bold truncate ${homeWon ? 'text-white' : 'text-slate-400'}`}>
                                                         {match.homeTeam}
                                                     </span>
                                                 </div>
-                                                <span className={`text-sm font-black tabular-nums ${homeWon ? 'text-cyan-400' : 'text-slate-500'}`}>
+                                                <span className={`text-xs sm:text-sm font-black tabular-nums ${homeWon ? 'text-cyan-400' : 'text-slate-500'}`}>
                                                     {match.scoreHome !== '' ? match.scoreHome : '-'}
                                                 </span>
                                             </div>
 
                                             {/* Away Team */}
-                                            <div className={`flex items-center justify-between px-3 py-2 ${awayWon ? 'bg-cyan-500/10' : ''}`}>
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <TeamLogo teamName={match.awayTeam} className="h-5 w-5 flex-shrink-0" />
-                                                    <span className={`text-xs font-bold truncate ${awayWon ? 'text-white' : 'text-slate-400'}`}>
+                                            <div className={`flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 ${awayWon ? 'bg-cyan-500/10' : ''}`}>
+                                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                                    <TeamLogo teamName={match.awayTeam} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                                                    <span className={`text-[10px] sm:text-xs font-bold truncate ${awayWon ? 'text-white' : 'text-slate-400'}`}>
                                                         {match.awayTeam}
                                                     </span>
                                                 </div>
-                                                <span className={`text-sm font-black tabular-nums ${awayWon ? 'text-cyan-400' : 'text-slate-500'}`}>
+                                                <span className={`text-xs sm:text-sm font-black tabular-nums ${awayWon ? 'text-cyan-400' : 'text-slate-500'}`}>
                                                     {match.scoreAway !== '' ? match.scoreAway : '-'}
                                                 </span>
                                             </div>

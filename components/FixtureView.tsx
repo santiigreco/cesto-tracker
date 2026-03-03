@@ -65,22 +65,22 @@ const StatusBadge: React.FC<{ match: Match; now: Date }> = ({ match, now }) => {
 
     if (effectiveStatus === 'live') {
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">
+            <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block"></span>En Vivo
             </span>
         );
     }
     if (effectiveStatus === 'finished') {
         return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400">
-                Finalizado
+            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400">
+                Final
             </span>
         );
     }
     // scheduled
     return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-cyan-300 bg-cyan-900/20 border border-cyan-800/40">
-            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold text-cyan-300 bg-cyan-900/20 border border-cyan-800/40">
+            <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {match.time}
@@ -100,11 +100,11 @@ const ScoreDisplay: React.FC<{ match: Match }> = ({ match }) => {
 
     return (
         <div className="flex items-center justify-center gap-1">
-            <span className={`text-lg font-black tabular-nums ${homeWon ? 'text-white' : 'text-slate-500'}`}>
+            <span className={`text-base sm:text-lg font-black tabular-nums ${homeWon ? 'text-white' : 'text-slate-500'}`}>
                 {match.scoreHome}
             </span>
-            <span className="text-slate-600 text-sm font-bold">:</span>
-            <span className={`text-lg font-black tabular-nums ${awayWon ? 'text-white' : 'text-slate-500'}`}>
+            <span className="text-slate-600 text-xs sm:text-sm font-bold">:</span>
+            <span className={`text-base sm:text-lg font-black tabular-nums ${awayWon ? 'text-white' : 'text-slate-500'}`}>
                 {match.scoreAway}
             </span>
         </div>
@@ -142,27 +142,27 @@ const MatchRow: React.FC<{
 
     return (
         <div
-            className={`group relative flex items-center gap-2 sm:gap-3 px-3 py-2 border-b border-slate-800 cursor-pointer transition-colors duration-150
+            className={`group relative flex items-center gap-1.5 sm:gap-3 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-slate-800 cursor-pointer transition-colors duration-150
                 ${isEven ? 'bg-slate-900' : 'bg-slate-800/40'}
                 ${!isEditMode ? 'hover:bg-slate-700/50' : ''}`}
             onClick={() => !isEditMode && onClick(match)}
         >
             {/* Status */}
-            <div className="w-16 sm:w-20 flex-shrink-0 flex justify-center">
+            <div className="w-[50px] sm:w-20 flex-shrink-0 flex justify-center">
                 <StatusBadge match={match} now={now} />
             </div>
 
             {/* Home Team */}
-            <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                <span className={`text-xs sm:text-sm font-semibold truncate text-right leading-tight
+            <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
+                <span className={`text-[11px] sm:text-sm font-semibold truncate text-right leading-tight
                     ${homeWon ? 'text-white font-bold' : 'text-slate-400'}`}>
                     {match.homeTeam}
                 </span>
-                <TeamLogo teamName={match.homeTeam} className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" />
+                <TeamLogo teamName={match.homeTeam} className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
             </div>
 
             {/* Score / Center */}
-            <div className="w-20 sm:w-24 flex-shrink-0 flex flex-col items-center justify-center">
+            <div className="w-14 sm:w-24 flex-shrink-0 flex flex-col items-center justify-center">
                 {isEditMode ? (
                     <div className="flex items-center gap-1">
                         <input
@@ -190,9 +190,9 @@ const MatchRow: React.FC<{
             </div>
 
             {/* Away Team */}
-            <div className="flex-1 flex items-center justify-start gap-2 min-w-0">
-                <TeamLogo teamName={match.awayTeam} className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" />
-                <span className={`text-xs sm:text-sm font-semibold truncate text-left leading-tight
+            <div className="flex-1 flex items-center justify-start gap-1.5 sm:gap-2 min-w-0">
+                <TeamLogo teamName={match.awayTeam} className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
+                <span className={`text-[11px] sm:text-sm font-semibold truncate text-left leading-tight
                     ${awayWon ? 'text-white font-bold' : 'text-slate-400'}`}>
                     {match.awayTeam}
                 </span>
@@ -254,13 +254,13 @@ const MatchRow: React.FC<{
             {!match.isRest && (
                 <div className="absolute -bottom-0 right-1.5 flex gap-1.5 items-center opacity-60">
                     {match.category && (
-                        <span className="text-[8px] font-black text-white bg-slate-700 px-1 rounded-sm uppercase">{match.category}</span>
+                        <span className="text-[7.5px] sm:text-[8px] font-black text-white bg-slate-700 px-1 rounded-sm uppercase">{match.category}</span>
                     )}
                     {match.tournament && match.tournament !== 'Todos' && (
-                        <span className="text-[8px] font-bold text-slate-500 uppercase">{match.tournament}</span>
+                        <span className="text-[7.5px] sm:text-[8px] font-bold text-slate-500 uppercase">{match.tournament}</span>
                     )}
                     {match.stageGroup && (
-                        <span className="text-[8px] font-bold text-cyan-600 uppercase">/ {match.stageGroup}</span>
+                        <span className="text-[7.5px] sm:text-[8px] font-bold text-cyan-600 uppercase">/ {match.stageGroup}</span>
                     )}
                 </div>
             )}
@@ -286,8 +286,8 @@ const RoundHeader: React.FC<{
                     {roundNumber}
                 </span>
             )}
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{label}</span>
-            <span className="text-[10px] text-slate-600 font-medium">{count} partido{count !== 1 ? 's' : ''}</span>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">{label}</span>
+            <span className="text-[9px] sm:text-[10px] text-slate-600 font-medium">{count} partido{count !== 1 ? 's' : ''}</span>
         </div>
         <ChevronDownIcon className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
     </button>
@@ -570,18 +570,18 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
     };
 
     return (
-        <div className="w-full flex-grow flex flex-col bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mt-8 shadow-2xl">
+        <div className="w-full flex-grow flex flex-col bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mt-4 sm:mt-8 shadow-2xl">
 
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-20 bg-slate-900 border-b border-slate-700 shadow-xl">
 
                 {/* Title Bar */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-5 w-5 text-cyan-400" />
-                            <h1 className="text-base font-black text-white tracking-widest uppercase">Fixture</h1>
-                            <span className="text-[10px] font-bold text-slate-600 border border-slate-700 px-1.5 rounded">
+                <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                            <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-400" />
+                            <h1 className="text-sm sm:text-base font-black text-white tracking-widest uppercase">Fixture</h1>
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-600 border border-slate-700 px-1.5 rounded">
                                 {activeSeason}
                             </span>
                         </div>
