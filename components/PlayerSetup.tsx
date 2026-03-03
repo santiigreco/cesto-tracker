@@ -646,4 +646,4 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     );
 };
 
-export default PlayerSetup;
+export default PlayerSetup; 
