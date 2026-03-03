@@ -132,8 +132,8 @@ const MatchRow: React.FC<{
         return (
             <div className={`flex items-center justify-center gap-3 py-3 px-4 ${isEven ? 'bg-slate-900' : 'bg-slate-900/60'} border-b border-slate-800`}>
                 <TeamLogo teamName={match.homeTeam} className="h-6 w-6 opacity-60 grayscale" />
-                <span className="text-slate-500 text-sm font-semibold">{match.homeTeam}</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600 border border-slate-700 px-2 py-0.5 rounded">
+                <span className="text-slate-500 text-[11px] sm:text-sm font-semibold">{match.homeTeam}</span>
+                <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-slate-600 border border-slate-700 px-2 py-0.5 rounded">
                     Fecha Libre
                 </span>
             </div>
@@ -153,8 +153,8 @@ const MatchRow: React.FC<{
             </div>
 
             {/* Home Team */}
-            <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
-                <span className={`text-[11px] sm:text-sm font-semibold truncate text-right leading-tight
+            <div className="flex-1 flex items-center justify-end gap-1 sm:gap-2 min-w-0">
+                <span className={`text-[10px] sm:text-sm font-semibold text-right leading-[1.2]
                     ${homeWon ? 'text-white font-bold' : 'text-slate-400'}`}>
                     {match.homeTeam}
                 </span>
@@ -190,9 +190,9 @@ const MatchRow: React.FC<{
             </div>
 
             {/* Away Team */}
-            <div className="flex-1 flex items-center justify-start gap-1.5 sm:gap-2 min-w-0">
+            <div className="flex-1 flex items-center justify-start gap-1 sm:gap-2 min-w-0">
                 <TeamLogo teamName={match.awayTeam} className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
-                <span className={`text-[11px] sm:text-sm font-semibold truncate text-left leading-tight
+                <span className={`text-[10px] sm:text-sm font-semibold text-left leading-[1.2]
                     ${awayWon ? 'text-white font-bold' : 'text-slate-400'}`}>
                     {match.awayTeam}
                 </span>
@@ -699,28 +699,42 @@ const FixtureView: React.FC<FixtureViewProps> = ({ isAdmin }) => {
                                             />
 
                                             {!isRoundCollapsed && (() => {
-                                                // Sub-group by date within the round
-                                                const byDate: Record<string, Match[]> = {};
+                                                // Group matches within the round
+                                                // Primary grouping: Category
+                                                // Secondary grouping: Date (if round label isn't a single date)
+                                                const categoriesInRound: Record<string, Match[]> = {};
                                                 roundMatches.forEach(m => {
-                                                    if (!byDate[m.date]) byDate[m.date] = [];
-                                                    byDate[m.date].push(m);
+                                                    const cat = m.category || 'Otros';
+                                                    if (!categoriesInRound[cat]) categoriesInRound[cat] = [];
+                                                    categoriesInRound[cat].push(m);
                                                 });
-                                                const dates = Object.keys(byDate).sort().reverse();
-                                                const showDateSub = dates.length > 1;
+
+                                                const sortedCategories = Object.keys(categoriesInRound).sort((a, b) => {
+                                                    // Move 'Primera A' and 'Primera B' to top
+                                                    if (a.includes('Primera') && !b.includes('Primera')) return -1;
+                                                    if (!a.includes('Primera') && b.includes('Primera')) return 1;
+                                                    return a.localeCompare(b);
+                                                });
 
                                                 return (
-                                                    <div>
-                                                        {dates.map(date => (
-                                                            <div key={date}>
-                                                                {showDateSub && (
-                                                                    <div className="px-4 py-1 bg-slate-800/30 border-b border-slate-800">
-                                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                                            {new Date(`${date}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/^\w/, c => c.toUpperCase())}
-                                                                        </span>
+                                                    <div className="bg-slate-900/40">
+                                                        {sortedCategories.map(cat => (
+                                                            <div key={cat} className="border-b border-slate-800/30 last:border-b-0">
+                                                                {/* Category Header (Only if multiple categories exist in round or if "Todas" filter is active) */}
+                                                                {(sortedCategories.length > 1 || filterCategory === 'Todas') && (
+                                                                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-800/50 border-b border-slate-800/30">
+                                                                        <div className="w-1 h-3 bg-cyan-500 rounded-full" />
+                                                                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{cat}</span>
                                                                     </div>
                                                                 )}
-                                                                {byDate[date]
-                                                                    .sort((a, b) => a.time.localeCompare(b.time))
+
+                                                                {/* Matches sorted by time */}
+                                                                {categoriesInRound[cat]
+                                                                    .sort((a, b) => {
+                                                                        // Sort by date THEN time within a category
+                                                                        if (a.date !== b.date) return a.date.localeCompare(b.date);
+                                                                        return a.time.localeCompare(b.time);
+                                                                    })
                                                                     .map((match, idx) => (
                                                                         <MatchRow
                                                                             key={match.id}

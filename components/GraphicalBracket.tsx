@@ -98,7 +98,7 @@ const GraphicalBracket: React.FC<GraphicalBracketProps> = ({ matches, isAdmin, o
                                             <div className={`flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-b border-slate-700/50 ${homeWon ? 'bg-cyan-500/10' : ''}`}>
                                                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                                     <TeamLogo teamName={match.homeTeam} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                                                    <span className={`text-[10px] sm:text-xs font-bold truncate ${homeWon ? 'text-white' : 'text-slate-400'}`}>
+                                                    <span className={`text-[10px] sm:text-xs font-bold leading-tight ${homeWon ? 'text-white' : 'text-slate-400'}`}>
                                                         {match.homeTeam}
                                                     </span>
                                                 </div>
@@ -111,7 +111,7 @@ const GraphicalBracket: React.FC<GraphicalBracketProps> = ({ matches, isAdmin, o
                                             <div className={`flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 ${awayWon ? 'bg-cyan-500/10' : ''}`}>
                                                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                                     <TeamLogo teamName={match.awayTeam} className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                                                    <span className={`text-[10px] sm:text-xs font-bold truncate ${awayWon ? 'text-white' : 'text-slate-400'}`}>
+                                                    <span className={`text-[10px] sm:text-xs font-bold leading-tight ${awayWon ? 'text-white' : 'text-slate-400'}`}>
                                                         {match.awayTeam}
                                                     </span>
                                                 </div>
