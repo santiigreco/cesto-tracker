@@ -50,6 +50,7 @@ export default function MatchRoute() {
         if (id && id !== 'new') {
             if (gameState.gameId !== id) {
                 handleLoadGame(id, false);
+                setActiveTab('statistics');
             }
         }
     }, [id, gameState.gameId]);
@@ -153,12 +154,12 @@ export default function MatchRoute() {
 
                 <Scoreboard />
 
-                <div className="hidden md:flex justify-center mb-8 border-b-2 border-slate-700">
+                <div className="hidden md:flex justify-center mb-8 border-b border-slate-700 bg-slate-900 shadow-md">
                     {tabsForCurrentMode.map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${activeTab === tab ? 'border-b-4 border-cyan-500 text-cyan-400' : 'text-slate-500 hover:text-cyan-400'}`}
+                            className={`relative z-20 flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${activeTab === tab ? 'border-b-4 border-cyan-500 text-cyan-400' : 'text-slate-500 hover:text-cyan-400'}`}
                         >
                             {tabTranslations[tab]}
                         </button>

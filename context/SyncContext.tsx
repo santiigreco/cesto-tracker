@@ -190,24 +190,33 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }));
 
             const loadedTallyStats: any = {};
-            (tallyRes.data || []).forEach((stat: any) => {
-                const player = stat.player_number;
-                if (!loadedTallyStats[player]) {
-                    loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
-                }
-                loadedTallyStats[player][stat.period] = {
-                    goles: stat.goles,
-                    triples: stat.triples,
-                    fallos: stat.fallos,
-                    recuperos: stat.recuperos,
-                    perdidas: stat.perdidas,
-                    reboteOfensivo: stat.rebote_ofensivo,
-                    reboteDefensivo: stat.rebote_defensivo,
-                    asistencias: stat.asistencias,
-                    golesContra: stat.goles_contra,
-                    faltasPersonales: stat.faltas_personales
-                };
-            });
+            
+            // Fix: Check if old match stored stats in settings JSON
+            if (tallyRes.data && tallyRes.data.length > 0) {
+                tallyRes.data.forEach((stat: any) => {
+                    const player = stat.player_number;
+                    if (!loadedTallyStats[player]) {
+                        loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
+                    }
+                    loadedTallyStats[player][stat.period] = {
+                        goles: stat.goles || 0,
+                        triples: stat.triples || 0,
+                        fallos: stat.fallos || 0,
+                        recuperos: stat.recuperos || 0,
+                        perdidas: stat.perdidas || 0,
+                        reboteOfensivo: stat.rebote_ofensivo || 0,
+                        reboteDefensivo: stat.rebote_defensivo || 0,
+                        asistencias: stat.asistencias || 0,
+                        golesContra: stat.goles_contra || 0,
+                        faltasPersonales: stat.faltas_personales || 0
+                    };
+                });
+            } else if (gameData.settings?.tallyStats) {
+                // Fallback for old games that did not use tally_stats relational table
+                Object.assign(loadedTallyStats, gameData.settings.tallyStats);
+            } else if (gameData.tallyStats) {
+                 Object.assign(loadedTallyStats, gameData.tallyStats);
+            }
 
             const loadedGameState = {
                 ...initialGameState,
