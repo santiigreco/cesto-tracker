@@ -117,10 +117,10 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         openModal('substitution'); // Open substitution modal to edit names quickly
     };
 
-    const hasMissingNames = gameState.availablePlayers.some(p => {
-        const name = gameState.playerNames[p] || '';
+    const hasMissingNames = gameState.availablePlayers?.some(p => {
+        const name = gameState.playerNames?.[p] || '';
         return !name || name === `Jugador #${p}` || name.includes('Jugador #');
-    });
+    }) || false;
 
 
     const handleRequestSaveGame = () => {
