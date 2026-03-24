@@ -133,7 +133,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
     // --- Dynamic Player Ordering Logic (for PlayerSelectionModal) ---
     const sortedPlayersByRecentUsage = useMemo(() => {
         const log = gameState.gameLog || [];
-        const usedPlayerNumbers = Array.from(new Set(log.map(entry => entry.playerNumber).filter(p => !!p)));
+        const usedPlayerNumbers = Array.from(new Set(log.map(entry => entry.playerNumber).filter(p => !!p))).sort((a, b) => Number(a) - Number(b));
         
         // Find players that are available but not used yet, sort them numerically
         const unusedPlayers = gameState.availablePlayers.filter(p => !usedPlayerNumbers.includes(p)).sort((a, b) => Number(a) - Number(b));
