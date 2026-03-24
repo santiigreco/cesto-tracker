@@ -31,7 +31,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
         ...(isOwner ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-6 w-6" /> }] : []),
         { id: 'tournaments' as AdminTab, label: 'Torneos', icon: <TrophyIcon rank={1} /> },
         { id: 'fixture' as AdminTab, label: 'Resultados', icon: <CalendarIcon className="h-6 w-6" /> },
-        { id: 'games' as AdminTab, label: 'En Vivo', icon: <div className="relative"><CalendarIcon className="h-6 w-6" /><span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span></div> },
+        { id: 'games' as AdminTab, label: 'Historial', icon: <CalendarIcon className="h-6 w-6" /> },
     ];
 
     return (

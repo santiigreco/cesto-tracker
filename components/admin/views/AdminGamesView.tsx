@@ -13,7 +13,7 @@ interface AdminGamesViewProps {
 export const AdminGamesView: React.FC<AdminGamesViewProps> = ({ onLoadGame }) => {
     const { games, fetchGames, deleteGame, loading, error } = useAdminGames();
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     useEffect(() => {
         fetchGames();

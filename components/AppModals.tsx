@@ -51,7 +51,8 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         handleClearSheet,
         handleConfirmNewGame,
         handleDeleteGameEvent,
-        handleEditGameEvent
+        handleEditGameEvent,
+        updatePlayerName
     } = useGameLogic();
 
     // Reconstruct wrappers from App logic to avoid passing down
@@ -114,7 +115,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
 
     const handleGoToEditNames = () => {
         closeModal('finishMatch');
-        openModal('substitution'); // Open substitution modal to edit names quickly
+        openModal('completeNames');
     };
 
     const hasMissingNames = gameState.availablePlayers?.some(p => {
@@ -295,6 +296,40 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     extraButtonColor="bg-slate-700 hover:bg-slate-600"
                 />
             )}
+
+            {modals.completeNames?.isOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[110] transition-opacity p-4">
+                    <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl p-6 sm:p-8 max-w-lg w-full max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200">
+                        <h2 className="text-2xl font-black text-white mb-2 tracking-tight italic drop-shadow-md">Completar Nombres</h2>
+                        <p className="text-slate-400 mb-6 text-sm">Asigna nombres reales a los números para el reporte oficial.</p>
+                        
+                        <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar space-y-3 mb-6">
+                            {gameState.availablePlayers.sort((a,b) => Number(a)-Number(b)).map(num => (
+                                <div key={num} className="flex items-center gap-3 bg-slate-700/30 p-2 rounded-xl border border-slate-600/30">
+                                    <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md">
+                                        #{num}
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        placeholder={`Nombre de jugador #${num}`}
+                                        className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all font-semibold"
+                                        value={gameState.playerNames[num] || ''}
+                                        onChange={(e) => updatePlayerName(num, e.target.value)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => { closeModal('completeNames'); openModal('finishMatch'); }}
+                            className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-black py-4 rounded-xl transition-all active:scale-95 shadow-xl shadow-cyan-900/30 tracking-widest uppercase text-sm"
+                        >
+                            Listo, volver al cierre
+                        </button>
+                    </div>
+                </div>
+            )}
+
 
             {notificationPopup && (
                 <NotificationPopup

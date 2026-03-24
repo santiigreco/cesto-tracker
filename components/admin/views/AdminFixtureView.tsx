@@ -9,7 +9,7 @@ export const AdminFixtureView: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('Todas');
     const [filterTournament, setFilterTournament] = useState('Todos');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     // Stats
     const totalMatches = matches.length;
