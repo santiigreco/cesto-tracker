@@ -1,29 +1,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import { XIcon } from './icons';
-import { EyeIcon } from './icons';
-import { SearchIcon } from './icons';
-import { CalendarIcon } from './icons';
+import { XIcon, EyeIcon, SearchIcon, CalendarIcon } from './icons';
 import Loader from './Loader';
 import TeamLogo from './TeamLogo';
-import { TrophyIcon } from './icons';
-import { ChevronDownIcon } from './icons';
-import { UsersIcon } from './icons';
 import { GameMode, Settings } from '../types';
-
-// Internal Icon for Navigation
-const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-);
-
-const FolderIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-    </svg>
-);
 
 interface SavedGame {
     id: string;
@@ -37,10 +18,6 @@ interface SavedGame {
     profiles?: { full_name: string | null } | null;
 }
 
-interface TournamentSummary {
-    id: string | 'all' | 'none';
-    name: string;
-}
 
 interface LoadGameModalProps {
     onClose: () => void;
@@ -49,12 +26,7 @@ interface LoadGameModalProps {
 }
 
 const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user }) => {
-    // Navigation State
-    const [view, setView] = useState<'tournaments' | 'games'>('tournaments');
-    const [selectedTournament, setSelectedTournament] = useState<TournamentSummary | null>(null);
-
     // Data State
-    const [tournaments, setTournaments] = useState<TournamentSummary[]>([]);
     const [games, setGames] = useState<SavedGame[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -65,49 +37,17 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
 
     // --- FETCH DATA ---
 
-    const fetchTournaments = useCallback(async () => {
-        if (!user) return;
-        
-        setLoading(true);
-        setError(null);
-        try {
-            const { data, error } = await supabase
-                .from('tournaments')
-                .select('id, name')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            
-            // Only store actual DB tournaments here
-            setTournaments(data || []);
-        } catch (err: any) {
-            setError('No se pudieron cargar los torneos.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
-
-    const fetchGames = useCallback(async (tournamentId: string) => {
+    const fetchGames = useCallback(async () => {
         if (!user) return;
 
         setLoading(true);
         setError(null);
         try {
-            let query = supabase
+            const { data: gamesData, error: gamesError } = await supabase
                 .from('games')
                 .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
-
-            if (tournamentId === 'all') {
-                query = query.eq('user_id', user.id);
-            } else if (tournamentId === 'none') {
-                query = query.eq('user_id', user.id).is('tournament_id', null);
-            } else {
-                query = query.eq('tournament_id', tournamentId);
-            }
-
-            const { data: gamesData, error: gamesError } = await query;
 
             if (gamesError) throw gamesError;
             
@@ -147,24 +87,10 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
     }, [user]);
 
     useEffect(() => {
-        if (view === 'tournaments' && user) {
-            fetchTournaments();
+        if (user) {
+            fetchGames();
         }
-    }, [view, fetchTournaments, user]);
-
-    const handleTournamentSelect = (tournament: TournamentSummary) => {
-        setSelectedTournament(tournament);
-        setView('games');
-        fetchGames(tournament.id);
-        setSearchTerm('');
-        setSelectedTeam('Todos');
-    };
-
-    const handleBackToTournaments = () => {
-        setView('tournaments');
-        setSelectedTournament(null);
-        setGames([]);
-    };
+    }, [fetchGames, user]);
 
     const uniqueTeams = useMemo(() => {
         const teams = new Set<string>(['Todos']);
@@ -218,23 +144,11 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                 {/* --- HEADER --- */}
                 <div className="flex justify-between items-center p-5 border-b border-slate-700 bg-slate-800 flex-shrink-0">
                     <div className="flex items-center gap-3">
-                        {view === 'games' && (
-                            <button 
-                                onClick={handleBackToTournaments}
-                                className="p-1.5 rounded-full bg-slate-700 hover:bg-slate-600 text-white transition-colors"
-                            >
-                                <ChevronDownIcon className="h-6 w-6 rotate-90" />
-                            </button>
-                        )}
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-                                {view === 'tournaments' ? 'Historial de Partidos' : selectedTournament?.name}
+                                Historial de Partidos
                             </h2>
-                            {view === 'games' && (
-                                <p className="text-slate-400 text-xs">
-                                    {selectedTournament?.id === 'all' || selectedTournament?.id === 'none' ? 'Historial personal' : 'Historial global del torneo'}
-                                </p>
-                            )}
+                            <p className="text-slate-400 text-xs">Todos tus encuentros, en orden cronológico</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white" aria-label="Cerrar">
@@ -242,98 +156,8 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                     </button>
                 </div>
 
-                {/* --- CONTENT: EXPLORER DASHBOARD --- */}
-                {view === 'tournaments' && (
-                    <div className="flex-grow overflow-y-auto custom-scrollbar p-6 bg-slate-900">
-                        {loading ? (
-                            <div className="flex justify-center py-20"><Loader /></div>
-                        ) : (
-                            <div className="space-y-10">
-                                
-                                {/* Section: My Activity */}
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <UsersIcon className="h-4 w-4"/> Tu Actividad
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        
-                                        {/* Main Card: All My Games */}
-                                        <button
-                                            onClick={() => handleTournamentSelect({ id: 'all', name: 'Todos mis partidos' })}
-                                            className="group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] border border-slate-700 hover:border-cyan-500/50 bg-gradient-to-br from-slate-800 to-slate-900"
-                                        >
-                                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                                <FolderIcon className="h-24 w-24 text-cyan-400" />
-                                            </div>
-                                            <div className="relative z-10">
-                                                <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-4 text-cyan-400 group-hover:scale-110 transition-transform">
-                                                    <UsersIcon className="h-6 w-6" />
-                                                </div>
-                                                <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">Mis Partidos</h3>
-                                                <p className="text-sm text-slate-400">Ver todo tu historial de juegos guardados.</p>
-                                            </div>
-                                            <div className="absolute bottom-6 right-6 text-cyan-500 transform translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all">
-                                                <ChevronRightIcon />
-                                            </div>
-                                        </button>
-
-                                        {/* Secondary Card: Untracked Games */}
-                                        <button
-                                            onClick={() => handleTournamentSelect({ id: 'none', name: 'Partidos sin torneo' })}
-                                            className="group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 border border-slate-700 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800"
-                                        >
-                                            <div className="relative z-10">
-                                                <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center mb-4 text-slate-400 group-hover:text-white transition-colors">
-                                                    <CalendarIcon className="h-6 w-6" />
-                                                </div>
-                                                <h3 className="text-xl font-bold text-slate-200 mb-1 group-hover:text-white">Partidos Sueltos</h3>
-                                                <p className="text-sm text-slate-500">Amistosos y juegos sin torneo asignado.</p>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Section: Global Tournaments */}
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <TrophyIcon rank={1} /> Torneos y Ligas
-                                    </h3>
-                                    {tournaments.length === 0 ? (
-                                        <div className="text-slate-500 text-sm italic bg-slate-800/30 p-4 rounded-lg border border-slate-800">
-                                            No hay torneos activos en este momento.
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {tournaments.map((t) => (
-                                                <button
-                                                    key={t.id}
-                                                    onClick={() => handleTournamentSelect(t)}
-                                                    className="group flex items-center justify-between p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-750 transition-all text-left"
-                                                >
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-yellow-500 group-hover:border-yellow-500/50 transition-colors shrink-0">
-                                                            <TrophyIcon rank={3} /> 
-                                                        </div>
-                                                        <span className="font-semibold text-slate-200 group-hover:text-white truncate">
-                                                            {t.name}
-                                                        </span>
-                                                    </div>
-                                                    <ChevronRightIcon className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                            </div>
-                        )}
-                        {error && <div className="text-center text-red-400 mt-4 bg-red-900/10 p-2 rounded border border-red-900/20">{error}</div>}
-                    </div>
-                )}
-
                 {/* --- CONTENT: GAMES LIST --- */}
-                {view === 'games' && (
-                    <>
+                <>
                         {/* Filters */}
                         <div className="p-4 bg-slate-800/50 border-b border-slate-700 space-y-4 flex-shrink-0">
                             <div className="relative">
@@ -463,14 +287,10 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
                                 </div>
                             )}
                         </div>
-                    </>
-                )}
-                
-                {view === 'games' && (
                     <div className="bg-slate-800 p-2 text-center text-xs text-slate-500 border-t border-slate-700 flex-shrink-0">
                         Mostrando {filteredGames.length} de {games.length} partidos
                     </div>
-                )}
+                </>
             </div>
         </div>
     );
