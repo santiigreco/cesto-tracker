@@ -128,12 +128,13 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             rebote_ofensivo: periodStats.reboteOfensivo,
                             rebote_defensivo: periodStats.reboteDefensivo,
                             asistencias: periodStats.asistencias,
-                            goles_contra: periodStats.golesContra,
+                            golescontra: periodStats.golesContra,
                             faltas_personales: periodStats.faltasPersonales
                         });
                     });
                 }
-                await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
+                const { error: tallyStatsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
+                if (tallyStatsError) throw tallyStatsError;
             }
 
             if (gameState.gameId !== newGameId) {
@@ -158,6 +159,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const handleLoadGame = useCallback(async (gameId: string, enableEditing: boolean = false) => {
         setIsLoading(true);
+        console.log(`[SyncContext] Cargando partido: ${gameId} (editar: ${enableEditing})`);
         try {
             const [gameRes, shotsRes, tallyRes] = await Promise.all([
                 supabase.from('games').select('*, tournaments(name)').eq('id', gameId).single(),
@@ -170,6 +172,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (tallyRes.error) throw tallyRes.error;
 
             const gameData = gameRes.data;
+            console.log('[SyncContext] Game metadata cargada correctamente');
 
             if (!enableEditing) {
                 try {
@@ -182,8 +185,8 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const loadedShots = (shotsRes.data || []).map((s: any) => ({
                 id: s.id,
-                playerNumber: s.player_number,
-                position: { x: s.x, y: s.y },
+                playerNumber: s.player_number?.toString(),
+                position: s.position || { x: s.x, y: s.y },
                 isGol: s.is_gol,
                 golValue: s.gol_value,
                 period: s.period
@@ -191,60 +194,82 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const loadedTallyStats: any = {};
             
-            // Fix: Check if old match stored stats in settings JSON
+            // 1. Prioridad: Relational DB Table (tally_stats)
             if (tallyRes.data && tallyRes.data.length > 0) {
+                console.log(`[SyncContext] Cargando ${tallyRes.data.length} filas de tally_stats`);
                 tallyRes.data.forEach((stat: any) => {
-                    const player = stat.player_number;
-                    if (!loadedTallyStats[player]) {
-                        loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
-                    }
-                    loadedTallyStats[player][stat.period] = {
-                        goles: stat.goles || 0,
-                        triples: stat.triples || 0,
-                        fallos: stat.fallos || 0,
-                        recuperos: stat.recuperos || 0,
-                        perdidas: stat.perdidas || 0,
-                        reboteOfensivo: stat.rebote_ofensivo || 0,
-                        reboteDefensivo: stat.rebote_defensivo || 0,
-                        asistencias: stat.asistencias || 0,
-                        golesContra: stat.goles_contra || 0,
-                        faltasPersonales: stat.faltas_personales || 0
-                    };
-                });
-            } else if (gameData.settings?.tallyStats || gameData.tallyStats) {
-                // Fallback for old games that did not use tally_stats relational table
-                const sourceStats = gameData.settings?.tallyStats || gameData.tallyStats;
-                
-                Object.entries(sourceStats).forEach(([player, plStats]: [string, any]) => {
+                    const player = stat.player_number?.toString();
+                    if (!player) return;
+                    
                     if (!loadedTallyStats[player]) {
                         loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
                     }
                     
-                    // Check if it's already in the new format (has 'First Half')
+                    const period = stat.period;
+                    if (loadedTallyStats[player][period]) {
+                        loadedTallyStats[player][period] = {
+                            goles: stat.goles ?? 0,
+                            triples: stat.triples ?? 0,
+                            fallos: stat.fallos ?? 0,
+                            recuperos: stat.recuperos ?? 0,
+                            perdidas: stat.perdidas ?? 0,
+                            reboteOfensivo: stat.rebote_ofensivo ?? stat.reboteOfensivo ?? 0,
+                            reboteDefensivo: stat.rebote_defensivo ?? stat.reboteDefensivo ?? 0,
+                            asistencias: stat.asistencias ?? 0,
+                            golesContra: stat.golescontra ?? stat.goles_contra ?? stat.golesContra ?? 0,
+                            faltasPersonales: stat.faltas_personales ?? stat.faltasPersonales ?? 0
+                        };
+                    }
+                });
+            } 
+            
+            // 2. Fallback: JSON storage (Legacy or double-save)
+            const sourceStats = gameData.settings?.tallyStats || gameData.tallyStats;
+            if (sourceStats && Object.keys(sourceStats).length > 0) {
+                console.log('[SyncContext] Mergeando datos de fallback JSON');
+                Object.entries(sourceStats).forEach(([player, plStats]: [string, any]) => {
+                    const pKey = player.toString();
+                    if (!loadedTallyStats[pKey]) {
+                        loadedTallyStats[pKey] = JSON.parse(JSON.stringify(initialPlayerTally));
+                    }
+                    
                     if (plStats['First Half'] || plStats['Second Half']) {
-                        // Ensure defaults for all periods just in case
                         Object.keys(plStats).forEach(period => {
-                            if (loadedTallyStats[player][period]) {
-                                loadedTallyStats[player][period] = {
-                                    ...loadedTallyStats[player][period],
-                                    ...plStats[period]
-                                };
+                            if (loadedTallyStats[pKey][period]) {
+                                // Merge only if the relational table didn't already provide better data
+                                // Or overwrite if relational was empty for this specific period
+                                const isRelationalEmpty = !tallyRes.data?.some(r => r.player_number?.toString() === pKey && r.period === period);
+                                if (isRelationalEmpty) {
+                                    loadedTallyStats[pKey][period] = {
+                                        ...loadedTallyStats[pKey][period],
+                                        ...plStats[period],
+                                        // Ensure cross-compatibility of field names in JSON
+                                        reboteOfensivo: plStats[period].reboteOfensivo ?? plStats[period].rebote_ofensivo ?? 0,
+                                        reboteDefensivo: plStats[period].reboteDefensivo ?? plStats[period].rebote_defensivo ?? 0,
+                                        golesContra: plStats[period].golesContra ?? plStats[period].goles_contra ?? plStats[period].golescontra ?? 0,
+                                        faltasPersonales: plStats[period].faltasPersonales ?? plStats[period].faltas_personales ?? 0
+                                    };
+                                }
                             }
                         });
-                    } else {
-                        // Old legacy format without periods! Map everything to 'First Half'
-                        loadedTallyStats[player]['First Half'] = {
-                            goles: plStats.goles || 0,
-                            triples: plStats.triples || 0,
-                            fallos: plStats.fallos || 0,
-                            recuperos: plStats.recuperos || 0,
-                            perdidas: plStats.perdidas || 0,
-                            reboteOfensivo: plStats.reboteOfensivo || plStats.rebote_ofensivo || 0,
-                            reboteDefensivo: plStats.reboteDefensivo || plStats.rebote_defensivo || 0,
-                            asistencias: plStats.asistencias || 0,
-                            golesContra: plStats.golesContra || plStats.goles_contra || 0,
-                            faltasPersonales: plStats.faltasPersonales || plStats.faltas_personales || 0
-                        };
+                    } else if (typeof plStats === 'object') {
+                        // Very old legacy format without periods
+                        const isRelationalEmpty = !tallyRes.data?.some(r => r.player_number?.toString() === pKey);
+                        if (isRelationalEmpty) {
+                            loadedTallyStats[pKey]['First Half'] = {
+                                ...loadedTallyStats[pKey]['First Half'],
+                                goles: plStats.goles || 0,
+                                triples: plStats.triples || 0,
+                                fallos: plStats.fallos || 0,
+                                recuperos: plStats.recuperos || 0,
+                                perdidas: plStats.perdidas || 0,
+                                reboteOfensivo: plStats.reboteOfensivo ?? plStats.rebote_ofensivo ?? 0,
+                                reboteDefensivo: plStats.reboteDefensivo ?? plStats.rebote_defensivo ?? 0,
+                                asistencias: plStats.asistencias || 0,
+                                golesContra: plStats.golesContra ?? plStats.goles_contra ?? plStats.golescontra ?? 0,
+                                faltasPersonales: plStats.faltasPersonales ?? plStats.faltas_personales ?? 0
+                            };
+                        }
                     }
                 });
             }
@@ -260,9 +285,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     tournamentId: gameData.tournament_id || gameData.settings?.tournamentId,
                     tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
                 },
-                availablePlayers: gameData.available_players,
-                playerNames: gameData.player_names,
-                activePlayers: gameData.available_players.slice(0, 6),
+                availablePlayers: gameData.available_players || [],
+                playerNames: gameData.player_names || {},
+                activePlayers: (gameData.available_players || []).slice(0, 6),
                 shots: loadedShots,
                 tallyStats: loadedTallyStats,
                 teamFouls: gameData.settings?.teamFouls || gameData.team_fouls || initialGameState.teamFouls,
@@ -271,10 +296,13 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setGameState(loadedGameState as any);
             if (enableEditing) setLastSaved(new Date());
+            
+            return gameData.game_mode;
 
         } catch (error: any) {
             console.error('Load Error:', error);
             alert(`No se pudo cargar el partido: ${error.message}`);
+            return null;
         } finally {
             setIsLoading(false);
         }
