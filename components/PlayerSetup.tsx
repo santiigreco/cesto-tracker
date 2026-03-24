@@ -4,9 +4,9 @@ import { JerseyIcon } from './icons';
 import { Settings, GameMode, RosterPlayer } from '../types';
 import ToggleSwitch from './ToggleSwitch';
 import { ChevronDownIcon } from './icons';
-import { UndoIcon } from './icons';
 import TeamSelectorModal from './TeamSelectorModal';
 import TournamentSelectorModal from './TournamentSelectorModal';
+import TeamLogo from './TeamLogo';
 import { supabase } from '../utils/supabaseClient';
 import { useFixtureSuggestion } from '../hooks/useFixtureSuggestion';
 import { TEAMS_CONFIG } from '../constants';
@@ -427,9 +427,13 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                     className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all group-hover/field:border-cyan-500/50"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-cyan-900/30 rounded-xl text-cyan-400">
-                                            <JerseyIcon className="h-5 w-5" />
-                                        </div>
+                                        {settings.myTeam ? (
+                                            <TeamLogo teamName={settings.myTeam} className="w-8 h-8" />
+                                        ) : (
+                                            <div className="p-2 bg-cyan-900/30 rounded-xl text-cyan-400">
+                                                <JerseyIcon className="h-5 w-5" />
+                                            </div>
+                                        )}
                                         <span className="font-bold text-sm sm:text-base">{settings.myTeam || 'Selecciona equipo'}</span>
                                     </div>
                                     <ChevronDownIcon className="h-4 w-4 text-slate-500" />
@@ -478,64 +482,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         </button>
                     </div>
 
-                    {/* ── Mode Selection ── */}
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 block text-center">Modo de Seguimiento</label>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                onClick={() => setSelectedMode('stats-tally')}
-                                className={`flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all gap-2 relative group-mode ${selectedMode === 'stats-tally'
-                                    ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400'
-                                    : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400'
-                                    }`}
-                            >
-                                <span className="text-2xl sm:text-3xl">🗒️</span>
-                                <span className="font-black text-[10px] sm:text-xs uppercase tracking-wider">Anotador</span>
-                                {selectedMode === 'stats-tally' && <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-cyan-500"></span>}
-                            </button>
 
-                            <button
-                                onClick={() => setSelectedMode('shot-chart')}
-                                className={`flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all gap-2 relative group-mode ${selectedMode === 'shot-chart'
-                                    ? 'bg-purple-500/10 border-purple-500 text-purple-400'
-                                    : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400'
-                                    }`}
-                            >
-                                <span className="text-2xl sm:text-3xl">🎯</span>
-                                <span className="font-black text-[10px] sm:text-xs uppercase tracking-wider group-mode-hover:text-purple-400">Tiro a Tiro</span>
-                                {selectedMode === 'shot-chart' && <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-purple-500"></span>}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* ── Player Selection ── */}
-                    <div className="space-y-4 pt-4">
-                        <div className="flex items-center justify-between px-1">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                Jugadores ({selectedPlayers.size})
-                            </label>
-                            <button
-                                onClick={() => setSelectedPlayers(new Set())}
-                                className="text-[10px] font-bold text-red-500/70 hover:text-red-400 flex items-center gap-1.5 transition-colors"
-                            >
-                                <UndoIcon className="h-3 w-3" /> Limpiar
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-3">
-                            {allPlayers.map((num) => (
-                                <button
-                                    key={num}
-                                    onClick={() => togglePlayer(num)}
-                                    className={`aspect-square sm:h-12 flex flex-col items-center justify-center rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all border shadow-sm ${selectedPlayers.has(num)
-                                        ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50 scale-105'
-                                        : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600'
-                                        }`}
-                                >
-                                    {num}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
 
                     {/* ── Start Button ── */}
                     <div className="pt-6">
