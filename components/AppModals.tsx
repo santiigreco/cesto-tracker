@@ -4,6 +4,7 @@ import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import { useGameContext, initialGameState } from '../context/GameContext';
 import { useGameLogic } from '../hooks/useGameLogic';
+import { useNavigate } from 'react-router-dom';
 
 import MobileMenu from './MobileMenu';
 import PlayerSelectionModal from './PlayerSelectionModal';
@@ -39,7 +40,7 @@ import { useSync } from '../context/SyncContext';
 
 const AppModals: React.FC<AppModalsProps> = (props) => {
     const { activeTab, setActiveTab, modals, closeModal, actionToAssign, setActionToAssign, notificationPopup, setNotificationPopup, toast, handleShare, showToast } = useUI();
-
+    const navigate = useNavigate();
     const { user, handleLogout, handleLogin } = useAuth();
     const { gameState, setGameState } = useGameContext();
     const { syncState, setSyncState, handleSyncToSupabase, handleLoadGame } = useSync();
@@ -85,6 +86,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
     const handleRequestReturnHome = () => {
         setGameState({ ...initialGameState, hasSeenHomepage: false, tutorialStep: 1 });
         closeModal('returnHome');
+        navigate('/');
     };
 
     const handleRequestNewGame = () => {

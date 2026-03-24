@@ -131,21 +131,34 @@ const TallyStatisticsView: React.FC<{
 
   const hasData = aggregatedStats.some(p => p.playerNumber !== 'Equipo' && (p.goles > 0 || p.triples > 0 || p.fallos > 0 || p.recuperos > 0 || p.perdidas > 0));
 
+  const periodTranslations: any = {
+    'all': 'Ambos',
+    'First Half': '1er T',
+    'Second Half': '2do T',
+    'First Overtime': '1er S',
+    'Second Overtime': '2do S'
+  };
+
   if (!hasData && !isSharing) {
     return (
-      <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
-        <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
-        <p className="text-slate-400">Registra algunos datos para ver las estadísticas de los jugadores aquí.</p>
+      <div className="flex flex-col gap-8">
+        <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg overflow-x-auto">
+          <div className="flex justify-start sm:justify-center gap-2 min-w-max">
+            <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>Ambos</button>
+            <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>1er T</button>
+            <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>2do T</button>
+            <button onClick={() => setTallyPeriodFilter('First Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'First Overtime')}>1er S</button>
+            <button onClick={() => setTallyPeriodFilter('Second Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Overtime')}>2do S</button>
+          </div>
+        </div>
+        <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
+          <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
+          <p className="text-slate-400">Registra algunos datos para ver las estadísticas de los jugadores aquí.</p>
+        </div>
       </div>
     );
   }
 
-  const periodTranslations: { [key in GamePeriod]: string } = {
-    'First Half': 'Primer Tiempo',
-    'Second Half': 'Segundo Tiempo',
-    'First Overtime': '1er Suple',
-    'Second Overtime': '2do Suple'
-  };
 
   const tableHeaders: { key: TallySortableKey, label: string, title: string }[] = [
     { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },

@@ -139,6 +139,7 @@ export default function MatchRoute() {
                     isAutoSaving={isAutoSaving}
                     lastSaved={lastSaved}
                     gameId={gameState.gameId}
+                    activeTab={activeTab}
                     onOpenSettings={() => openModal('settings')}
                     isReadOnly={gameState.isReadOnly}
                     isAdmin={isAdmin}

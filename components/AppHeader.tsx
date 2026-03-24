@@ -28,6 +28,7 @@ interface AppHeaderProps {
     onLogin?: () => void;
     onSave?: () => void;
     onOpenProfile?: () => void;
+    activeTab?: string;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -50,7 +51,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     userInitial,
     onLogin,
     onSave,
-    onOpenProfile
+    onOpenProfile,
+    activeTab
 }) => {
     const navigate = useNavigate();
     return (
@@ -160,7 +162,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                         </p>
                     </div>
 
-                    {currentPeriod && onPeriodChange && (
+                    {currentPeriod && onPeriodChange && activeTab !== 'statistics' && (
                         <div className="mt-2 inline-block">
                             <select
                                 value={currentPeriod}
