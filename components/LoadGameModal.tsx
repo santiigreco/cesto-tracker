@@ -46,7 +46,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame, user
             const { data: gamesData, error: gamesError } = await supabase
                 .from('games')
                 .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id')
-                .eq('user_id', user.id)
+                .limit(500)
                 .order('created_at', { ascending: false });
 
             if (gamesError) throw gamesError;
