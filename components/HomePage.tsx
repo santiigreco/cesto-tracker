@@ -180,14 +180,26 @@ const NextMatchWidget: React.FC<{
     return null;
 };
 
+const LAST_SETUP_KEY = 'cesto_last_team_setup';
+
 const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, user, onLogin, onLoadGame, canEditFixture }) => {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
     const communityStats = useCommunityStats();
     const { profile } = useProfile();
+
+    // Último setup guardado en localStorage
+    const lastSetup = (() => {
+        try {
+            const raw = localStorage.getItem(LAST_SETUP_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (parsed?.myTeam) return parsed as { myTeam: string; players?: string[]; playerNames?: Record<string, string> };
+        } catch { /* ignore */ }
+        return null;
+    })();
 
     const handleLogout = async () => {
         await (supabase.auth as any).signOut();
@@ -200,6 +212,16 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
     const handleStartClick = () => {
         setIsTeamSelectorOpen(true);
+    };
+
+    // Inicio rápido: usa el último setup sin pasar por el formulario
+    const handleQuickStart = () => {
+        if (!lastSetup) return;
+        const roster: RosterPlayer[] = (lastSetup.players || []).map(num => ({
+            number: num,
+            name: lastSetup.playerNames?.[num] || '',
+        }));
+        onStart(lastSetup.myTeam, roster.length > 0 ? roster : undefined);
     };
 
     const handleTeamSelected = (name: string, roster?: RosterPlayer[]) => {
@@ -346,6 +368,28 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                     </svg>
                                 </div>
                             </div>
+
+                            {/* Quick Start — solo si hay setup previo */}
+                            {lastSetup && (
+                                <div className="col-span-6 flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-3">
+                                    <span className="text-lg">⚡</span>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Acceso rápido</p>
+                                        <p className="text-sm font-bold text-white truncate">
+                                            {lastSetup.myTeam}
+                                            {lastSetup.players && lastSetup.players.length > 0 && (
+                                                <span className="text-slate-400 font-normal"> · {lastSetup.players.length} jugadoras</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleQuickStart}
+                                        className="flex-shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs uppercase tracking-widest px-4 py-2 rounded-xl transition-all hover:scale-105 shadow-lg shadow-emerald-900/20"
+                                    >
+                                        Continuar →
+                                    </button>
+                                </div>
+                            )}
 
                             <div
                                 onClick={handleFixtureClick}

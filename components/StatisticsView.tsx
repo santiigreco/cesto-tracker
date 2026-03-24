@@ -349,7 +349,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
           <div className="flex flex-col sm:flex-row justify-between items-center -mb-4 gap-4">
             <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
             <div className="flex gap-2">
-              {onShareClick && typeof navigator.share === 'function' && Object.keys(tallyStats).length > 0 && (
+              {onShareClick && Object.keys(tallyStats).length > 0 && (
                 <button
                   onClick={onShareClick}
                   className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
@@ -463,7 +463,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
         <div className="flex flex-col sm:flex-row justify-between items-center -mb-4 gap-4">
           <h2 className="text-3xl font-bold text-cyan-400">Resumen Estadístico</h2>
           <div className="flex gap-2">
-            {onShareClick && typeof navigator.share === 'function' && hasData && (
+            {onShareClick && hasData && (
               <button
                 onClick={onShareClick}
                 className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500"
