@@ -12,6 +12,7 @@ interface AppHeaderProps {
     onRequestReturnHome: () => void;
     isSetupComplete: boolean;
     gameName?: string;
+    myTeam?: string;
     gameMode: GameMode;
     isAutoSaving: boolean;
     lastSaved: Date | null;
@@ -34,6 +35,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     onRequestReturnHome,
     isSetupComplete,
     gameName,
+    myTeam,
     gameMode,
     isAutoSaving,
     lastSaved,
@@ -147,7 +149,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
                 {/* Subtitle / Period Selector Row */}
                 <div className="flex flex-col items-center gap-1">
-                    {gameName && <p className="text-lg font-bold text-white truncate max-w-[90vw]">{gameName}</p>}
+                    {gameName && (
+                        <p className="text-lg font-bold text-white truncate max-w-[90vw]">
+                            {myTeam ? `${myTeam} vs ${gameName}` : gameName}
+                        </p>
+                    )}
                     <div className="flex items-center gap-3">
                         <p className="text-xs sm:text-base text-slate-400 font-medium">
                             {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}

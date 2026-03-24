@@ -61,6 +61,12 @@ export default function MatchRoute() {
             : ['tally', 'statistics'] as const;
     }, [gameState.gameMode]);
 
+    useEffect(() => {
+        if (!tabsForCurrentMode.includes(activeTab as any)) {
+            setActiveTab(tabsForCurrentMode[0]);
+        }
+    }, [tabsForCurrentMode, activeTab, setActiveTab]);
+
     const tabTranslations: Partial<Record<AppTab, string>> = {
         logger: 'Cancha',
         tally: 'Planilla',
@@ -127,6 +133,7 @@ export default function MatchRoute() {
                     onRequestReturnHome={() => openModal('returnHome')}
                     isSetupComplete={gameState.isSetupComplete}
                     gameName={gameState.settings.gameName}
+                    myTeam={gameState.settings.myTeam}
                     gameMode={gameState.gameMode}
                     isAutoSaving={isAutoSaving}
                     lastSaved={lastSaved}

@@ -247,7 +247,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         // Set default name if empty
         const finalSettings = {
             ...settings,
-            gameName: settings.gameName?.trim() || `Partido del ${new Date().toLocaleDateString()}`
+            gameName: settings.gameName?.trim() || 'Equipo Rival'
         };
 
         // Save this team config for next time
