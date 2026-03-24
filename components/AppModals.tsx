@@ -39,7 +39,7 @@ interface AppModalsProps {
 import { useSync } from '../context/SyncContext';
 
 const AppModals: React.FC<AppModalsProps> = (props) => {
-    const { activeTab, setActiveTab, modals, closeModal, actionToAssign, setActionToAssign, notificationPopup, setNotificationPopup, toast, handleShare, showToast } = useUI();
+    const { activeTab, setActiveTab, modals, openModal, closeModal, actionToAssign, setActionToAssign, notificationPopup, setNotificationPopup, toast, handleShare, showToast } = useUI();
     const navigate = useNavigate();
     const { user, handleLogout, handleLogin } = useAuth();
     const { gameState, setGameState } = useGameContext();
@@ -98,6 +98,30 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         closeModal('settings');
         useUI().openModal('reselect');
     };
+
+    const handleConfirmFinalize = async () => {
+        closeModal('finishMatch');
+        showToast('Finalizando y guardando partido...', 'info');
+        try {
+            await handleSyncToSupabase(true);
+            setActiveTab('statistics');
+            showToast('¡Partido finalizado y guardado con éxito!', 'success');
+        } catch (err: any) {
+            showToast(`Error al guardar: ${err.message}`, 'error');
+            setActiveTab('statistics');
+        }
+    };
+
+    const handleGoToEditNames = () => {
+        closeModal('finishMatch');
+        openModal('substitution'); // Open substitution modal to edit names quickly
+    };
+
+    const hasMissingNames = gameState.availablePlayers.some(p => {
+        const name = gameState.playerNames[p] || '';
+        return !name || name === `Jugador #${p}` || name.includes('Jugador #');
+    });
+
 
     const handleRequestSaveGame = () => {
         closeModal('settings');
@@ -241,6 +265,34 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     onConfirm={handleConfirmReselectPlayers}
                     onClose={() => closeModal('reselect')}
                     confirmButtonColor="bg-yellow-600 hover:bg-yellow-700"
+                />
+            )}
+
+            {modals.finishMatch?.isOpen && (
+                <ConfirmationModal
+                    title="¿Finalizar Partido?"
+                    message={
+                        <div className="flex flex-col gap-4">
+                            <p>Se guardarán los resultados finales en la nube y se generará el resumen estadístico.</p>
+                            {hasMissingNames && (
+                                <div className="bg-cyan-900/40 border border-cyan-500/30 p-3 rounded-lg flex gap-3 text-sm">
+                                    <span className="text-xl">💡</span>
+                                    <p className="text-cyan-100 italic">
+                                        <strong>Sugerencia:</strong> Notamos que algunos jugadores no tienen nombre real cargado. 
+                                        Cargarlos ahora asegurará un reporte Excel impecable.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    }
+                    confirmText="Finalizar y Guardar"
+                    cancelText="Cancelar"
+                    onConfirm={handleConfirmFinalize}
+                    onClose={() => closeModal('finishMatch')}
+                    confirmButtonColor="bg-red-600 hover:bg-red-700"
+                    extraButtonText={hasMissingNames ? "Completar Nombres" : undefined}
+                    onExtraClick={hasMissingNames ? handleGoToEditNames : undefined}
+                    extraButtonColor="bg-slate-700 hover:bg-slate-600"
                 />
             )}
 

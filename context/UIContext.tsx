@@ -13,7 +13,8 @@ export type ModalName =
     | 'loadGame'
     | 'mobileMenu'
     | 'playerSelection'
-    | 'profile';
+    | 'profile'
+    | 'finishMatch';
 
 export interface ModalState {
     isOpen: boolean;
@@ -70,7 +71,8 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         loadGame: { isOpen: false },
         mobileMenu: { isOpen: false },
         playerSelection: { isOpen: false },
-        profile: { isOpen: false }
+        profile: { isOpen: false },
+        finishMatch: { isOpen: false }
     });
 
     const openModal = (name: ModalName, params?: any) => {

@@ -4,7 +4,7 @@ import { useUI } from '../context/UIContext';
 
 const Scoreboard: React.FC = React.memo(() => {
   const { gameState, setGameState } = useGameContext();
-  const { activeTab, setActiveTab } = useUI();
+  const { activeTab, setActiveTab, openModal } = useUI();
   const { gameMode, shots, tallyStats, currentPeriod } = gameState;
 
   const totalPoints = useMemo(() => {
@@ -50,7 +50,7 @@ const Scoreboard: React.FC = React.memo(() => {
                 onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Half' }))}
                 className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/10"
               >
-                1T <span className="text-lg leading-none">»</span>
+                FIN 1° T <span className="text-lg leading-none">»</span>
               </button>
             ) : currentPeriod === 'Second Half' ? (
               <>
@@ -58,14 +58,14 @@ const Scoreboard: React.FC = React.memo(() => {
                   onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'First Overtime' }))}
                   className="hidden sm:flex items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider"
                 >
-                  + Suple
+                  SUPLEMENTARIO
                 </button>
                 <button
-                  onClick={() => setActiveTab('statistics')}
+                  onClick={() => openModal('finishMatch')}
                   className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
                   title="Finalizar e ir a estadísticas"
                 >
-                  <span>🏁 Finalizar</span>
+                  <span>🏁 FIN PARTIDO</span>
                 </button>
               </>
             ) : currentPeriod === 'First Overtime' ? (
@@ -74,23 +74,23 @@ const Scoreboard: React.FC = React.memo(() => {
                   onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Overtime' }))}
                   className="hidden sm:flex items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider"
                 >
-                  + 2° Suple
+                  FIN 1° S (+S)
                 </button>
                 <button
-                  onClick={() => setActiveTab('statistics')}
+                  onClick={() => openModal('finishMatch')}
                   className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
                   title="Finalizar e ir a estadísticas"
                 >
-                  <span>🏁 Finalizar</span>
+                  <span>🏁 FIN PARTIDO</span>
                 </button>
               </>
             ) : currentPeriod === 'Second Overtime' ? (
               <button
-                onClick={() => setActiveTab('statistics')}
+                onClick={() => openModal('finishMatch')}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
                 title="Finalizar e ir a estadísticas"
               >
-                <span>🏁 Finalizar</span>
+                <span>🏁 FIN PARTIDO</span>
               </button>
             ) : null}
           </>
