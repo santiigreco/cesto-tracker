@@ -4,7 +4,7 @@ import { useUI } from '../context/UIContext';
 
 const Scoreboard: React.FC = React.memo(() => {
   const { gameState, setGameState } = useGameContext();
-  const { setActiveTab } = useUI();
+  const { activeTab, setActiveTab } = useUI();
   const { gameMode, shots, tallyStats, currentPeriod } = gameState;
 
   const totalPoints = useMemo(() => {
@@ -41,24 +41,59 @@ const Scoreboard: React.FC = React.memo(() => {
         </span>
       </div>
 
-      {/* Botones Accionables (Terminar 1er tiempo / Partido) */}
-      <div className="flex-1 flex justify-end">
-        {currentPeriod === 'First Half' ? (
-          <button
-            onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Half' }))}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/10"
-          >
-            Terminar 1T <span className="text-lg leading-none">»</span>
-          </button>
-        ) : currentPeriod === 'Second Half' ? (
-          <button
-            onClick={() => setActiveTab('statistics')}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
-          >
-            <span>🏁 Terminar</span>
-          </button>
-        ) : (
-          <div className="flex-1"></div>
+      {/* Botones Accionables (Terminar 1er tiempo / Partido) (Solo se muestran si no estamos en estadísticas) */}
+      <div className="flex-1 flex justify-end gap-2">
+        {activeTab !== 'statistics' && (
+          <>
+            {currentPeriod === 'First Half' ? (
+              <button
+                onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Half' }))}
+                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/10"
+              >
+                1T <span className="text-lg leading-none">»</span>
+              </button>
+            ) : currentPeriod === 'Second Half' ? (
+              <>
+                <button
+                  onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'First Overtime' }))}
+                  className="hidden sm:flex items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider"
+                >
+                  + Suple
+                </button>
+                <button
+                  onClick={() => setActiveTab('statistics')}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
+                  title="Finalizar e ir a estadísticas"
+                >
+                  <span>🏁 Finalizar</span>
+                </button>
+              </>
+            ) : currentPeriod === 'First Overtime' ? (
+              <>
+                <button
+                  onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Overtime' }))}
+                  className="hidden sm:flex items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider"
+                >
+                  + 2° Suple
+                </button>
+                <button
+                  onClick={() => setActiveTab('statistics')}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
+                  title="Finalizar e ir a estadísticas"
+                >
+                  <span>🏁 Finalizar</span>
+                </button>
+              </>
+            ) : currentPeriod === 'Second Overtime' ? (
+              <button
+                onClick={() => setActiveTab('statistics')}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
+                title="Finalizar e ir a estadísticas"
+              >
+                <span>🏁 Finalizar</span>
+              </button>
+            ) : null}
+          </>
         )}
       </div>
     </div>
