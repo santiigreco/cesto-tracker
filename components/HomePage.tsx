@@ -10,7 +10,7 @@ import { ChevronDownIcon } from './icons';
 import { WhatsappIcon } from './icons';
 import { faqData } from './faqData';
 import { GoogleIcon } from './icons';
-import { UsersIcon, CalendarIcon, CoffeeIcon } from './icons';
+import { CalendarIcon } from './icons';
 import UserProfileModal from './UserProfileModal';
 import { supabase } from '../utils/supabaseClient';
 import { useProfile } from '../hooks/useProfile';
@@ -38,6 +38,7 @@ const TrendingUpIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
     </svg>
 );
+
 
 const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-4 w-4"} viewBox="0 0 20 20" fill="currentColor">
@@ -85,7 +86,6 @@ const TallyMockup = () => (
 interface HomePageProps {
     onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
     onLoadGameClick: () => void;
-    onManageTeamsClick: () => void;
     user?: any;
     onLogin?: () => void;
     onLoadGame: (gameId: string, asOwner: boolean) => void;
@@ -180,7 +180,7 @@ const NextMatchWidget: React.FC<{
     return null;
 };
 
-const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, onManageTeamsClick, user, onLogin, onLoadGame, canEditFixture }) => {
+const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, user, onLogin, onLoadGame, canEditFixture }) => {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -375,20 +375,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             </div>
 
-                            <div
-                                onClick={user ? onManageTeamsClick : onLogin}
-                                className="col-span-3 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-blue-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
-                            >
-                                <div className="p-5 flex items-center gap-4 h-full">
-                                    <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-blue-500/10 transition-colors">
-                                        <UsersIcon className="h-5 w-5 text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <h5 className="font-black text-white uppercase tracking-tighter">Equipos</h5>
-                                        {!user && <span className="text-[9px] text-slate-600 block flex items-center gap-1 font-bold"><LockIcon className="h-2 w-2" /> REQUERIDO</span>}
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <div
                                 onClick={user ? onLoadGameClick : onLogin}

@@ -157,8 +157,18 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
                             <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
                                 <td className="p-4">
                                     <div className="font-bold text-white">{user.full_name || 'Sin Nombre'}</div>
-                                    <div className="text-xs text-slate-500 font-mono">{user.id}</div>
                                     {user.email && <div className="text-xs text-cyan-500/80">{user.email}</div>}
+                                    <div className="text-[10px] text-slate-500 font-mono">{user.id.substring(0, 16)}…</div>
+                                    {user.last_sign_in_at && (
+                                        <div className="text-[10px] text-slate-600 mt-0.5">
+                                            Último acceso: {new Date(user.last_sign_in_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </div>
+                                    )}
+                                    {user.created_at && (
+                                        <div className="text-[10px] text-slate-600">
+                                            Registrado: {new Date(user.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </div>
+                                    )}
                                 </td>
                                 
                                 <td className="p-4">

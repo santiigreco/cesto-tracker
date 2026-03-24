@@ -11,7 +11,6 @@ export type ModalName =
     | 'substitution'
     | 'share'
     | 'loadGame'
-    | 'teamManager'
     | 'mobileMenu'
     | 'playerSelection'
     | 'profile';
@@ -69,7 +68,6 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         substitution: { isOpen: false },
         share: { isOpen: false },
         loadGame: { isOpen: false },
-        teamManager: { isOpen: false },
         mobileMenu: { isOpen: false },
         playerSelection: { isOpen: false },
         profile: { isOpen: false }

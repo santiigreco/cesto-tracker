@@ -14,18 +14,15 @@ export const useAdminUsers = (isOwner: boolean) => {
         setLoading(true);
         setError(null);
         try {
-            const { data, error: apiError } = await supabase
-                .from('profiles')
-                .select('*')
-                .range(0, 4999);
+            // Usamos la RPC get_admin_users() que hace JOIN entre auth.users y profiles.
+            // Esto garantiza ver TODOS los usuarios registrados, incluso los que
+            // no tienen fila en la tabla profiles todavía.
+            const { data, error: rpcError } = await supabase.rpc('get_admin_users');
 
-            if (apiError) throw apiError;
+            if (rpcError) throw rpcError;
 
             if (data) {
-                const sorted = (data as AdminProfile[]).sort((a, b) => 
-                    new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime()
-                );
-                setUsers(sorted);
+                setUsers(data as AdminProfile[]);
             }
         } catch (err: any) {
             setError(err.message);
@@ -99,18 +96,13 @@ export const useAdminUsers = (isOwner: boolean) => {
         
         try {
             // INTENTO 1: Usar función RPC (Recomendado)
-            // Esto permite borrar al usuario de `auth.users` si has creado la función SQL `delete_user`
-            // SQL necesario en Supabase: 
-            // create function delete_user(user_id uuid) returns void as $$ begin delete from auth.users where id = user_id; end; $$ language plpgsql security definer;
             const { error: rpcError } = await supabase.rpc('delete_user', { user_id: id });
 
             if (!rpcError) {
-                // Éxito vía RPC
                 setUsers(prev => prev.filter(u => u.id !== id));
                 return;
             }
 
-            // Si RPC falla (o no existe), intentamos borrar solo el perfil
             console.warn("RPC delete_user falló o no existe, intentando borrado directo de tabla...", rpcError.message);
 
             // INTENTO 2: Borrar de la tabla profiles directamente
@@ -118,22 +110,19 @@ export const useAdminUsers = (isOwner: boolean) => {
                 .from('profiles')
                 .delete()
                 .eq('id', id)
-                .select(); // .select() es CRUCIAL para saber si realmente se borró algo
+                .select();
 
             if (apiError) throw apiError;
 
-            // Si data está vacío, significa que RLS bloqueó el borrado silenciosamente
             if (!data || data.length === 0) {
                 throw new Error("No se pudo eliminar el registro. Es probable que falten permisos RLS en la base de datos o la función 'delete_user'.");
             }
 
-            // Éxito vía Tabla Directa
             setUsers(prev => prev.filter(u => u.id !== id));
 
         } catch (err: any) {
             console.error(err);
             alert("Error al eliminar usuario: " + err.message);
-            // Recargar lista para asegurar que la UI coincida con la BD
             fetchUsers();
         }
     };

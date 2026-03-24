@@ -17,7 +17,6 @@ import ConfirmationModal from './ConfirmationModal';
 import NotificationPopup from './NotificationPopup';
 import GameEventEditModal from './GameEventEditModal';
 import UserProfileModal from './UserProfileModal';
-import TeamRosterModal from './TeamRosterModal';
 import Toast from './Toast';
 
 interface AppModalsProps {
@@ -33,7 +32,7 @@ interface AppModalsProps {
     editingEvent: GameEvent | null;
     setEditingEvent: (e: GameEvent | null) => void;
 
-    handleTeamLoadedFromHome: (team: SavedTeam) => void;
+    handleTeamLoadedFromHome?: (team: SavedTeam) => void;
 }
 
 import { useSync } from '../context/SyncContext';
@@ -285,14 +284,6 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            {modals.teamManager?.isOpen && (
-                <TeamRosterModal
-                    isOpen={modals.teamManager?.isOpen}
-                    onClose={() => closeModal('teamManager')}
-                    onLoadTeam={props.handleTeamLoadedFromHome}
-                    currentSelection={{ name: '', players: [] }}
-                />
-            )}
 
             {toast && <Toast message={toast.message} type={toast.type} />}
         </>

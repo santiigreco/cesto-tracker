@@ -6,13 +6,16 @@ export type AdminTab = 'dashboard' | 'users' | 'tournaments' | 'games' | 'fixtur
 
 export interface AdminProfile {
     id: string;
-    email?: string; // Puede venir de auth o joined query
+    email?: string;
     full_name: string | null;
+    avatar_url?: string | null;
     role: IdentityRole | null;
     permission_role: PermissionRole;
     favorite_club: string | null;
+    is_admin?: boolean;
     created_at: string;
     updated_at: string;
+    last_sign_in_at?: string | null;
 }
 
 export interface AdminTournament {

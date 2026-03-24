@@ -33,7 +33,6 @@ export default function HomeRoute() {
         <HomePage
             onStart={handleStartApp}
             onLoadGameClick={() => openModal('loadGame')}
-            onManageTeamsClick={() => openModal('teamManager')}
             user={user}
             onLogin={handleLogin}
             onLoadGame={handleLoadGame}
