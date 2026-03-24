@@ -1,17 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { JerseyIcon } from './icons';
-import { Settings, GameMode, SavedTeam, RosterPlayer } from '../types';
+import { Settings, GameMode, RosterPlayer } from '../types';
 import ToggleSwitch from './ToggleSwitch';
 import { ChevronDownIcon } from './icons';
 import { UndoIcon } from './icons';
-import { UsersIcon } from './icons';
 import TeamSelectorModal from './TeamSelectorModal';
 import TournamentSelectorModal from './TournamentSelectorModal';
-import TeamRosterModal from './TeamRosterModal';
 import { supabase } from '../utils/supabaseClient';
 import { useFixtureSuggestion } from '../hooks/useFixtureSuggestion';
-import { useTeamManager } from '../hooks/useTeamManager';
 import { TEAMS_CONFIG } from '../constants';
 import { findBestTeamMatch } from '../utils/teamUtils';
 
@@ -151,14 +148,10 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         return {};
     });
 
-    const { teams: savedTeams, fetchTeams } = useTeamManager();
-
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
     const [isRivalSelectorOpen, setIsRivalSelectorOpen] = useState(false); // State for Rival selector
     const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
-    const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
-
     const [settings, setSettings] = useState<Settings>(() => {
         // Only auto-restore myTeam for fresh games (no initialSettings provided)
         if (initialSettings.myTeam) return initialSettings;
@@ -193,11 +186,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         setLocalPlayerNames(newNames);
     };
 
-    // ── Smart Team Mapping ──
-    useEffect(() => {
-        fetchTeams();
-    }, []);
-
     useEffect(() => {
         if (!settings.tournamentName) {
             setSettings(prev => ({
@@ -207,55 +195,27 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         }
     }, [settings.tournamentName]);
 
-    // Apply smart mapping once teams are loaded
+    // Apply smart name matching using TEAMS_CONFIG once settings are available
     useEffect(() => {
-        if (savedTeams.length === 0 && TEAMS_CONFIG.length === 0) return;
-
-        // This effect should only run once to initialize from fixture names
-        // or when savedTeams are first loaded.
+        if (TEAMS_CONFIG.length === 0) return;
 
         let nextMyTeam = settings.myTeam;
         let nextGameName = settings.gameName;
-        let teamToApply: SavedTeam | null = null;
         let mappingChanged = false;
 
-        // 1. Resolve My Team
         if (settings.myTeam) {
-            const savedMatch = findBestTeamMatch<SavedTeam>(settings.myTeam, savedTeams);
-            if (savedMatch) {
-                nextMyTeam = savedMatch.name;
-                mappingChanged = true;
-                // Auto-apply roster if empty or default
-                if (selectedPlayers.size === 0 || selectedPlayers.size === allPlayers.length) {
-                    teamToApply = savedMatch as SavedTeam;
-                }
-            } else {
-                const leagueMatch = findBestTeamMatch(settings.myTeam, TEAMS_CONFIG);
-                if (leagueMatch) {
-                    nextMyTeam = leagueMatch.name;
-                    mappingChanged = true;
-                }
-            }
+            const leagueMatch = findBestTeamMatch(settings.myTeam, TEAMS_CONFIG);
+            if (leagueMatch) { nextMyTeam = leagueMatch.name; mappingChanged = true; }
         }
-
-        // 2. Resolve Rival Team
         if (settings.gameName) {
             const leagueMatch = findBestTeamMatch(settings.gameName, TEAMS_CONFIG);
-            if (leagueMatch) {
-                nextGameName = leagueMatch.name;
-                mappingChanged = true;
-            }
+            if (leagueMatch) { nextGameName = leagueMatch.name; mappingChanged = true; }
         }
 
         if (mappingChanged) {
             setSettings(prev => ({ ...prev, myTeam: nextMyTeam, gameName: nextGameName }));
         }
-
-        if (teamToApply) {
-            applyTeamRoster(teamToApply.name, teamToApply.players);
-        }
-
-    }, [savedTeams, initialSettings.myTeam, initialSettings.gameName]);
+    }, [initialSettings.myTeam, initialSettings.gameName]);
 
     // Default to 'stats-tally' (Anotador) if no mode provided
     const [selectedMode, setSelectedMode] = useState<GameMode>(initialGameMode || 'stats-tally');
@@ -307,11 +267,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         if (!isNaN(numValue)) {
             setSettings({ ...settings, [key]: numValue });
         }
-    };
-
-    const handleTeamLoadedFromManager = (team: SavedTeam) => {
-        applyTeamRoster(team.name, team.players);
-        setIsRosterModalOpen(false);
     };
 
     const handleTeamSelectedFromDropdown = (name: string, roster?: RosterPlayer[]) => {
@@ -479,14 +434,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                     </div>
                                     <ChevronDownIcon className="h-4 w-4 text-slate-500" />
                                 </button>
-                                {user && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setIsRosterModalOpen(true); }}
-                                        className="mt-2 w-full flex items-center justify-center gap-2 text-[10px] font-black text-cyan-500 hover:text-cyan-400 uppercase tracking-widest py-2 rounded-xl bg-cyan-500/5 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-all"
-                                    >
-                                        <UsersIcon className="h-3 w-3" /> Mis Planteles
-                                    </button>
-                                )}
                             </div>
                         </div>
 
@@ -637,11 +584,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 currentTournamentId={settings.tournamentId}
             />
 
-            <TeamRosterModal
-                isOpen={isRosterModalOpen}
-                onClose={() => setIsRosterModalOpen(false)}
-                onSelectTeam={handleTeamLoadedFromManager}
-            />
         </div>
     );
 };
