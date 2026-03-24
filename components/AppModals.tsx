@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AppTab, Settings, GameState, StatAction, GameEvent, ShotPosition, SavedTeam } from '../types';
 import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
@@ -130,6 +130,41 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         setSyncState({ status: 'idle', message: '' });
     };
 
+    // --- Dynamic Player Ordering Logic (for PlayerSelectionModal) ---
+    const sortedPlayersByRecentUsage = useMemo(() => {
+        const log = gameState.gameLog || [];
+        const usedPlayerNumbers = Array.from(new Set(log.map(entry => entry.playerNumber).filter(p => !!p)));
+        
+        // Find players that are available but not used yet, sort them numerically
+        const unusedPlayers = gameState.availablePlayers.filter(p => !usedPlayerNumbers.includes(p)).sort((a, b) => Number(a) - Number(b));
+        
+        // Return used ones (most recent first) followed by numerical unused ones
+        return [...usedPlayerNumbers, ...unusedPlayers];
+    }, [gameState.gameLog, gameState.availablePlayers]);
+
+    const playerStatuses = useMemo(() => {
+        const statuses: Record<string, string[]> = {};
+        const log = gameState.gameLog || [];
+
+        gameState.availablePlayers.forEach(p => {
+            statuses[p] = [];
+            
+            // 1. Foul Check (4 fouls)
+            const playerFouls = log.filter(e => e.playerNumber === p && e.action === 'faltasPersonales').length;
+            if (playerFouls >= 4) statuses[p].push('⚠️');
+
+            // 2. Streak Check (Last 3 shots of this player)
+            // Note: shots are stored in gameState.shots which is more reliable for streaks
+            const playerShots = gameState.shots.filter(s => s.playerNumber === p).slice(-3);
+            if (playerShots.length === 3) {
+                if (playerShots.every(s => s.isGol)) statuses[p].push('🔥');
+                if (playerShots.every(s => !s.isGol)) statuses[p].push('❄️');
+            }
+        });
+        return statuses;
+    }, [gameState.gameLog, gameState.shots, gameState.availablePlayers]);
+
+
     const handleSettingsChange = (newSettings: Settings) => {
         setGameState(prev => ({ ...prev, settings: newSettings }));
     };
@@ -151,9 +186,11 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     isOpen={modals.playerSelection?.isOpen}
                     onClose={() => { closeModal('playerSelection'); setActionToAssign(null); }}
                     onSelectPlayer={handleAssignActionToPlayer}
-                    players={props.playersForTally}
+                    players={sortedPlayersByRecentUsage}
                     playerNames={gameState.playerNames}
                     actionLabel={props.actionLabel || ''}
+                    playerStatuses={playerStatuses}
+                    recentCount={gameState.gameLog.length > 0 ? Array.from(new Set(gameState.gameLog.map(e => e.playerNumber).filter(p => !!p))).length : 0}
                 />
             )}
 
