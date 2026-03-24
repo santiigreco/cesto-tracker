@@ -29,28 +29,25 @@ export const useAdminGames = () => {
             // 2. Extract unique User IDs
             const userIds = Array.from(new Set(gamesData.map(g => g.user_id).filter(Boolean)));
             
-            // 3. Fetch Profiles manually
+            // 3. Fetch Profiles manually via RPC to get email + names correctly
             const profilesMap: Record<string, { email: string | null; full_name: string | null }> = {};
 
             if (userIds.length > 0) {
-                const { data: profilesData, error: profilesError } = await supabase
-                    .from('profiles')
-                    .select('id, full_name, email') // Try to fetch email if column exists, otherwise it will just be undefined in result usually
-                    .in('id', userIds);
+                // We use the same RPC as AdminUsersView to ensure we get email and full_name correctly
+                const { data: usersData, error: rpcError } = await supabase.rpc('get_admin_users');
                 
-                // Note: If email column doesn't exist in 'profiles', select might fail in strict mode. 
-                // But usually standard profiles have it or we ignore the error for the join sake.
-                // Assuming profiles table structure matches what we expect or is flexible.
-                
-                if (!profilesError && profilesData) {
-                    profilesData.forEach((p: any) => {
-                        profilesMap[p.id] = { 
-                            full_name: p.full_name,
-                            email: p.email || null
+                if (!rpcError && usersData) {
+                    usersData.forEach((u: any) => {
+                        profilesMap[u.id] = { 
+                            full_name: u.full_name || 'Anónimo',
+                            email: u.email || null
                         };
                     });
+                } else {
+                    console.warn("Could not fetch user profiles via RPC for games list", rpcError);
                 }
             }
+
 
             // 4. Merge data
             const enrichedGames: AdminGame[] = gamesData.map(game => ({

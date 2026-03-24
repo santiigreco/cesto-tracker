@@ -153,16 +153,22 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
             const playerFouls = log.filter(e => e.playerNumber === p && e.action === 'faltasPersonales').length;
             if (playerFouls >= 4) statuses[p].push('⚠️');
 
-            // 2. Streak Check (Last 3 shots of this player)
-            // Note: shots are stored in gameState.shots which is more reliable for streaks
-            const playerShots = gameState.shots.filter(s => s.playerNumber === p).slice(-3);
-            if (playerShots.length === 3) {
-                if (playerShots.every(s => s.isGol)) statuses[p].push('🔥');
-                if (playerShots.every(s => !s.isGol)) statuses[p].push('❄️');
+            // 2. Streak Check (Last 3 shots of this player from gameLog)
+            // This works for both Chart and Tally modes
+            const shotActions = ['goles', 'triples', 'fallos'];
+            const playerLogs = log.filter(e => e.playerNumber === p && shotActions.includes(e.action)).slice(0, 3);
+            
+            if (playerLogs.length === 3) {
+                const allHits = playerLogs.every(e => e.action === 'goles' || e.action === 'triples');
+                const allMisses = playerLogs.every(e => e.action === 'fallos');
+                
+                if (allHits) statuses[p].push('🔥');
+                if (allMisses) statuses[p].push('❄️');
             }
         });
         return statuses;
-    }, [gameState.gameLog, gameState.shots, gameState.availablePlayers]);
+    }, [gameState.gameLog, gameState.availablePlayers]);
+
 
 
     const handleSettingsChange = (newSettings: Settings) => {
