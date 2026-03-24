@@ -211,11 +211,42 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         faltasPersonales: stat.faltas_personales || 0
                     };
                 });
-            } else if (gameData.settings?.tallyStats) {
+            } else if (gameData.settings?.tallyStats || gameData.tallyStats) {
                 // Fallback for old games that did not use tally_stats relational table
-                Object.assign(loadedTallyStats, gameData.settings.tallyStats);
-            } else if (gameData.tallyStats) {
-                 Object.assign(loadedTallyStats, gameData.tallyStats);
+                const sourceStats = gameData.settings?.tallyStats || gameData.tallyStats;
+                
+                Object.entries(sourceStats).forEach(([player, plStats]: [string, any]) => {
+                    if (!loadedTallyStats[player]) {
+                        loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
+                    }
+                    
+                    // Check if it's already in the new format (has 'First Half')
+                    if (plStats['First Half'] || plStats['Second Half']) {
+                        // Ensure defaults for all periods just in case
+                        Object.keys(plStats).forEach(period => {
+                            if (loadedTallyStats[player][period]) {
+                                loadedTallyStats[player][period] = {
+                                    ...loadedTallyStats[player][period],
+                                    ...plStats[period]
+                                };
+                            }
+                        });
+                    } else {
+                        // Old legacy format without periods! Map everything to 'First Half'
+                        loadedTallyStats[player]['First Half'] = {
+                            goles: plStats.goles || 0,
+                            triples: plStats.triples || 0,
+                            fallos: plStats.fallos || 0,
+                            recuperos: plStats.recuperos || 0,
+                            perdidas: plStats.perdidas || 0,
+                            reboteOfensivo: plStats.reboteOfensivo || plStats.rebote_ofensivo || 0,
+                            reboteDefensivo: plStats.reboteDefensivo || plStats.rebote_defensivo || 0,
+                            asistencias: plStats.asistencias || 0,
+                            golesContra: plStats.golesContra || plStats.goles_contra || 0,
+                            faltasPersonales: plStats.faltasPersonales || plStats.faltas_personales || 0
+                        };
+                    }
+                });
             }
 
             const loadedGameState = {

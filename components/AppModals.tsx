@@ -137,9 +137,8 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     onLoadGame={async (id) => {
                         closeModal('loadGame');
                         try {
-                            const gameMode = await handleLoadGame(id, false);
-                            // Navigate to correct tab based on mode
-                            setActiveTab(gameMode === 'stats-tally' ? 'tally' : 'logger');
+                            await handleLoadGame(id, false);
+                            setActiveTab('statistics');
                         } catch (err: any) {
                             showToast(`No se pudo cargar el partido: ${err.message}`, 'error');
                         }
@@ -273,10 +272,9 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     onLogout={handleLogout}
                     onLoadGame={async (id, asOwner) => {
                         try {
-                            const gameMode = await handleLoadGame(id, asOwner);
+                            await handleLoadGame(id, asOwner);
                             closeModal('profile');
-                            // Navigate to correct tab based on game mode
-                            setActiveTab(gameMode === 'stats-tally' ? 'tally' : 'logger');
+                            setActiveTab('statistics');
                         } catch (err: any) {
                             showToast(`No se pudo cargar el partido: ${err.message}`, 'error');
                         }
