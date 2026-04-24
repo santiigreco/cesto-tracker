@@ -4,7 +4,7 @@ import { useAdminTournaments } from '../hooks/useAdminTournaments';
 import { TrophyIcon } from '../../icons';
 import { TrashIcon } from '../../icons';
 import { PlusIcon } from '../../icons';
-import Loader from '../../Loader';
+import Loader from '@/components/ui/Loader';
 import { RedoIcon } from '../../icons'; // For un-archiving
 
 // Simple Archive Icon Component

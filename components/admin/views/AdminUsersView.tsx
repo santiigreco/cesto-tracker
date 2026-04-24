@@ -6,7 +6,7 @@ import { TrashIcon } from '../../icons';
 import { PencilIcon } from '../../icons';
 import { CheckIcon } from '../../icons';
 import { XIcon } from '../../icons';
-import Loader from '../../Loader';
+import Loader from '@/components/ui/Loader';
 import { TEAMS_CONFIG } from '../../../constants';
 import { IdentityRole, PermissionRole } from '../../../types';
 

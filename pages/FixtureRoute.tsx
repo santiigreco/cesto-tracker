@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import FixtureView from '../components/FixtureView';
+import FixtureView from '@/components/views/FixtureView';
 
 export default function FixtureRoute() {
     const navigate = useNavigate();

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useFixture, Match } from '../../../hooks/useFixture';
 import { SearchIcon, TrashIcon, RefreshIcon, PlusIcon } from '../../icons';
-import Loader from '../../Loader';
+import Loader from '@/components/ui/Loader';
 
 export const AdminFixtureView: React.FC = () => {
     const { matches, loading, updateMatch, deleteMatch, refresh } = useFixture();

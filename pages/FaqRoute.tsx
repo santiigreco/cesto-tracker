@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import FaqView from '../components/FaqView';
+import FaqView from '@/components/views/FaqView';
 
 export default function FaqRoute() {
     const navigate = useNavigate();

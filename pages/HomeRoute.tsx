@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import HomePage from '../components/HomePage';
+import HomePage from '@/components/views/HomePage';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useGameContext } from '../context/GameContext';
-import LoadGameModal from '../components/LoadGameModal';
+import LoadGameModal from '@/components/modals/LoadGameModal';
 import { useProfile } from '../hooks/useProfile';
 import { useCommunityStats } from '../hooks/useCommunityStats';
 

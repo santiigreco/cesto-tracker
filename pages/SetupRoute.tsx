@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import PlayerSetup from '../components/PlayerSetup';
+import PlayerSetup from '@/components/game/PlayerSetup';
 import { useGameContext } from '../context/GameContext';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { Settings, GameMode, RosterPlayer } from '../types';

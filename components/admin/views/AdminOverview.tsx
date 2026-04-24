@@ -7,7 +7,7 @@ import { AdminStatCard } from '../ui/AdminStatCard';
 import { UsersIcon } from '../../icons';
 import { TrophyIcon } from '../../icons';
 import { CalendarIcon } from '../../icons';
-import Loader from '../../Loader';
+import Loader from '@/components/ui/Loader';
 
 interface AdminOverviewProps {
     isOwner: boolean;

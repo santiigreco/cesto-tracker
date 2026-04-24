@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import StandingsView from '../components/StandingsView';
+import StandingsView from '@/components/views/StandingsView';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 

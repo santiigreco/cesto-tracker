@@ -4,7 +4,7 @@ import { useAdminGames } from '../hooks/useAdminGames';
 import { SearchIcon } from '../../icons';
 import { TrashIcon } from '../../icons';
 import { EyeIcon } from '../../icons';
-import Loader from '../../Loader';
+import Loader from '@/components/ui/Loader';
 
 interface AdminGamesViewProps {
     onLoadGame: (gameId: string, asOwner: boolean) => void;

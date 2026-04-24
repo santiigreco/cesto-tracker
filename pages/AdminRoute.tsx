@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import Loader from '../components/Loader';
+import Loader from '@/components/ui/Loader';
 import { AdminOverview } from '../components/admin/views/AdminOverview';
 import { AdminUsersView } from '../components/admin/views/AdminUsersView';
 import { AdminTournamentsView } from '../components/admin/views/AdminTournamentsView';
