@@ -498,6 +498,58 @@ export const generateFederationExcel = async (gameState: GameState) => {
     footerCell.font = { name: FONT_NAME, size: 8 };
 
     // =============================================
+    // DATA VALIDATIONS (Dropdowns)
+    // =============================================
+    // C2:E2 (Club), C4:E4 (Rival)
+    const listValidationClub: ExcelJS.DataValidation = {
+        type: 'list', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$C$1:$C$13']
+    };
+    ws.getCell('C2').dataValidation = listValidationClub;
+    ws.getCell('C4').dataValidation = listValidationClub;
+
+    // I2:N2 (Torneo)
+    ws.getCell('I2').dataValidation = {
+        type: 'list', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$E$1:$E$14']
+    };
+
+    // I4:N4 (Categoría)
+    ws.getCell('I4').dataValidation = {
+        type: 'list', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$A$1:$A$2']
+    };
+
+    // Q2:S2 (Fecha) - Greater than 21/03/2024
+    ws.getCell('Q2').dataValidation = {
+        type: 'date', operator: 'greaterThan', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$G$1']
+    };
+
+    // Number validations
+    for (let rowIdx = DATA_START_ROW; rowIdx <= DATA_END_ROW; rowIdx++) {
+        // Player number
+        ws.getCell(`B${rowIdx}`).dataValidation = {
+            type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+            formulae: [1, 15]
+        };
+        // Standard stats
+        const statCols = ['D','E','F','G','H','I','J', 'L','M','N','O','P','Q','R', 'T','U','V','W','X','Y','Z', 'AB','AC','AD','AE','AF','AG','AH'];
+        statCols.forEach(col => {
+            ws.getCell(`${col}${rowIdx}`).dataValidation = {
+                type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+                formulae: [0, 250]
+            };
+        });
+        // Faltas
+        ['K', 'S', 'AA', 'AI'].forEach(col => {
+            ws.getCell(`${col}${rowIdx}`).dataValidation = {
+                type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+                formulae: [0, 6]
+            };
+        });
+    }
+    // =============================================
     // HOJA 2: CRUDO (flat data for federation import)
     // =============================================
     const sheetCrudo = workbook.addWorksheet('Crudo');
@@ -608,6 +660,9 @@ export const generateFederationExcel = async (gameState: GameState) => {
                 const colLetter = sheetImport.getColumn(j).letter;
                 targetCell.value = { formula: `+'Reporte a FCCF'!${colLetter}${i}` };
             }
+            
+            // Copy formatting
+            targetCell.style = sourceCell.style;
         }
     }
 

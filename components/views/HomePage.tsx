@@ -298,32 +298,25 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
 
 
                             <div
-                                onClick={() => navigate('/standings')}
-                                className="col-span-6 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-cyan-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-t from-cyan-400/5 to-transparent" />
-                                <div className="p-6 flex flex-col h-full">
-                                    <div className="p-3 bg-slate-900 rounded-xl w-fit mb-auto group-hover:scale-110 transition-transform">
-                                        <span className="text-2xl">🏆</span>
-                                    </div>
-                                    <h4 className="text-lg font-black text-white mb-1 uppercase tracking-tighter">Tabla</h4>
-                                    <p className="text-slate-500 text-[10px] uppercase font-black leading-none">Posiciones & Playoffs</p>
-                                </div>
-                            </div>
-
-
-
-                            <div
                                 onClick={user ? onLoadGameClick : onLogin}
-                                className="col-span-3 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-emerald-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+                                className="col-span-6 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-emerald-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
                             >
-                                <div className="p-5 flex items-center gap-4 h-full">
+                                <div className="absolute inset-0 bg-gradient-to-l from-emerald-400/5 to-transparent" />
+                                <div className="p-5 flex items-center justify-center sm:justify-start gap-4 h-full">
                                     <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-emerald-500/10 transition-colors">
-                                        <CloudDownloadIcon className="h-5 w-5 text-emerald-400" />
+                                        <CloudDownloadIcon className="h-6 w-6 text-emerald-400" />
                                     </div>
                                     <div>
-                                        <h5 className="font-black text-white uppercase tracking-tighter">Historial</h5>
-                                        {!user && <span className="text-[9px] text-slate-600 block flex items-center gap-1 font-bold"><LockIcon className="h-2 w-2" /> REQUERIDO</span>}
+                                        <h5 className="text-xl font-black text-white uppercase tracking-tighter">Historial de Partidos</h5>
+                                        {!user ? (
+                                            <span className="text-[10px] text-slate-500 block flex items-center gap-1 font-bold mt-1">
+                                                <LockIcon className="h-3 w-3" /> INICIÁ SESIÓN PARA VER TUS PARTIDOS
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400 block font-bold mt-1 uppercase">
+                                                Recuperá y continuá tracking
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

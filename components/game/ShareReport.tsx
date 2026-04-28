@@ -66,11 +66,11 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
         }
 
         const sortedPlayers = Object.values(playersMap).sort((a, b) => b.points - a.points);
-        const mvp = sortedPlayers[0];
+        const topScorers = sortedPlayers.filter(p => p.points > 0).slice(0, 3);
         const totalShots = totalGoles + totalTriples + totalFallos;
         const efficiency = totalShots > 0 ? ((totalGoles + totalTriples) / totalShots * 100).toFixed(0) : '0';
 
-        return { totalPoints, totalGoles, totalTriples, totalFallos, totalRecuperos, totalPerdidas, mvp, efficiency };
+        return { totalPoints, totalGoles, totalTriples, totalFallos, totalRecuperos, totalPerdidas, topScorers, efficiency };
     }, [gameState, playerStats]);
 
 
@@ -155,15 +155,20 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
                         </div>
                     </div>
 
-                    {/* MVP Section */}
-                    {summaryData.mvp && (
-                        <div className="w-full bg-gradient-to-r from-slate-800 to-slate-800/50 p-4 rounded-xl border-l-4 border-cyan-500 flex items-center justify-between">
-                            <div>
-                                <span className="block text-[10px] text-cyan-400 font-bold uppercase mb-0.5">Máxima Anotadora</span>
-                                <span className="text-xl font-bold text-white">{summaryData.mvp.name}</span>
-                            </div>
-                            <div className="bg-cyan-500/20 px-3 py-1 rounded-lg">
-                                <span className="text-xl font-bold text-cyan-300">{summaryData.mvp.points} <span className="text-xs">pts</span></span>
+                    {/* Top Scorers Section */}
+                    {summaryData.topScorers.length > 0 && (
+                        <div className="w-full bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
+                            <h4 className="text-[10px] text-cyan-400 font-bold uppercase mb-3 tracking-widest text-center">Top Goleadoras</h4>
+                            <div className="flex flex-col gap-2">
+                                {summaryData.topScorers.map((player, idx) => (
+                                    <div key={idx} className="flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-slate-500 w-4">{idx + 1}º</span>
+                                            <span className="text-sm font-bold text-white">{player.name}</span>
+                                        </div>
+                                        <span className="text-sm font-black text-cyan-300">{player.points} pts</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
