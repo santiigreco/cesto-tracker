@@ -81,6 +81,21 @@ export const generateFederationExcel = async (gameState: GameState) => {
         }
     });
 
+    ws.properties.defaultColWidth = 11.425;
+    ws.properties.defaultRowHeight = 14.45;
+
+    // Apply Federation exact protection
+    const protectionConfig = {
+        algorithmName: 'SHA-512',
+        hashValue: '1kpptv5JGLbrjer90pDNWKHDrmkBTZWsDdKuDsPMozln2Qa6TQdKHHm5pkQ8LlNJHX8tj0rTHhzX6JQqU5BCIQ==',
+        saltValue: 'ba+XjhXGlcxToBZ92nemaQ==',
+        spinCount: 100000,
+        sheet: true,
+        objects: true,
+        scenarios: true
+    };
+    (ws as any).sheetProtection = protectionConfig;
+
     // --- Column Widths (A=spacer, B=#, C=Name, D-AI=stats, AJ-AQ=total) ---
     ws.getColumn(1).width = 2;
     ws.getColumn(2).width = 6.71;
@@ -133,14 +148,17 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // Row 2: Club / Torneo / Fecha
     setMetaField(2, 2, 'Club:', 3, 5, gameState.settings.myTeam || '-');
     setMetaField(2, 7, 'Torneo:', 9, 14, gameState.settings.tournamentName || '-');
-    setMetaField(2, 16, 'Fecha:', 17, 19, new Date(), true);
+    
+    // Parse gameDate, ensuring it's treated as a local date
+    const parsedDate = gameState.settings.gameDate ? new Date(gameState.settings.gameDate + 'T12:00:00') : new Date();
+    setMetaField(2, 16, 'Fecha:', 17, 19, parsedDate, true);
 
     // Row 3: Small separator
     ws.getRow(3).height = 7.5;
 
     // Row 4: Rival / Categoría
     setMetaField(4, 2, 'Rival:', 3, 5, gameState.settings.gameName || '-');
-    setMetaField(4, 7, 'Categoría:', 9, 14, '-');
+    setMetaField(4, 7, 'Categoría:', 9, 14, gameState.settings.categoryName || '-');
 
     // Row 5: Separator with thick bottom
     ws.getRow(5).height = 15;
@@ -553,6 +571,9 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // HOJA 2: CRUDO (flat data for federation import)
     // =============================================
     const sheetCrudo = workbook.addWorksheet('Crudo');
+    sheetCrudo.properties.defaultColWidth = 11.425;
+    sheetCrudo.properties.defaultRowHeight = 14.45;
+    (sheetCrudo as any).sheetProtection = protectionConfig;
 
     // Headers
     const crudoHeaders = [
@@ -582,9 +603,9 @@ export const generateFederationExcel = async (gameState: GameState) => {
         { label: '2do tiempo suplementario', startCol: 28 },  // AB-AI
     ];
 
-    const categoria = '-';
+    const categoria = gameState.settings.categoryName || '-';
     const torneo = gameState.settings.tournamentName || '';
-    const fecha = new Date();
+    const fecha = gameState.settings.gameDate ? new Date(gameState.settings.gameDate + 'T12:00:00') : new Date();
     const club = gameState.settings.myTeam || '';
     const rival = gameState.settings.gameName || '';
 
@@ -639,6 +660,9 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // HOJA 3: Para importar
     // =============================================
     const sheetImport = workbook.addWorksheet('Para importar');
+    sheetImport.properties.defaultColWidth = 11.425;
+    sheetImport.properties.defaultRowHeight = 14.45;
+    (sheetImport as any).sheetProtection = protectionConfig;
 
     // Copy column widths from main sheet (ws)
     for (let i = 1; i <= 43; i++) {
@@ -685,6 +709,9 @@ export const generateFederationExcel = async (gameState: GameState) => {
     // HOJA 4: AUX (reference lists for dropdowns)
     // =============================================
     const sheetAux = workbook.addWorksheet('Aux');
+    sheetAux.properties.defaultColWidth = 11.425;
+    sheetAux.properties.defaultRowHeight = 14.45;
+    (sheetAux as any).sheetProtection = protectionConfig;
 
     // Column A: Categorías
     const categorias = ['Masculino', 'Primera A'];

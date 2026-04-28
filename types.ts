@@ -32,6 +32,9 @@ export interface Settings {
   myTeam?: string;
   tournamentId?: string; // ID del torneo en base de datos
   tournamentName?: string; // Nombre para mostrar en UI
+  categoryName?: string; // Categoría (e.g. Primera A)
+  gameDate?: string; // ISO Date string for the match date
+
 
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;

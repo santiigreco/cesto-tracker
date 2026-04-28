@@ -20,6 +20,8 @@ const defaultSettings: Settings = {
     myTeam: '',
     tournamentId: '',
     tournamentName: 'Primera A - Apertura 2026', // Pre-selected tournament
+    categoryName: 'Primera A',
+    gameDate: new Date().toISOString().split('T')[0],
     isManoCalienteEnabled: true,
     manoCalienteThreshold: 5,
     isManoFriaEnabled: true,
@@ -390,6 +392,35 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                             </div>
                             <ChevronDownIcon className="h-4 w-4 text-slate-500" />
                         </button>
+                    </div>
+
+                    {/* ── Category and Date ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Categoría</label>
+                            <div className="relative">
+                                <select
+                                    value={settings.categoryName || ''}
+                                    onChange={(e) => setSettings({ ...settings, categoryName: e.target.value })}
+                                    className="w-full bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all focus:border-cyan-500/50 outline-none appearance-none font-bold text-sm sm:text-base cursor-pointer"
+                                >
+                                    <option value="" disabled>Seleccionar Categoría</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Primera A">Primera A</option>
+                                </select>
+                                <ChevronDownIcon className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Fecha</label>
+                            <input
+                                type="date"
+                                value={settings.gameDate || ''}
+                                onChange={(e) => setSettings({ ...settings, gameDate: e.target.value })}
+                                className="w-full bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all focus:border-cyan-500/50 outline-none font-bold text-sm sm:text-base [color-scheme:dark]"
+                            />
+                        </div>
                     </div>
 
 
