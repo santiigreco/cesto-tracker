@@ -498,11 +498,170 @@ export const generateFederationExcel = async (gameState: GameState) => {
     footerCell.font = { name: FONT_NAME, size: 8 };
 
     // =============================================
+    // HOJA 2: CRUDO (flat data for federation import)
+    // =============================================
+    const sheetCrudo = workbook.addWorksheet('Crudo');
+
+    // Headers
+    const crudoHeaders = [
+        'Categoría', 'Torneo', 'Fecha', 'Club', 'Rival', 'Tiempo',
+        '# jugador', 'Nombre jugador', 'Lanza\nmientos', 'Dobles', 'Triples',
+        'Ofens', 'Defens', 'Recu\nperos', 'Pér\ndidas', 'Faltas'
+    ];
+
+    // Column widths matching original
+    sheetCrudo.getColumn(2).width = 13;
+    sheetCrudo.getColumn(6).width = 24.43;
+    sheetCrudo.getColumn(8).width = 15.43;
+
+    const crudoHeaderRow = sheetCrudo.getRow(1);
+    crudoHeaders.forEach((h, i) => {
+        const cell = crudoHeaderRow.getCell(i + 1);
+        cell.value = h;
+    });
+    // Column C (Fecha) uses date format
+    sheetCrudo.getColumn(3).numFmt = 'dd/mm/yyyy';
+
+    // Period labels and their corresponding column ranges in Reporte
+    const crudoPeriods: { label: string; startCol: number }[] = [
+        { label: '1er tiempo', startCol: 4 },   // D-K
+        { label: '2do tiempo', startCol: 12 },   // L-S
+        { label: '1er tiempo suplementario', startCol: 20 },  // T-AA
+        { label: '2do tiempo suplementario', startCol: 28 },  // AB-AI
+    ];
+
+    const categoria = '-';
+    const torneo = gameState.settings.tournamentName || '';
+    const fecha = new Date();
+    const club = gameState.settings.myTeam || '';
+    const rival = gameState.settings.gameName || '';
+
+    let crudoRow = 2;
+    // For each period, add 12 rows (one per player slot)
+    crudoPeriods.forEach(period => {
+        for (let playerIdx = 0; playerIdx < MAX_PLAYERS; playerIdx++) {
+            const reportRow = DATA_START_ROW + playerIdx; // 9-20
+            const playerNum = players[playerIdx];
+            const hasPlayer = !!playerNum;
+
+            // Get stats for this player+period
+            let lanz = 0, dobles = 0, triples = 0, ofens = 0, defens = 0, recup = 0, perd = 0, faltas = 0;
+            if (hasPlayer) {
+                const periodKey = period.label === '1er tiempo' ? 'First Half'
+                    : period.label === '2do tiempo' ? 'Second Half'
+                    : period.label === '1er tiempo suplementario' ? 'First Overtime'
+                    : 'Second Overtime';
+                const stats = getStats(playerNum, periodKey);
+                lanz = stats.lanzamientos;
+                dobles = stats.goles;
+                triples = stats.triples;
+                ofens = stats.reboteOfensivo;
+                defens = stats.reboteDefensivo;
+                recup = stats.recuperos;
+                perd = stats.perdidas;
+                faltas = stats.faltas;
+            }
+
+            const row = sheetCrudo.getRow(crudoRow);
+            row.getCell(1).value = categoria;
+            row.getCell(2).value = torneo;
+            row.getCell(3).value = fecha;
+            row.getCell(4).value = club;
+            row.getCell(5).value = rival;
+            row.getCell(6).value = period.label;
+            row.getCell(7).value = hasPlayer ? Number(playerNum) : 0;
+            row.getCell(8).value = hasPlayer ? (gameState.playerNames[playerNum] || '') : '';
+            row.getCell(9).value = lanz;
+            row.getCell(10).value = dobles;
+            row.getCell(11).value = triples;
+            row.getCell(12).value = ofens;
+            row.getCell(13).value = defens;
+            row.getCell(14).value = recup;
+            row.getCell(15).value = perd;
+            row.getCell(16).value = faltas;
+            crudoRow++;
+        }
+    });
+
+    // =============================================
+    // HOJA 3: Para importar
+    // =============================================
+    const sheetImport = workbook.addWorksheet('Para importar');
+
+    // Copy column widths from main sheet (ws)
+    for (let i = 1; i <= 43; i++) {
+        sheetImport.getColumn(i).width = ws.getColumn(i).width;
+    }
+
+    // Copy row heights and set formulas to reference 'Reporte a FCCF'
+    for (let i = 1; i <= 24; i++) {
+        const sourceRow = ws.getRow(i);
+        const targetRow = sheetImport.getRow(i);
+        if (sourceRow.height) targetRow.height = sourceRow.height;
+
+        for (let j = 1; j <= 43; j++) {
+            const sourceCell = sourceRow.getCell(j);
+            const targetCell = targetRow.getCell(j);
+
+            // Only set formula if the source cell has something
+            if (sourceCell.value !== null && sourceCell.value !== undefined && sourceCell.value !== '') {
+                const colLetter = sheetImport.getColumn(j).letter;
+                targetCell.value = { formula: `+'Reporte a FCCF'!${colLetter}${i}` };
+            }
+        }
+    }
+
+    // Copy all merges from the main sheet
+    const mergesToCopy = [
+        'C2:E2', 'G2:H2', 'I2:N2', 'Q2:S2',
+        'C4:E4', 'G4:H4', 'I4:N4',
+        'D6:K6', 'L6:S6', 'T6:AA6', 'AB6:AI6', 'AJ6:AQ6',
+        'B7:B8', 'C7:C8', 'D7:D8', 'E7:F7', 'G7:H7',
+        'I7:I8', 'J7:J8', 'K7:K8', 'L7:L8', 'M7:N7', 'O7:P7',
+        'Q7:Q8', 'R7:R8', 'S7:S8', 'T7:T8', 'U7:V7', 'W7:X7',
+        'Y7:Y8', 'Z7:Z8', 'AA7:AA8', 'AB7:AB8', 'AC7:AD7', 'AE7:AF7',
+        'AG7:AG8', 'AH7:AH8', 'AI7:AI8', 'AJ7:AJ8', 'AK7:AL7', 'AM7:AN7',
+        'AO7:AO8', 'AP7:AP8', 'AQ7:AQ8',
+        'B22:C22'
+    ];
+    mergesToCopy.forEach(m => sheetImport.mergeCells(m));
+
+    // =============================================
+    // HOJA 4: AUX (reference lists for dropdowns)
+    // =============================================
+    const sheetAux = workbook.addWorksheet('Aux');
+
+    // Column A: Categorías
+    const categorias = ['Masculino', 'Primera A'];
+    categorias.forEach((v, i) => { sheetAux.getCell(i + 1, 1).value = v; });
+
+    // Column C: Clubes
+    const clubes = [
+        'APV', 'APV masc A', 'APV masc B', 'Avellaneda', 'Ballester',
+        'CEF La Plata', 'Ciudad', 'GEVP', 'Hacoaj', 'San Martín',
+        'SITAS', 'Social Parque', 'Vélez'
+    ];
+    clubes.forEach((v, i) => { sheetAux.getCell(i + 1, 3).value = v; });
+
+    // Column E: Torneos
+    const torneos = [
+        'Apertura 2024', 'Clausura 2024', 'Apertura 2025', 'Clausura 2025',
+        'Apertura 2026', 'Clausura 2026', 'Apertura 2027', 'Clausura 2027',
+        'Apertura 2028', 'Clausura 2028', 'Apertura 2029', 'Clausura 2029',
+        'Apertura 2030', 'Clausura 2030'
+    ];
+    torneos.forEach((v, i) => { sheetAux.getCell(i + 1, 5).value = v; });
+
+    // Column G: Date reference (March 21, 2024 = serial 45372)
+    sheetAux.getCell(1, 7).value = new Date(2024, 2, 21); // March 21, 2024
+    sheetAux.getCell(1, 7).numFmt = 'dd/mm/yyyy';
+
+    // =============================================
     // EXPORT
     // =============================================
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const fileName = `Reporte_FCCF_${gameState.settings.myTeam || 'Equipo'}_vs_${gameState.settings.gameName || 'Rival'}.xlsx`;
+    const fileName = 'Estadísticas - Reporte a FCCF v2.xlsx';
 
     // Handle FileSaver import discrepancy for esm.sh
     const saveAs = (FileSaver as any).saveAs || FileSaver;
