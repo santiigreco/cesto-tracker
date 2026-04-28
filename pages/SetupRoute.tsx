@@ -30,7 +30,6 @@ export default function SetupRoute() {
                 myTeam: state?.teamName || gameState.settings.myTeam,
                 gameName: state?.rivalName || gameState.settings.gameName,
                 tournamentName: state?.tournamentName || gameState.settings.tournamentName,
-                fixture_id: state?.fixtureId || gameState.settings.fixture_id
             }}
             initialGameMode={gameState.gameMode || 'stats-tally'}
             initialPlayerNames={initialNames}

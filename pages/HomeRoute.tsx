@@ -28,7 +28,7 @@ export default function HomeRoute() {
     const communityStats = useCommunityStats();
     const { profile } = useProfile();
     const isOwner = user && profile?.is_admin === true;
-    const canEditFixture = isOwner || profile?.permission_role === 'admin' || profile?.permission_role === 'fixture_manager';
+    const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
 
     return (
         <>
@@ -38,7 +38,7 @@ export default function HomeRoute() {
                 user={user}
                 onLogin={handleLogin}
                 onLoadGame={handleLoadGame}
-                canEditFixture={canEditFixture}
+                canAccessAdmin={!!canAccessAdmin}
             />
             {modals.loadGame?.isOpen && (
                 <LoadGameModal

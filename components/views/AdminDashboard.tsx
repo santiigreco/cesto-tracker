@@ -8,7 +8,7 @@ import { AdminOverview } from '../admin/views/AdminOverview';
 import { AdminUsersView } from '../admin/views/AdminUsersView';
 import { AdminTournamentsView } from '../admin/views/AdminTournamentsView';
 import { AdminGamesView } from '../admin/views/AdminGamesView';
-import { AdminFixtureView } from '../admin/views/AdminFixtureView';
+
 
 interface AdminDashboardProps {
     isOpen: boolean;
@@ -81,7 +81,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
                         {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} />}
                         {activeTab === 'users' && isOwner && <AdminUsersView isOwner={isOwner} />}
                         {activeTab === 'tournaments' && <AdminTournamentsView />}
-                        {activeTab === 'fixture' && <AdminFixtureView />}
+
                         {activeTab === 'games' && <AdminGamesView onLoadGame={onLoadGame} />}
                     </div>
                 </div>

@@ -12,7 +12,7 @@ export default function StandingsRoute() {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-            {/* Top nav bar — identical pattern to FixtureRoute */}
+            {/* Top nav bar */}
             <div className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800 px-4 py-3 flex items-center gap-3">
                 <button
                     onClick={() => navigate('/')}

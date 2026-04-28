@@ -8,7 +8,7 @@ import { AdminOverview } from '../components/admin/views/AdminOverview';
 import { AdminUsersView } from '../components/admin/views/AdminUsersView';
 import { AdminTournamentsView } from '../components/admin/views/AdminTournamentsView';
 import { AdminGamesView } from '../components/admin/views/AdminGamesView';
-import { AdminFixtureView } from '../components/admin/views/AdminFixtureView';
+
 import { AdminSidebar } from '../components/admin/ui/AdminSidebar';
 import { AdminTab } from '../components/admin/types';
 import { RefreshIcon, XIcon } from '../components/icons';
@@ -99,7 +99,7 @@ const AdminRoute: React.FC = () => {
                     {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} />}
                     {activeTab === 'users' && isOwner && <AdminUsersView isOwner={isOwner} />}
                     {activeTab === 'tournaments' && <AdminTournamentsView />}
-                    {activeTab === 'fixture' && <AdminFixtureView />}
+
                     {activeTab === 'games' && <AdminGamesView onLoadGame={(id) => navigate(`/match/${id}`)} />}
                 </div>
             </div>

@@ -10,14 +10,13 @@ import { ChevronDownIcon } from '../icons';
 import { WhatsappIcon } from '../icons';
 import { faqData } from '../faqData';
 import { GoogleIcon } from '../icons';
-import { CalendarIcon } from '../icons';
+
 import UserProfileModal from '@/components/modals/UserProfileModal';
 import { supabase } from '../../utils/supabaseClient';
 import { useProfile } from '../../hooks/useProfile';
 import InstallApp from '@/components/views/InstallApp';
 import TeamSelectorModal from '@/components/modals/TeamSelectorModal';
-import TeamLogo from '@/components/ui/TeamLogo';
-import { useNextMatch } from '../../hooks/useNextMatch';
+
 import { useCommunityStats } from '../../hooks/useCommunityStats';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -89,100 +88,12 @@ interface HomePageProps {
     user?: any;
     onLogin?: () => void;
     onLoadGame: (gameId: string, asOwner: boolean) => void;
-    canEditFixture: boolean;
+    canAccessAdmin: boolean;
 }
-
-// ── Next Match / Last Game Widget ──────────────────────────────────────
-const NextMatchWidget: React.FC<{
-    user: any;
-    onFixtureClick: () => void;
-    onLoadGameClick: () => void;
-    onLoadGame: (id: string) => void;
-}> = ({ user, onFixtureClick, onLoadGameClick, onLoadGame }) => {
-    const { nextMatches, lastGame, loading } = useNextMatch(user?.id);
-
-    if (loading) {
-        return (
-            <div className="h-40 rounded-2xl bg-slate-800/50 border border-slate-700/50 animate-pulse" />
-        );
-    }
-
-    if (nextMatches && nextMatches.length > 0) {
-        return (
-            <div className="flex flex-col gap-4">
-                {nextMatches.map((match, idx) => {
-                    const matchDate = new Date(`${match.date}T00:00:00`);
-                    const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const diffDays = Math.round((matchDate.getTime() - today.getTime()) / 86_400_000);
-                    const isToday = diffDays === 0;
-                    const isTomorrow = diffDays === 1;
-                    const dayLabel = isToday ? '🔴 Hoy' : isTomorrow ? '📅 Mañana' : `📅 ${matchDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
-                    const isFirst = idx === 0;
-
-                    return (
-                        <button
-                            key={match.id}
-                            onClick={onFixtureClick}
-                            className={`group w-full text-left bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-[2rem] transition-all duration-300 backdrop-blur-md shadow-xl overflow-hidden relative ${isFirst ? 'p-5' : 'p-4 scale-[0.97]'}`}
-                        >
-                            <div className="flex items-center justify-between mb-3">
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-red-400' : 'text-slate-500'}`}>
-                                    {dayLabel} • {match.time}hs
-                                </span>
-                                {match.location && (
-                                    <span className="text-[9px] text-slate-500 font-bold bg-slate-900/50 px-2 py-0.5 rounded-full border border-slate-700/50 truncate max-w-[120px]">
-                                        📍 {match.location}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <TeamLogo teamName={match.homeTeam} className={`${isFirst ? 'h-10 w-10' : 'h-8 w-8'} flex-shrink-0 drop-shadow-lg`} />
-                                    <span className={`${isFirst ? 'text-sm' : 'text-xs'} font-black text-slate-200 truncate uppercase tracking-tighter`}>{match.homeTeam}</span>
-                                </div>
-                                <div className="text-[10px] font-black text-slate-600 px-2 tracking-widest">VS</div>
-                                <div className="flex items-center justify-end gap-3 flex-1 min-w-0">
-                                    <span className={`${isFirst ? 'text-sm' : 'text-xs'} font-black text-slate-200 truncate uppercase tracking-tighter text-right`}>{match.awayTeam}</span>
-                                    <TeamLogo teamName={match.awayTeam} className={`${isFirst ? 'h-10 w-10' : 'h-8 w-8'} flex-shrink-0 drop-shadow-lg`} />
-                                </div>
-                            </div>
-                        </button>
-                    );
-                })}
-            </div>
-        );
-    }
-
-    if (lastGame && user) {
-        const relDate = new Date(lastGame.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
-        return (
-            <button
-                onClick={() => onLoadGame(lastGame.id)}
-                className="group w-full text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-2xl p-4 transition-all duration-200"
-            >
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">🕐 Último partido guardado</span>
-                    <span className="text-[10px] text-slate-600">{relDate}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <TeamLogo teamName={lastGame.myTeam} className="h-8 w-8 flex-shrink-0" />
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{lastGame.gameName}</p>
-                        <p className="text-xs text-slate-500">{lastGame.myTeam || 'Sin equipo'}</p>
-                    </div>
-                    <span className="ml-auto text-[10px] text-emerald-400 font-bold group-hover:text-emerald-300">Retomar →</span>
-                </div>
-            </button>
-        );
-    }
-
-    return null;
-};
 
 const LAST_SETUP_KEY = 'cesto_last_team_setup';
 
-const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, user, onLogin, onLoadGame, canEditFixture }) => {
+const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick, user, onLogin, onLoadGame, canAccessAdmin }) => {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -206,9 +117,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
         setIsProfileOpen(false);
     };
 
-    const handleFixtureClick = () => {
-        navigate('/fixture');
-    };
+
 
     const handleStartClick = () => {
         setIsTeamSelectorOpen(true);
@@ -248,7 +157,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                     <h1 className="font-extrabold text-lg tracking-tight text-white">Cesto Tracker</h1>
                 </div>
                 <div className="flex items-center gap-3">
-                    {canEditFixture && (
+                    {canAccessAdmin && (
                         <button
                             onClick={() => navigate('/admin')}
                             className="hidden sm:flex items-center gap-2 bg-red-900/20 border border-red-900/50 text-red-500 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all"
@@ -321,12 +230,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             )}
                         </div>
 
-                        <NextMatchWidget
-                            user={user}
-                            onFixtureClick={handleFixtureClick}
-                            onLoadGameClick={onLoadGameClick}
-                            onLoadGame={(id) => onLoadGame(id, true)}
-                        />
+
 
                         <div className="w-full grid grid-cols-6 gap-3 sm:gap-4 mt-4">
                             <div className="col-span-6 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 mb-2 shadow-sm pointer-events-none">
@@ -391,23 +295,11 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                                 </div>
                             )}
 
-                            <div
-                                onClick={handleFixtureClick}
-                                className="col-span-3 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-yellow-500/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/5 to-transparent" />
-                                <div className="p-6 flex flex-col h-full">
-                                    <div className="p-3 bg-slate-900 rounded-xl w-fit mb-auto group-hover:scale-110 transition-transform">
-                                        <CalendarIcon className="h-6 w-6 text-yellow-500" />
-                                    </div>
-                                    <h4 className="text-lg font-black text-white mb-1 uppercase tracking-tighter">Fixture</h4>
-                                    <p className="text-slate-500 text-[10px] uppercase font-black leading-none">Calendario de juegos</p>
-                                </div>
-                            </div>
+
 
                             <div
                                 onClick={() => navigate('/standings')}
-                                className="col-span-3 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-cyan-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+                                className="col-span-6 sm:col-span-3 group relative h-48 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-cyan-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-t from-cyan-400/5 to-transparent" />
                                 <div className="p-6 flex flex-col h-full">
@@ -537,7 +429,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ onStart, onLoadGameClick
                             Sin sponsors ni publicidades, solo código y pasión. Si te sirve el proyecto, ¡compartilo en tu club!
                         </p>
                         <div className="flex flex-wrap justify-center gap-6">
-                            <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Quiero%20sumarme%20para%20ayudar%20a%20administrar%20fixtures..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                            <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Quiero%20sumarme%20como%20admin..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
                                 <span>🛠️</span> Sumate como Admin
                             </a>
                             <a href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20idea%20o%20comentario%20sobre%20la%20app..." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">

@@ -32,7 +32,7 @@ export interface Settings {
   myTeam?: string;
   tournamentId?: string; // ID del torneo en base de datos
   tournamentName?: string; // Nombre para mostrar en UI
-  fixture_id?: string | null; // Vincula el partido al fixture oficial
+
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
   isManoFriaEnabled: boolean;
@@ -118,7 +118,7 @@ export type IdentityRole = 'jugador' | 'entrenador' | 'hincha' | 'dirigente' | '
 export type UserRole = IdentityRole;
 
 // Roles de permisos (Solo asignables por el Owner desde el panel)
-export type PermissionRole = 'admin' | 'fixture_manager' | null;
+export type PermissionRole = 'admin' | null;
 
 export interface UserProfile {
   id: string;

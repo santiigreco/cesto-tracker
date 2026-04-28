@@ -34,14 +34,7 @@ interface SavedGame {
     settings: any;
 }
 
-interface UpcomingMatch {
-    id: string;
-    date: string;
-    time: string;
-    homeTeam: string;
-    awayTeam: string;
-    round?: string;
-}
+
 
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user, onLogout, onLoadGame }) => {
     const { profile, loading: profileLoading, updateProfile, uploadAvatar } = useProfile();
@@ -63,7 +56,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     const [savedGames, setSavedGames] = useState<SavedGame[]>([]);
     const [gamesLoading, setGamesLoading] = useState(false);
 
-    const [upcomingMatch, setUpcomingMatch] = useState<UpcomingMatch | null>(null);
+
 
     const isOwner = profile?.is_admin === true;
     const canAccessAdminPanel = isOwner || profile?.permission_role === 'admin';
@@ -80,37 +73,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
         }
     }, [profile]);
 
-    // Fetch upcoming fixture match for the user's favorite team
-    useEffect(() => {
-        if (!isOpen || !profile?.favorite_club) {
-            setUpcomingMatch(null);
-            return;
-        }
-        const today = new Date().toISOString().split('T')[0];
-        supabase
-            .from('fixture')
-            .select('id, date, time, home_team, away_team, round')
-            .gte('date', today)
-            .or(`home_team.eq.${profile.favorite_club},away_team.eq.${profile.favorite_club}`)
-            .neq('status', 'finished')
-            .order('date', { ascending: true })
-            .limit(1)
-            .single()
-            .then(({ data }) => {
-                if (data) {
-                    setUpcomingMatch({
-                        id: data.id,
-                        date: data.date,
-                        time: data.time,
-                        homeTeam: data.home_team,
-                        awayTeam: data.away_team,
-                        round: data.round,
-                    });
-                } else {
-                    setUpcomingMatch(null);
-                }
-            });
-    }, [isOpen, profile?.favorite_club]);
+
 
     const fetchGames = useCallback(async () => {
         if (!user) return;
@@ -171,24 +134,15 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
     const formatDate = (dateStr: string) =>
         new Date(dateStr).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    const formatMatchDate = (dateStr: string) => {
-        const d = new Date(`${dateStr}T00:00:00`);
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-        if (diff === 0) return '🔴 Hoy';
-        if (diff === 1) return '📅 Mañana';
-        return `📅 ${d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
-    };
+
 
     const getGameModeLabel = (mode: string) =>
         mode === 'shot-chart' ? '🗺️ Mapa' : '📋 Planilla';
 
     if (!isOpen) return null;
 
+
     const gamesCount = profile?.games_count ?? savedGames.length;
-    const opponent = upcomingMatch
-        ? (upcomingMatch.homeTeam === profile?.favorite_club ? upcomingMatch.awayTeam : upcomingMatch.homeTeam)
-        : null;
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in backdrop-blur-sm" onClick={onClose}>
@@ -246,24 +200,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                         </div>
                     )}
 
-                    {/* Upcoming match banner */}
-                    {upcomingMatch && opponent && (
-                        <button
-                            onClick={() => { navigate('/fixture'); onClose(); }}
-                            className="mt-3 w-full flex items-center gap-3 bg-cyan-900/20 border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl px-4 py-2.5 text-left transition-all group"
-                        >
-                            <span className="text-xl shrink-0">📣</span>
-                            <div className="flex-grow min-w-0">
-                                <p className="text-[10px] font-black text-cyan-400 uppercase tracking-wider">Próximo partido · {profile?.favorite_club}</p>
-                                <p className="text-sm font-bold text-white truncate">vs {opponent}</p>
-                                <p className="text-xs text-slate-400">
-                                    {formatMatchDate(upcomingMatch.date)} · {upcomingMatch.time}hs
-                                    {upcomingMatch.round ? ` · ${upcomingMatch.round}` : ''}
-                                </p>
-                            </div>
-                            <span className="text-slate-500 group-hover:text-cyan-400 transition-colors shrink-0 text-lg">›</span>
-                        </button>
-                    )}
+
                 </div>
 
                 {/* Tabs */}

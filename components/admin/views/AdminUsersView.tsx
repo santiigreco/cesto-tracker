@@ -20,7 +20,6 @@ const IDENTITY_OPTIONS: { value: IdentityRole; label: string; color: string }[] 
 
 const PERMISSION_OPTIONS: { value: PermissionRole | 'user'; label: string; color: string }[] = [
     { value: 'user', label: 'Usuario', color: 'bg-slate-800 text-slate-500 border-slate-700' }, 
-    { value: 'fixture_manager', label: 'Gestor Fixture', color: 'bg-yellow-900/50 text-yellow-300 border-yellow-600 font-bold' },
     { value: 'admin', label: 'Admin', color: 'bg-red-900/50 text-red-300 border-red-500 font-bold' },
 ];
 
