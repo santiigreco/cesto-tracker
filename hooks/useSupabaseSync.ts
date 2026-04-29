@@ -47,7 +47,7 @@ export const useSupabaseSync = () => {
                 player_names: gameState.playerNames,
                 available_players: gameState.availablePlayers,
                 // New Fields for Database Relation
-                tournament_id: gameState.settings.tournamentId || null,
+                tournament_id: null, // Legacy relation deprecated. Rely on settings.tournamentName instead.
                 my_team_name: gameState.settings.myTeam || null,
                 opponent_name: gameName.trim(),
                 user_id: user.id, // Associate with user

@@ -2,7 +2,7 @@
 import React from 'react';
 import { IdentityRole, PermissionRole } from '../../types';
 
-export type AdminTab = 'dashboard' | 'users' | 'tournaments' | 'games';
+export type AdminTab = 'dashboard' | 'users' | 'games';
 
 export interface AdminProfile {
     id: string;
@@ -18,11 +18,7 @@ export interface AdminProfile {
     last_sign_in_at?: string | null;
 }
 
-export interface AdminTournament {
-    id: string;
-    name: string;
-    created_at: string;
-}
+
 
 export interface AdminGame {
     id: string;

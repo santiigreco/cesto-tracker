@@ -6,7 +6,7 @@ import { useProfile } from '../hooks/useProfile';
 import Loader from '@/components/ui/Loader';
 import { AdminOverview } from '../components/admin/views/AdminOverview';
 import { AdminUsersView } from '../components/admin/views/AdminUsersView';
-import { AdminTournamentsView } from '../components/admin/views/AdminTournamentsView';
+
 import { AdminGamesView } from '../components/admin/views/AdminGamesView';
 
 import { AdminSidebar } from '../components/admin/ui/AdminSidebar';
@@ -98,7 +98,7 @@ const AdminRoute: React.FC = () => {
                 <div className="flex-grow overflow-y-auto custom-scrollbar p-4 lg:p-6" key={refreshKey}>
                     {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} />}
                     {activeTab === 'users' && isOwner && <AdminUsersView isOwner={isOwner} />}
-                    {activeTab === 'tournaments' && <AdminTournamentsView />}
+
 
                     {activeTab === 'games' && <AdminGamesView onLoadGame={(id) => navigate(`/match/${id}`)} />}
                 </div>

@@ -29,7 +29,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
     const tabs = [
         { id: 'dashboard' as AdminTab, label: 'Resumen', icon: <ChartBarIcon className="h-6 w-6" /> },
         ...(isOwner ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-6 w-6" /> }] : []),
-        { id: 'tournaments' as AdminTab, label: 'Torneos', icon: <TrophyIcon rank={1} /> },
         { id: 'games' as AdminTab, label: 'Historial', icon: <CalendarIcon className="h-6 w-6" /> },
     ];
 

@@ -1,14 +1,7 @@
-
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../utils/supabaseClient';
+import React from 'react';
 import { XIcon } from '../icons';
 import { TrophyIcon } from '../icons';
-import Loader from '@/components/ui/Loader';
-
-interface Tournament {
-    id: string;
-    name: string;
-}
+import { TOURNAMENTS_CONFIG } from '../../constants';
 
 interface TournamentSelectorModalProps {
     isOpen: boolean;
@@ -18,55 +11,6 @@ interface TournamentSelectorModalProps {
 }
 
 const TournamentSelectorModal: React.FC<TournamentSelectorModalProps> = ({ isOpen, onClose, onSelectTournament, currentTournamentId }) => {
-    const [tournaments, setTournaments] = useState<Tournament[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [creating, setCreating] = useState(false);
-
-    useEffect(() => {
-        if (isOpen) {
-            fetchTournaments();
-        }
-    }, [isOpen]);
-
-    const fetchTournaments = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('tournaments')
-            .select('id, name')
-            .order('created_at', { ascending: false });
-
-        if (!error && data) {
-            setTournaments(data);
-        }
-        setLoading(false);
-    };
-
-    const handleCreateTournament = async () => {
-        if (!searchTerm.trim()) return;
-        setCreating(true);
-
-        // Insert new tournament
-        const { data, error } = await supabase
-            .from('tournaments')
-            .insert([{ name: searchTerm.trim() }])
-            .select()
-            .single();
-
-        if (error) {
-            console.error(error);
-            alert('Error al crear el torneo');
-        } else if (data) {
-            onSelectTournament(data.id, data.name);
-            onClose();
-        }
-        setCreating(false);
-    };
-
-    const filteredTournaments = tournaments.filter(t => 
-        t.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     if (!isOpen) return null;
 
     return (
@@ -81,53 +25,20 @@ const TournamentSelectorModal: React.FC<TournamentSelectorModalProps> = ({ isOpe
                     </button>
                 </div>
                 
-                <div className="p-4 flex-grow overflow-hidden flex flex-col">
-                    <input 
-                        type="text" 
-                        placeholder="Buscar o crear torneo..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:border-cyan-500 focus:outline-none mb-4"
-                        autoFocus
-                    />
-
-                    {loading ? (
-                        <div className="flex justify-center py-8"><Loader /></div>
-                    ) : (
-                        <div className="overflow-y-auto custom-scrollbar flex-grow space-y-2">
-                            {filteredTournaments.length > 0 ? (
-                                filteredTournaments.map(t => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => { onSelectTournament(t.id, t.name); onClose(); }}
-                                        className={`w-full text-left p-4 rounded-lg border transition-all ${
-                                            currentTournamentId === t.id 
-                                            ? 'bg-cyan-900/30 border-cyan-500 text-cyan-400' 
-                                            : 'bg-slate-700/50 border-transparent hover:bg-slate-700 text-white'
-                                        }`}
-                                    >
-                                        <span className="font-bold">{t.name}</span>
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="text-center text-slate-400 py-4">
-                                    {searchTerm ? 'No se encontraron torneos con ese nombre.' : 'No hay torneos registrados.'}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {searchTerm && !filteredTournaments.find(t => t.name.toLowerCase() === searchTerm.toLowerCase()) && (
-                        <div className="mt-4 pt-4 border-t border-slate-700">
-                            <button
-                                onClick={handleCreateTournament}
-                                disabled={creating}
-                                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2"
-                            >
-                                {creating ? <Loader className="h-5 w-5" /> : `Crear Torneo: "${searchTerm}"`}
-                            </button>
-                        </div>
-                    )}
+                <div className="p-4 flex-grow overflow-y-auto custom-scrollbar flex flex-col space-y-2">
+                    {TOURNAMENTS_CONFIG.map(name => (
+                        <button
+                            key={name}
+                            onClick={() => { onSelectTournament(name, name); onClose(); }} // Using name as ID since it's hardcoded
+                            className={`w-full text-left p-4 rounded-lg border transition-all ${
+                                currentTournamentId === name 
+                                ? 'bg-cyan-900/30 border-cyan-500 text-cyan-400' 
+                                : 'bg-slate-700/50 border-transparent hover:bg-slate-700 text-white'
+                            }`}
+                        >
+                            <span className="font-bold">{name}</span>
+                        </button>
+                    ))}
                 </div>
              </div>
         </div>
@@ -135,3 +46,4 @@ const TournamentSelectorModal: React.FC<TournamentSelectorModalProps> = ({ isOpe
 };
 
 export default TournamentSelectorModal;
+

@@ -1,11 +1,11 @@
 
 import React, { useEffect } from 'react';
 import { useAdminUsers } from '../hooks/useAdminUsers';
-import { useAdminTournaments } from '../hooks/useAdminTournaments';
+
 import { useAdminGames } from '../hooks/useAdminGames';
 import { AdminStatCard } from '../ui/AdminStatCard';
 import { UsersIcon } from '../../icons';
-import { TrophyIcon } from '../../icons';
+
 import { CalendarIcon } from '../../icons';
 import Loader from '@/components/ui/Loader';
 
@@ -15,16 +15,15 @@ interface AdminOverviewProps {
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({ isOwner }) => {
     const { users, fetchUsers, loading: l1 } = useAdminUsers(isOwner);
-    const { tournaments, fetchTournaments, loading: l2 } = useAdminTournaments();
+
     const { games, fetchGames, loading: l3 } = useAdminGames();
 
     useEffect(() => {
         fetchUsers();
-        fetchTournaments();
         fetchGames();
-    }, [fetchUsers, fetchTournaments, fetchGames]);
+    }, [fetchUsers, fetchGames]);
 
-    const loading = l1 || l2 || l3;
+    const loading = l1 || l3;
 
     if (loading && users.length === 0 && games.length === 0) {
         return <div className="flex justify-center items-center h-48"><Loader /></div>;
@@ -45,12 +44,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ isOwner }) => {
                     icon={<CalendarIcon />} 
                     colorClass="text-cyan-400" 
                 />
-                <AdminStatCard 
-                    title="Torneos" 
-                    value={tournaments.length} 
-                    icon={<TrophyIcon rank={1} />} 
-                    colorClass="text-yellow-400" 
-                />
+
             </div>
             
             <div className="bg-slate-800/50 p-4 lg:p-6 rounded-xl border border-slate-700">

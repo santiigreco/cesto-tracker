@@ -9,7 +9,7 @@ import TournamentSelectorModal from '@/components/modals/TournamentSelectorModal
 import TeamLogo from '@/components/ui/TeamLogo';
 import { supabase } from '../../utils/supabaseClient';
 
-import { TEAMS_CONFIG } from '../../constants';
+import { TEAMS_CONFIG, CATEGORIES_CONFIG } from '../../constants';
 import { findBestTeamMatch } from '../../utils/teamUtils';
 
 const LAST_TEAM_STORAGE_KEY = 'cesto_last_team_setup';
@@ -367,15 +367,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                 </div>
                                 <ChevronDownIcon className="h-4 w-4 text-slate-500" />
                             </button>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="O escribe nombre personalizado..."
-                                    value={settings.gameName}
-                                    onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
-                                    className="w-full bg-transparent border-b border-slate-800 text-xs text-slate-500 px-4 py-2 focus:border-cyan-500 outline-none transition-colors"
-                                />
-                            </div>
+
                         </div>
                     </div>
 
@@ -405,8 +397,9 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                     className="w-full bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all focus:border-cyan-500/50 outline-none appearance-none font-bold text-sm sm:text-base cursor-pointer"
                                 >
                                     <option value="" disabled>Seleccionar Categoría</option>
-                                    <option value="Masculino">Masculino</option>
-                                    <option value="Primera A">Primera A</option>
+                                    {CATEGORIES_CONFIG.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
                                 </select>
                                 <ChevronDownIcon className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
                             </div>

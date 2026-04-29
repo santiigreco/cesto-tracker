@@ -22,11 +22,7 @@ export interface Match {
     stageGroup?: string;
 }
 
-export interface TournamentOption {
-    id: string;
-    name: string;
-    status: 'active' | 'finished';
-}
+
 
 // Normalize Excel-style dates (DD/MM/YYYY) to ISO (YYYY-MM-DD)
 const normalizeDate = (dateStr: string | null): string => {
@@ -85,7 +81,7 @@ const SEASON_LIMIT = 500;
 
 export const useFixture = () => {
     const [matches, setMatches] = useState<Match[]>([]);
-    const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [activeSeason, setActiveSeason] = useState<string>(String(new Date().getFullYear()));
     const [activeRoundKey, setActiveRoundKey] = useState<string | null>(null);
@@ -113,20 +109,7 @@ export const useFixture = () => {
         setLoading(false);
     };
 
-    const fetchTournaments = async () => {
-        const { data, error } = await supabase
-            .from('tournaments')
-            .select('id, name, status')
-            .order('created_at', { ascending: false });
 
-        if (!error && data) {
-            setTournaments(data.map((t: Record<string, unknown>) => ({
-                id: String(t.id),
-                name: String(t.name),
-                status: (t.status as TournamentOption['status']) || 'active',
-            })));
-        }
-    };
 
     const addMatch = async (matchData: Omit<Match, 'id' | 'status' | 'scoreHome' | 'scoreAway'>) => {
         const season = String(new Date().getFullYear());
@@ -185,7 +168,7 @@ export const useFixture = () => {
 
     useEffect(() => {
         fetchSeason(activeSeason);
-        fetchTournaments();
+
 
         const subscription = supabase
             .channel('public:fixture')
@@ -200,7 +183,7 @@ export const useFixture = () => {
 
     return {
         matches,
-        tournaments,
+
         loading,
         addMatch,
         updateMatch,
