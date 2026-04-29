@@ -142,12 +142,61 @@ export const generateFederationExcel = async (gameState: GameState) => {
         fillDataBlock(28, statsOt2); // 2do supl (AB=28)
     }
 
+    // --- Reinyectar Validaciones de Datos (Desplegables) ---
+    // En caso de que la plantilla original los haya perdido, los forzamos aquí.
+    
+    const listValidationClub: ExcelJS.DataValidation = {
+        type: 'list', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$C$1:$C$13']
+    };
+    ws.getCell('C2').dataValidation = listValidationClub;
+    ws.getCell('C4').dataValidation = listValidationClub;
+
+    ws.getCell('I2').dataValidation = {
+        type: 'list', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$E$1:$E$14']
+    };
+
+    ws.getCell('I4').dataValidation = {
+        type: 'list', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$A$1:$A$2']
+    };
+
+    ws.getCell('Q2').dataValidation = {
+        type: 'date', operator: 'greaterThan', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+        formulae: ['Aux!$G$1']
+    };
+
+    // Validaciones de números en la zona de datos (jugadoras)
+    for (let rowIdx = DATA_START_ROW; rowIdx <= DATA_START_ROW + 11; rowIdx++) {
+        // Player number
+        ws.getCell(`B${rowIdx}`).dataValidation = {
+            type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+            formulae: [1, 15]
+        };
+        // Standard stats
+        const statCols = ['D','E','F','G','H','I','J', 'L','M','N','O','P','Q','R', 'T','U','V','W','X','Y','Z', 'AB','AC','AD','AE','AF','AG','AH'];
+        statCols.forEach(col => {
+            ws.getCell(`${col}${rowIdx}`).dataValidation = {
+                type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+                formulae: [0, 250]
+            };
+        });
+        // Faltas
+        ['K', 'S', 'AA', 'AI'].forEach(col => {
+            ws.getCell(`${col}${rowIdx}`).dataValidation = {
+                type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
+                formulae: [0, 6]
+            };
+        });
+    }
+
     // =============================================
     // EXPORT
     // =============================================
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const fileName = 'Estadísticas - Reporte a FCCF.xlsx';
+    const fileName = 'Estadísticas - Reporte a FCCF v2.xlsx';
 
     // Handle FileSaver import discrepancy for esm.sh
     const saveAs = (FileSaver as any).saveAs || FileSaver;
