@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SyncState } from '../../hooks/useSupabaseSync';
+import { SyncState } from '../../context/SyncContext';
 import { XIcon } from '../icons';
 import { CheckIcon } from '../icons';
 

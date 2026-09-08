@@ -1,15 +1,24 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import HomeRoute from './pages/HomeRoute';
-import SetupRoute from './pages/SetupRoute';
-import MatchRoute from './pages/MatchRoute';
-import StandingsRoute from './pages/StandingsRoute';
-import AdminRoute from './pages/AdminRoute';
-import FaqRoute from './pages/FaqRoute';
+import Loader from '@/components/ui/Loader';
+
+const HomeRoute = lazy(() => import('./pages/HomeRoute'));
+const SetupRoute = lazy(() => import('./pages/SetupRoute'));
+const MatchRoute = lazy(() => import('./pages/MatchRoute'));
+const StandingsRoute = lazy(() => import('./pages/StandingsRoute'));
+const AdminRoute = lazy(() => import('./pages/AdminRoute'));
+const FaqRoute = lazy(() => import('./pages/FaqRoute'));
+
+const RouteLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
+    <Loader />
+  </div>
+);
 
 function App() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteLoader />}>
+      <Routes>
       <Route path="/" element={<HomeRoute />} />
       <Route path="/setup" element={<SetupRoute />} />
       <Route path="/match/:id" element={<MatchRoute />} />
@@ -25,6 +34,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 

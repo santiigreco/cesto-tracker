@@ -81,7 +81,7 @@ const isMatchFinished = (m: Match): boolean => {
     );
 };
 
-function computeEntries(groupMatches: Match[]): StandingsEntry[] {
+export function computeEntries(groupMatches: Match[]): StandingsEntry[] {
     const teamMap: Record<string, StandingsEntry> = {};
 
     const get = (team: string): StandingsEntry => {

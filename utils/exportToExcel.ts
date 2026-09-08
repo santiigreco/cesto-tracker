@@ -1,6 +1,4 @@
 
-import ExcelJS from 'exceljs';
-import FileSaver from 'file-saver';
 import { GameState } from '../types';
 
 // Helper types for the specific stats structure
@@ -16,6 +14,14 @@ interface CalculatedStats {
 }
 
 export const generateFederationExcel = async (gameState: GameState) => {
+    // Dynamically import heavy Excel dependencies only when user exports
+    const [ExcelJSModule, FileSaverModule] = await Promise.all([
+        import('exceljs'),
+        import('file-saver')
+    ]);
+    const ExcelJS = (ExcelJSModule.default || ExcelJSModule) as any;
+    const FileSaver = (FileSaverModule.default || FileSaverModule) as any;
+
     // 1. Load the exact template file from the public directory
     const response = await fetch('/template.xlsx');
     const arrayBuffer = await response.arrayBuffer();
