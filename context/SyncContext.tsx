@@ -223,14 +223,12 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { data: { user } } = await supabase.auth.getUser();
 
-            const [gameRes, shotsRes, tallyRes] = await Promise.all([
-                supabase.from('games').select('*, tournaments(name)').eq('id', gameId).single(),
-                supabase.from('shots').select('*').eq('game_id', gameId),
+            const [gameRes, tallyRes] = await Promise.all([
+                supabase.from('games').select('*').eq('id', gameId).single(),
                 supabase.from('tally_stats').select('*').eq('game_id', gameId),
             ]);
 
             if (gameRes.error) throw gameRes.error;
-            if (shotsRes.error) throw shotsRes.error;
             if (tallyRes.error) throw tallyRes.error;
 
             const gameData = gameRes.data;
@@ -245,15 +243,6 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     console.warn('Could not increment view count', err);
                 }
             }
-
-            const loadedShots = (shotsRes.data || []).map((s: any) => ({
-                id: s.id,
-                playerNumber: s.player_number?.toString(),
-                position: s.position || { x: s.x, y: s.y },
-                isGol: s.is_gol,
-                golValue: s.gol_value,
-                period: s.period
-            }));
 
             const loadedTallyStats: any = {};
 
@@ -314,34 +303,6 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 });
             }
 
-            // 3. Fallback: Reconstruct from relational `shots` table (for legacy shot-chart games in Supabase)
-            const hasTallyData = Object.values(loadedTallyStats).some((p: any) =>
-                Object.values(p).some((periodStats: any) =>
-                    (periodStats?.goles || 0) > 0 || (periodStats?.triples || 0) > 0 || (periodStats?.fallos || 0) > 0
-                )
-            );
-            if (!hasTallyData && loadedShots.length > 0) {
-                loadedShots.forEach((shot: any) => {
-                    const pKey = shot.playerNumber?.toString();
-                    if (!pKey) return;
-                    if (!loadedTallyStats[pKey]) {
-                        loadedTallyStats[pKey] = JSON.parse(JSON.stringify(initialPlayerTally));
-                    }
-                    const period = shot.period;
-                    if (loadedTallyStats[pKey] && loadedTallyStats[pKey][period]) {
-                        if (shot.isGol) {
-                            if (shot.golValue === 3) {
-                                loadedTallyStats[pKey][period].triples = (loadedTallyStats[pKey][period].triples || 0) + 1;
-                            } else {
-                                loadedTallyStats[pKey][period].goles = (loadedTallyStats[pKey][period].goles || 0) + 1;
-                            }
-                        } else {
-                            loadedTallyStats[pKey][period].fallos = (loadedTallyStats[pKey][period].fallos || 0) + 1;
-                        }
-                    }
-                });
-            }
-
             // Ensure every participating player and "Equipo" has initialized tally stats structure
             const availablePlayers = gameData.available_players || [];
             const allPlayerKeys = ['Equipo', ...availablePlayers];
@@ -362,14 +323,14 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 settings: {
                     ...gameData.settings,
                     tournamentId: gameData.tournament_id || gameData.settings?.tournamentId,
-                    tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
+                    tournamentName: gameData.settings?.tournamentName || null
                 },
                 availablePlayers: availablePlayers,
                 playerNames: gameData.player_names || {},
                 activePlayers: availablePlayers.slice(0, 6),
                 currentPeriod: gameData.settings?.currentPeriod || 'First Half',
                 opponentScore: gameData.settings?.opponentScore ?? 0,
-                shots: loadedShots,
+                shots: [],
                 tallyStats: loadedTallyStats,
                 teamFouls: gameData.settings?.teamFouls || gameData.team_fouls || initialGameState.teamFouls,
                 gameLog: gameData.settings?.gameLog || [],
@@ -399,13 +360,10 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Usuario no autenticado");
 
-            // 1. Delete associated shots
-            await supabase.from('shots').delete().eq('game_id', gameId);
-
-            // 2. Delete associated tally stats
+            // 1. Delete associated tally stats
             await supabase.from('tally_stats').delete().eq('game_id', gameId);
 
-            // 3. Delete the game itself
+            // 2. Delete the game itself
             const { error: gameError } = await supabase
                 .from('games')
                 .delete()

@@ -1,5 +1,5 @@
 
-import { TallyStatsPeriod, Shot } from '../types';
+import { TallyStatsPeriod } from '../types';
 
 export const mapTallyPeriodToDb = (stats: TallyStatsPeriod) => ({
     goles: stats.goles,
@@ -25,22 +25,4 @@ export const mapTallyPeriodFromDb = (dbStats: any): TallyStatsPeriod => ({
     asistencias: dbStats.asistencias,
     golesContra: dbStats.golescontra,
     faltasPersonales: dbStats.faltas_personales || 0,
-});
-
-export const mapShotToDb = (shot: Shot, gameId: string) => ({
-    game_id: gameId,
-    player_number: shot.playerNumber,
-    position: shot.position,
-    is_gol: shot.isGol,
-    gol_value: shot.golValue,
-    period: shot.period,
-});
-
-export const mapShotFromDb = (s: any): Shot => ({
-    id: s.id,
-    playerNumber: s.player_number,
-    position: s.position,
-    isGol: s.is_gol,
-    golValue: s.gol_value,
-    period: s.period,
 });

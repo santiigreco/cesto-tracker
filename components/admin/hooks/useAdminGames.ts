@@ -67,7 +67,6 @@ export const useAdminGames = () => {
     const deleteGame = async (id: string) => {
         if (!confirm("¿Eliminar este partido permanentemente?")) return;
         try {
-            await supabase.from('shots').delete().eq('game_id', id);
             await supabase.from('tally_stats').delete().eq('game_id', id);
             const { error: apiError } = await supabase.from('games').delete().eq('id', id);
             if (apiError) throw apiError;
