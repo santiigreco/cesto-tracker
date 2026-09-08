@@ -25,6 +25,7 @@ export const initialPlayerTally: TallyStats = {
 
 export const initialGameState: GameState = {
     gameId: null,
+    userId: null,
     shots: [],
     isSetupComplete: false,
     hasSeenHomepage: false,

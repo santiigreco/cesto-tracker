@@ -1,14 +1,18 @@
-
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useGameContext, initialPlayerTally, initialGameState } from './GameContext';
 import { useUI } from './UIContext';
-import { GamePeriod } from '../types';
+import { GamePeriod, GameMode, GameState } from '../types';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 export interface SyncState {
     status: SyncStatus;
     message: string;
+}
+
+export interface LoadGameResult {
+    gameMode: GameMode;
+    isOwner: boolean;
 }
 
 interface SyncContextType {
@@ -17,8 +21,9 @@ interface SyncContextType {
     isAutoSaving: boolean;
     isLoading: boolean;
     lastSaved: Date | null;
-    handleSyncToSupabase: (gameNameInput?: any, isAutoSaveInput?: boolean) => Promise<void>;
-    handleLoadGame: (gameId: string, enableEditing: boolean) => Promise<void>;
+    handleSyncToSupabase: (gameNameInput?: any, isAutoSaveInput?: boolean) => Promise<string | null>;
+    handleLoadGame: (gameId: string, enableEditing?: boolean) => Promise<LoadGameResult | null>;
+    handleDeleteGame: (gameId: string) => Promise<boolean>;
 }
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -31,28 +36,43 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-    const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean) => {
+    // Track last saved signature to prevent duplicate background syncs
+    const lastSavedSignatureRef = useRef<string>('');
+    const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean): Promise<string | null> => {
         const isAutoSave = (typeof gameNameInput === 'boolean') ? gameNameInput : (isAutoSaveInput === true);
 
-        // Build a standardized game name: "Equipo vs Rival · DD MMM YYYY"
-        const myTeam = gameState.settings.myTeam?.trim() || '';
-        const rival = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
-            ? gameNameInput.trim()
-            : (gameState.settings.gameName?.trim() || '');
-        const dateStr = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-
-        // Build the label only with what's available — no placeholder fallbacks
-        let gameNameLabel: string;
-        if (myTeam && rival) {
-            gameNameLabel = `${myTeam} vs ${rival}`;
-        } else if (myTeam) {
-            gameNameLabel = myTeam;
-        } else if (rival) {
-            gameNameLabel = `vs ${rival}`;
-        } else {
-            gameNameLabel = 'Partido';
+        // 1. Calculate current myScore for quick preview in lists
+        let myScore = 0;
+        if (gameState.gameMode === 'shot-chart') {
+            myScore = gameState.shots.reduce((acc, s) => acc + (s.isGol ? s.golValue : 0), 0);
+        } else if (gameState.gameMode === 'stats-tally') {
+            Object.entries(gameState.tallyStats).forEach(([playerNumber, playerTally]) => {
+                if (playerNumber === 'Equipo') return;
+                Object.values(playerTally).forEach(periodStats => {
+                    myScore += ((periodStats?.goles || 0) * 2) + ((periodStats?.triples || 0) * 3);
+                });
+            });
         }
-        const gameName = `${gameNameLabel} · ${dateStr}`;
+
+        // 2. Build clean game name without duplicating "vs" or date
+        const myTeam = gameState.settings.myTeam?.trim() || '';
+        const existingName = gameState.settings.gameName?.trim() || '';
+        let rival = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
+            ? gameNameInput.trim()
+            : existingName;
+
+        // If rival already contains formatted match name or date, clean it up
+        let gameName = rival;
+        if (!gameName || gameName === 'Partido') {
+            const dateStr = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+            if (myTeam) {
+                gameName = `${myTeam} · ${dateStr}`;
+            } else {
+                gameName = `Partido · ${dateStr}`;
+            }
+        }
 
         if (isAutoSave) {
             setIsAutoSaving(true);
@@ -70,7 +90,11 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 settings: {
                     ...gameState.settings,
                     gameName: gameName.trim(),
-                    teamFouls: gameState.teamFouls // Move into settings to avoid schema error
+                    myScore,
+                    opponentScore: gameState.opponentScore,
+                    currentPeriod: gameState.currentPeriod,
+                    teamFouls: gameState.teamFouls,
+                    gameLog: gameState.gameLog,
                 },
                 player_names: gameState.playerNames,
                 available_players: gameState.availablePlayers,
@@ -104,7 +128,8 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         gol_value: shot.golValue,
                         period: shot.period
                     }));
-                    await supabase.from('shots').insert(shotsPayload);
+                    const { error: shotsError } = await supabase.from('shots').insert(shotsPayload);
+                    if (shotsError) console.error("Error syncing shots:", shotsError);
                 }
             }
 
@@ -119,47 +144,107 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             game_id: newGameId,
                             player_number: playerNumber,
                             period: periodKey,
-                            goles: periodStats.goles,
-                            triples: periodStats.triples,
-                            fallos: periodStats.fallos,
-                            recuperos: periodStats.recuperos,
-                            perdidas: periodStats.perdidas,
-                            rebote_ofensivo: periodStats.reboteOfensivo,
-                            rebote_defensivo: periodStats.reboteDefensivo,
-                            asistencias: periodStats.asistencias,
-                            golescontra: periodStats.golesContra,
-                            faltas_personales: periodStats.faltasPersonales
+                            goles: periodStats.goles || 0,
+                            triples: periodStats.triples || 0,
+                            fallos: periodStats.fallos || 0,
+                            recuperos: periodStats.recuperos || 0,
+                            perdidas: periodStats.perdidas || 0,
+                            rebote_ofensivo: periodStats.reboteOfensivo || 0,
+                            rebote_defensivo: periodStats.reboteDefensivo || 0,
+                            asistencias: periodStats.asistencias || 0,
+                            golescontra: periodStats.golesContra || 0,
+                            faltas_personales: periodStats.faltasPersonales || 0
                         });
                     });
                 }
-                const { error: tallyStatsError } = await supabase.from('tally_stats').upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
-                if (tallyStatsError) throw tallyStatsError;
+                if (statsPayload.length > 0) {
+                    const { error: tallyStatsError } = await supabase
+                        .from('tally_stats')
+                        .upsert(statsPayload, { onConflict: 'game_id,player_number,period' });
+                    if (tallyStatsError) console.error("Error syncing tally stats:", tallyStatsError);
+                }
             }
 
-            if (gameState.gameId !== newGameId) {
-                setGameState(prev => ({ ...prev, gameId: newGameId, settings: { ...prev.settings, gameName: gameName.trim() } }));
-            }
+            // Update gameId and userId in local state if newly assigned
+            setGameState(prev => ({
+                ...prev,
+                gameId: newGameId,
+                userId: user.id,
+                settings: { ...prev.settings, gameName: gameName.trim() }
+            }));
 
             setLastSaved(new Date());
+
             if (!isAutoSave) {
                 setSyncState({ status: 'success', message: '¡Partido guardado con éxito!' });
+                showToast('¡Partido guardado en la nube!', 'success');
             }
-            showToast('¡Partido guardado en la nube!', 'success');
+
+            return newGameId;
         } catch (error: any) {
             console.error('Sync Error:', error);
             if (!isAutoSave) {
                 setSyncState({ status: 'error', message: error.message });
+                showToast(`Error al guardar: ${error.message}`, 'error');
             }
-            showToast(`Error al guardar: ${error.message}`, 'error');
+            return null;
         } finally {
             setIsAutoSaving(false);
         }
-    }, [gameState, setGameState]);
+    }, [gameState, setGameState, showToast]);
 
-    const handleLoadGame = useCallback(async (gameId: string, enableEditing: boolean = false) => {
+    // Background Debounced Auto-Save
+    useEffect(() => {
+        if (!gameState.isSetupComplete || gameState.isReadOnly) return;
+        const hasActions = (gameState.gameLog && gameState.gameLog.length > 0) || (gameState.shots && gameState.shots.length > 0) || !!gameState.gameId;
+        if (!hasActions) return;
+
+        const currentSignature = JSON.stringify({
+            gameId: gameState.gameId,
+            logLen: gameState.gameLog?.length || 0,
+            shotsLen: gameState.shots?.length || 0,
+            fouls: gameState.teamFouls,
+            oppScore: gameState.opponentScore,
+            period: gameState.currentPeriod
+        });
+
+        if (currentSignature === lastSavedSignatureRef.current) return;
+
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+        }
+
+        autoSaveTimerRef.current = setTimeout(async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                lastSavedSignatureRef.current = currentSignature;
+                handleSyncToSupabase(undefined, true);
+            }
+        }, 2500);
+
+        return () => {
+            if (autoSaveTimerRef.current) {
+                clearTimeout(autoSaveTimerRef.current);
+            }
+        };
+    }, [
+        gameState.isSetupComplete,
+        gameState.isReadOnly,
+        gameState.gameId,
+        gameState.gameLog?.length,
+        gameState.shots?.length,
+        gameState.teamFouls,
+        gameState.opponentScore,
+        gameState.currentPeriod,
+        handleSyncToSupabase
+    ]);
+
+    const handleLoadGame = useCallback(async (gameId: string, enableEditing: boolean = false): Promise<LoadGameResult | null> => {
         setIsLoading(true);
         console.log(`[SyncContext] Cargando partido: ${gameId} (editar: ${enableEditing})`);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+
             const [gameRes, shotsRes, tallyRes] = await Promise.all([
                 supabase.from('games').select('*, tournaments(name)').eq('id', gameId).single(),
                 supabase.from('shots').select('*').eq('game_id', gameId),
@@ -171,8 +256,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (tallyRes.error) throw tallyRes.error;
 
             const gameData = gameRes.data;
-            console.log('[SyncContext] Game metadata cargada correctamente');
+            const isOwner = Boolean(user && gameData.user_id === user.id);
 
+            // Increment views if someone is just viewing (read-only)
             if (!enableEditing) {
                 try {
                     const currentViews = gameData.views || 0;
@@ -192,18 +278,17 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }));
 
             const loadedTallyStats: any = {};
-            
-            // 1. Prioridad: Relational DB Table (tally_stats)
+
+            // 1. Load from relational tally_stats table
             if (tallyRes.data && tallyRes.data.length > 0) {
-                console.log(`[SyncContext] Cargando ${tallyRes.data.length} filas de tally_stats`);
                 tallyRes.data.forEach((stat: any) => {
                     const player = stat.player_number?.toString();
                     if (!player) return;
-                    
+
                     if (!loadedTallyStats[player]) {
                         loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
                     }
-                    
+
                     const period = stat.period;
                     if (loadedTallyStats[player][period]) {
                         loadedTallyStats[player][period] = {
@@ -220,29 +305,25 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         };
                     }
                 });
-            } 
-            
-            // 2. Fallback: JSON storage (Legacy or double-save)
+            }
+
+            // 2. Fallback: JSON storage (Legacy)
             const sourceStats = gameData.settings?.tallyStats || gameData.tallyStats;
             if (sourceStats && Object.keys(sourceStats).length > 0) {
-                console.log('[SyncContext] Mergeando datos de fallback JSON');
                 Object.entries(sourceStats).forEach(([player, plStats]: [string, any]) => {
                     const pKey = player.toString();
                     if (!loadedTallyStats[pKey]) {
                         loadedTallyStats[pKey] = JSON.parse(JSON.stringify(initialPlayerTally));
                     }
-                    
+
                     if (plStats['First Half'] || plStats['Second Half']) {
                         Object.keys(plStats).forEach(period => {
                             if (loadedTallyStats[pKey][period]) {
-                                // Merge only if the relational table didn't already provide better data
-                                // Or overwrite if relational was empty for this specific period
                                 const isRelationalEmpty = !tallyRes.data?.some(r => r.player_number?.toString() === pKey && r.period === period);
                                 if (isRelationalEmpty) {
                                     loadedTallyStats[pKey][period] = {
                                         ...loadedTallyStats[pKey][period],
                                         ...plStats[period],
-                                        // Ensure cross-compatibility of field names in JSON
                                         reboteOfensivo: plStats[period].reboteOfensivo ?? plStats[period].rebote_ofensivo ?? 0,
                                         reboteDefensivo: plStats[period].reboteDefensivo ?? plStats[period].rebote_defensivo ?? 0,
                                         golesContra: plStats[period].golesContra ?? plStats[period].goles_contra ?? plStats[period].golescontra ?? 0,
@@ -251,31 +332,24 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                 }
                             }
                         });
-                    } else if (typeof plStats === 'object') {
-                        // Very old legacy format without periods
-                        const isRelationalEmpty = !tallyRes.data?.some(r => r.player_number?.toString() === pKey);
-                        if (isRelationalEmpty) {
-                            loadedTallyStats[pKey]['First Half'] = {
-                                ...loadedTallyStats[pKey]['First Half'],
-                                goles: plStats.goles || 0,
-                                triples: plStats.triples || 0,
-                                fallos: plStats.fallos || 0,
-                                recuperos: plStats.recuperos || 0,
-                                perdidas: plStats.perdidas || 0,
-                                reboteOfensivo: plStats.reboteOfensivo ?? plStats.rebote_ofensivo ?? 0,
-                                reboteDefensivo: plStats.reboteDefensivo ?? plStats.rebote_defensivo ?? 0,
-                                asistencias: plStats.asistencias || 0,
-                                golesContra: plStats.golesContra ?? plStats.goles_contra ?? plStats.golescontra ?? 0,
-                                faltasPersonales: plStats.faltasPersonales ?? plStats.faltas_personales ?? 0
-                            };
-                        }
                     }
                 });
             }
 
-            const loadedGameState = {
+            // Ensure every participating player and "Equipo" has initialized tally stats structure
+            const availablePlayers = gameData.available_players || [];
+            const allPlayerKeys = ['Equipo', ...availablePlayers];
+            allPlayerKeys.forEach(p => {
+                if (!loadedTallyStats[p]) {
+                    loadedTallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
+                }
+            });
+
+            // Restore complete GameState snapshot
+            const loadedGameState: GameState = {
                 ...initialGameState,
                 gameId: gameData.id,
+                userId: gameData.user_id,
                 gameMode: gameData.game_mode,
                 isSetupComplete: true,
                 hasSeenHomepage: true,
@@ -284,31 +358,81 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     tournamentId: gameData.tournament_id || gameData.settings?.tournamentId,
                     tournamentName: gameData.tournaments?.name || gameData.settings?.tournamentName
                 },
-                availablePlayers: gameData.available_players || [],
+                availablePlayers: availablePlayers,
                 playerNames: gameData.player_names || {},
-                activePlayers: (gameData.available_players || []).slice(0, 6),
+                activePlayers: availablePlayers.slice(0, 6),
+                currentPeriod: gameData.settings?.currentPeriod || 'First Half',
+                opponentScore: gameData.settings?.opponentScore ?? 0,
                 shots: loadedShots,
                 tallyStats: loadedTallyStats,
                 teamFouls: gameData.settings?.teamFouls || gameData.team_fouls || initialGameState.teamFouls,
+                gameLog: gameData.settings?.gameLog || [],
+                tallyRedoLog: [],
                 isReadOnly: !enableEditing,
             };
 
-            setGameState(loadedGameState as any);
+            setGameState(loadedGameState);
             if (enableEditing) setLastSaved(new Date());
-            
-            return gameData.game_mode;
+
+            return {
+                gameMode: gameData.game_mode,
+                isOwner
+            };
 
         } catch (error: any) {
             console.error('Load Error:', error);
-            alert(`No se pudo cargar el partido: ${error.message}`);
+            showToast(`No se pudo cargar el partido: ${error.message}`, 'error');
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [setGameState, initialPlayerTally, initialGameState]);
+    }, [setGameState, showToast]);
+
+    const handleDeleteGame = useCallback(async (gameId: string): Promise<boolean> => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Usuario no autenticado");
+
+            // 1. Delete associated shots
+            await supabase.from('shots').delete().eq('game_id', gameId);
+
+            // 2. Delete associated tally stats
+            await supabase.from('tally_stats').delete().eq('game_id', gameId);
+
+            // 3. Delete the game itself
+            const { error: gameError } = await supabase
+                .from('games')
+                .delete()
+                .eq('id', gameId)
+                .eq('user_id', user.id);
+
+            if (gameError) throw gameError;
+
+            // Reset current game if it was the deleted one
+            if (gameState.gameId === gameId) {
+                setGameState(initialGameState);
+            }
+
+            showToast('Partido eliminado correctamente', 'success');
+            return true;
+        } catch (error: any) {
+            console.error('Delete Game Error:', error);
+            showToast(`Error al eliminar: ${error.message}`, 'error');
+            return false;
+        }
+    }, [gameState.gameId, setGameState, showToast]);
 
     return (
-        <SyncContext.Provider value={{ syncState, setSyncState, isAutoSaving, isLoading, lastSaved, handleSyncToSupabase, handleLoadGame }}>
+        <SyncContext.Provider value={{
+            syncState,
+            setSyncState,
+            isAutoSaving,
+            isLoading,
+            lastSaved,
+            handleSyncToSupabase,
+            handleLoadGame,
+            handleDeleteGame
+        }}>
             {children}
         </SyncContext.Provider>
     );

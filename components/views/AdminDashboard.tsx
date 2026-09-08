@@ -6,7 +6,6 @@ import { AdminTab } from '../admin/types';
 import { AdminSidebar } from '../admin/ui/AdminSidebar';
 import { AdminOverview } from '../admin/views/AdminOverview';
 import { AdminUsersView } from '../admin/views/AdminUsersView';
-import { AdminTournamentsView } from '../admin/views/AdminTournamentsView';
 import { AdminGamesView } from '../admin/views/AdminGamesView';
 
 
@@ -80,8 +79,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, isOwne
                     <div className="flex-grow overflow-y-auto custom-scrollbar p-4 lg:p-6" key={refreshKey}>
                         {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} />}
                         {activeTab === 'users' && isOwner && <AdminUsersView isOwner={isOwner} />}
-                        {activeTab === 'tournaments' && <AdminTournamentsView />}
-
                         {activeTab === 'games' && <AdminGamesView onLoadGame={onLoadGame} />}
                     </div>
                 </div>

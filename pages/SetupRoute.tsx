@@ -5,11 +5,14 @@ import { useGameContext } from '../context/GameContext';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { Settings, GameMode, RosterPlayer } from '../types';
 
+import { useProfile } from '../hooks/useProfile';
+
 export default function SetupRoute() {
     const navigate = useNavigate();
     const location = useLocation();
     const { gameState } = useGameContext();
     const { handleSetupComplete } = useGameLogic();
+    const { profile } = useProfile();
     const state = location.state as any;
 
     const initialPlayers = state?.roster ? state.roster.map((p: RosterPlayer) => p.number) : gameState.availablePlayers;
@@ -27,7 +30,7 @@ export default function SetupRoute() {
             initialSelectedPlayers={initialPlayers}
             initialSettings={{
                 ...gameState.settings,
-                myTeam: state?.teamName || gameState.settings.myTeam,
+                myTeam: state?.teamName || gameState.settings.myTeam || profile?.favorite_club || '',
                 gameName: state?.rivalName || gameState.settings.gameName,
                 tournamentName: state?.tournamentName || gameState.settings.tournamentName,
             }}

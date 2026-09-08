@@ -100,7 +100,7 @@ const AdminRoute: React.FC = () => {
                     {activeTab === 'users' && isOwner && <AdminUsersView isOwner={isOwner} />}
 
 
-                    {activeTab === 'games' && <AdminGamesView onLoadGame={(id) => navigate(`/match/${id}`)} />}
+                    {activeTab === 'games' && <AdminGamesView onLoadGame={(id, asOwner) => navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`)} />}
                 </div>
             </div>
         </div>

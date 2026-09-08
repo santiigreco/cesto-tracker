@@ -204,16 +204,22 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 <LoadGameModal
                     isOpen={modals.loadGame?.isOpen}
                     onClose={() => closeModal('loadGame')}
-                    onLoadGame={async (id) => {
+                    onLoadGame={async (id, editable) => {
                         closeModal('loadGame');
                         try {
-                            await handleLoadGame(id, false);
-                            setActiveTab('statistics');
+                            const res = await handleLoadGame(id, !!editable);
+                            if (editable && res) {
+                                setActiveTab(res.gameMode === 'shot-chart' ? 'logger' : 'tally');
+                            } else {
+                                setActiveTab('statistics');
+                            }
+                            navigate(`/match/${id}${editable ? '?edit=true' : ''}`);
                         } catch (err: any) {
                             showToast(`No se pudo cargar el partido: ${err.message}`, 'error');
                         }
                     }}
                     user={user}
+                    onLogin={handleLogin}
                 />
             )}
 

@@ -38,14 +38,22 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
         {user ? (
           <div
             onClick={onOpenProfile}
-            className="flex items-center gap-3 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer hover:bg-slate-750 transition-colors group"
+            className="flex items-center gap-2.5 bg-slate-800/90 hover:bg-slate-750 px-3 py-1.5 rounded-full border border-slate-750 cursor-pointer transition-all group shadow-sm"
           >
-            <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold uppercase overflow-hidden relative ring-2 ring-transparent group-hover:ring-cyan-400 transition-all">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-600 to-emerald-600 flex items-center justify-center text-white font-bold text-xs uppercase overflow-hidden relative ring-2 ring-transparent group-hover:ring-cyan-400 transition-all shrink-0">
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                user.email?.charAt(0) || 'U'
+                profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'
               )}
+            </div>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">
+                {profile?.full_name || user.email?.split('@')[0]}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium leading-tight">
+                {profile?.favorite_club ? `🏐 ${profile.favorite_club}` : 'Completar perfil ⚡'}
+              </span>
             </div>
           </div>
         ) : (

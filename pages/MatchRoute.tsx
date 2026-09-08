@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useGameContext } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
@@ -17,6 +17,8 @@ import { useSync } from '../context/SyncContext';
 
 export default function MatchRoute() {
     const { id } = useParams();
+    const [searchParams] = useSearchParams();
+    const isEditRequested = searchParams.get('edit') === 'true';
     const navigate = useNavigate();
     const { gameState, setGameState, redoStack } = useGameContext();
     const { user, authLoading, handleLogin } = useAuth();
@@ -46,14 +48,24 @@ export default function MatchRoute() {
     const [analysisPeriodFilter, setAnalysisPeriodFilter] = useState('all');
     const [isCorrectionsVisible, setIsCorrectionsVisible] = useState(false);
 
+    const isGameOwner = Boolean(user && gameState.userId && gameState.userId === user.id);
+
     useEffect(() => {
         if (id && id !== 'new') {
             if (gameState.gameId !== id) {
-                handleLoadGame(id, false);
-                setActiveTab('statistics');
+                const enableEditing = isEditRequested;
+                handleLoadGame(id, enableEditing).then((res) => {
+                    if (res) {
+                        if (enableEditing) {
+                            setActiveTab(res.gameMode === 'shot-chart' ? 'logger' : 'tally');
+                        } else {
+                            setActiveTab('statistics');
+                        }
+                    }
+                });
             }
         }
-    }, [id, gameState.gameId]);
+    }, [id, gameState.gameId, isEditRequested, handleLoadGame, setActiveTab]);
 
     const tabsForCurrentMode = useMemo(() => {
         if (!gameState.gameMode) return ['logger', 'tally', 'statistics'] as const;
@@ -154,6 +166,36 @@ export default function MatchRoute() {
                 />
 
                 <Scoreboard />
+
+                {/* Owner Mode Toggle */}
+                {isGameOwner && (
+                    <div className="flex items-center justify-between bg-slate-800/80 border border-slate-700/80 rounded-2xl px-4 py-2.5 mb-4 backdrop-blur-sm shadow-md animate-fade-in">
+                        <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${gameState.isReadOnly ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`}></span>
+                            <span className="text-xs font-bold text-slate-300">
+                                {gameState.isReadOnly ? 'Modo Lectura (Estadísticas)' : 'Modo Anotador (En Vivo)'}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const nextReadOnly = !gameState.isReadOnly;
+                                setGameState(prev => ({ ...prev, isReadOnly: nextReadOnly }));
+                                if (nextReadOnly) {
+                                    setActiveTab('statistics');
+                                } else {
+                                    setActiveTab(gameState.gameMode === 'shot-chart' ? 'logger' : 'tally');
+                                }
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                                gameState.isReadOnly
+                                    ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md hover:shadow-cyan-500/20'
+                                    : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600'
+                            }`}
+                        >
+                            {gameState.isReadOnly ? '✏️ Continuar Anotando' : '📊 Ver Estadísticas'}
+                        </button>
+                    </div>
+                )}
 
                 <div className="hidden md:flex justify-center mb-8 border-b border-slate-700 bg-slate-900 shadow-md">
                     {tabsForCurrentMode.map(tab => (

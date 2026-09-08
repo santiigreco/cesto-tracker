@@ -34,7 +34,11 @@ export interface Settings {
   tournamentName?: string; // Nombre para mostrar en UI
   categoryName?: string; // Categoría (e.g. Primera A)
   gameDate?: string; // ISO Date string for the match date
-
+  myScore?: number;
+  opponentScore?: number;
+  currentPeriod?: GamePeriod;
+  teamFouls?: { [key in GamePeriod]: number };
+  gameLog?: GameEvent[];
 
   isManoCalienteEnabled: boolean;
   manoCalienteThreshold: number;
@@ -81,6 +85,7 @@ export interface GameEvent {
 
 export interface GameState {
   gameId: string | null; // Supabase game ID
+  userId?: string | null; // Supabase user ID who created the game
   shots: Shot[];
   isSetupComplete: boolean;
   hasSeenHomepage: boolean;

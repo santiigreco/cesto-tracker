@@ -1,4 +1,5 @@
 
+import type ExcelJS from 'exceljs';
 import { GameState } from '../types';
 
 // Helper types for the specific stats structure

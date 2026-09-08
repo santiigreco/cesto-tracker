@@ -144,7 +144,10 @@ El sistema distingue dos niveles de roles en `UserProfile` ([types.ts](file:///c
 
 ## 9. Deuda Técnica Conocida y Precauciones
 
-- **Capa de Sincronización:** Consolidada al 100% en `context/SyncContext.tsx`. El hook legacy `useSupabaseSync.ts` ha sido removido y todos los modales (incluido `SaveGameModal.tsx`) consumen la sincronización directamente desde el contexto global (`useSync()`).
+- **Capa de Sincronización y Auto-Guardado:** Consolidada al 100% en `context/SyncContext.tsx`. Cuenta con auto-guardado en segundo plano con debounce de 2.5s, restauración completa de snapshots (período, score rival, faltas acumuladas y log de jugadas) y conmutación de modo (anotador vs estadísticas) según propiedad del partido.
+- **Historial de Partidos:** Centralizado en `LoadGameModal.tsx` con separación de "Mis Partidos" vs "Comunidad", acciones de reanudación directa en modo edición y eliminación en cascada.
 - **Optimización de Bundle:** Completada. Se implementó code-splitting con `React.lazy()` en todas las rutas de `App.tsx`, separación de vendors (`vendor-react`, `vendor-supabase`) y carga dinámica bajo demanda (`await import`) para `exceljs` en `exportToExcel.ts`, reduciendo la carga inicial en más de un 80%.
 - **Componentes Monolíticos Pendientes de Modularizar:**
   - `PlayerSetup.tsx` (~25 KB). (`StatisticsView.tsx` y `HomePage.tsx` fueron modularizados con éxito en submódulos atómicos bajo `components/views/statistics/` y `components/views/home/`).
+- **Próxima Limpieza de Código Muerto:**
+  - Deprecación y remoción de subsistemas de Fixture/Torneos en deshuso (`useFixture.ts`, `StandingsRoute.tsx`, vistas de torneo) para enfocar la app 100% en el seguimiento, análisis y planilla técnica en vivo.

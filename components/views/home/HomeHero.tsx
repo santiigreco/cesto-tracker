@@ -14,13 +14,27 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ user, profile, communityStat
   return (
     <div className="text-center lg:text-left space-y-4">
       {user && profile && (
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 mb-2 backdrop-blur-sm shadow-sm">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">En línea</span>
-          <span className="text-slate-500 px-1">•</span>
-          <span className="text-xs font-bold text-slate-300">
+          <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">
+            {profile.role === 'jugador' ? '🏃 Jugador/a' :
+             profile.role === 'entrenador' ? '📋 Entrenador/a' :
+             profile.role === 'hincha' ? '🥁 Hincha' :
+             profile.role === 'periodista' ? '🎙️ Prensa' :
+             profile.role === 'dirigente' ? '⏱️ Mesa/Delegado' : '🏐 En línea'}
+          </span>
+          <span className="text-slate-600 px-0.5">•</span>
+          <span className="text-xs font-bold text-white">
             {profile.full_name || user.email?.split('@')[0]}
           </span>
+          {profile.favorite_club && (
+            <>
+              <span className="text-slate-600 px-0.5">•</span>
+              <span className="text-xs font-bold text-emerald-400">
+                {profile.favorite_club}
+              </span>
+            </>
+          )}
         </div>
       )}
       <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-[0.8] lg:leading-[0.8]">

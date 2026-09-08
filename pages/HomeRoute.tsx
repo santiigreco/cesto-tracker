@@ -21,8 +21,8 @@ export default function HomeRoute() {
         navigate('/setup', { state: { teamName, roster } });
     };
 
-    const handleLoadGame = (id: string, asOwner: boolean) => {
-        navigate(`/match/${id}`);
+    const handleLoadGame = (id: string, asOwner: boolean = false) => {
+        navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`);
     };
 
     const communityStats = useCommunityStats();
@@ -44,11 +44,12 @@ export default function HomeRoute() {
                 <LoadGameModal
                     isOpen={modals.loadGame?.isOpen}
                     onClose={() => closeModal('loadGame')}
-                    onLoadGame={(id) => {
+                    onLoadGame={(id, editable) => {
                         closeModal('loadGame');
-                        handleLoadGame(id, false);
+                        handleLoadGame(id, !!editable);
                     }}
                     user={user}
+                    onLogin={handleLogin}
                 />
             )}
         </>
