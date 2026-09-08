@@ -158,7 +158,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                     )}
                     <div className="flex items-center gap-3">
                         <p className="text-xs sm:text-base text-slate-400 font-medium">
-                            {gameMode === 'stats-tally' ? 'Estadísticas y Tanteador' : 'Registro de Tiros y Mapa'}
+                            Planilla Técnica y Estadísticas
                         </p>
                     </div>
 

@@ -44,7 +44,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ user, profile, communityStat
         </span>
       </h1>
       <p className="text-lg sm:text-xl text-slate-400 max-w-md mx-auto lg:mx-0 pt-4 leading-relaxed font-medium">
-        Estadísticas en vivo, mapas de calor y gestión profesional. <br className="hidden sm:block" />
+        Estadísticas en vivo, planilla técnica digital y gestión profesional. <br className="hidden sm:block" />
         <span className="text-slate-200">Creado por y para la comunidad del Cesto.</span>
       </p>
       {communityStats.totalGames !== null && communityStats.totalGames > 0 && (

@@ -2,21 +2,17 @@
 import React, { useMemo } from 'react';
 import { GameState, PlayerStats } from '../../types';
 import StatisticsView from '@/components/views/StatisticsView';
-import Court from '@/components/game/Court';
-import HeatmapOverlay from '@/components/charts/HeatmapOverlay';
-import ZoneChart from '@/components/charts/ZoneChart';
 import TeamLogo from '@/components/ui/TeamLogo';
 
 interface ShareReportProps {
     gameState: GameState;
-    playerStats: PlayerStats[];
+    playerStats?: PlayerStats[];
     viewMode: 'summary' | 'detailed';
     rivalScore?: number | null;
 }
 
-const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewMode, rivalScore }) => {
-    const { shots, playerNames, gameMode, tallyStats, settings } = gameState;
-    const showMaps = gameMode === 'shot-chart' && shots.length > 0;
+const ShareReport: React.FC<ShareReportProps> = ({ gameState, viewMode, rivalScore }) => {
+    const { playerNames, tallyStats, settings } = gameState;
 
     // Calculate aggregated stats for Summary Card
     const summaryData = useMemo(() => {
@@ -28,42 +24,24 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
         let totalPerdidas = 0;
         const playersMap: Record<string, { points: number, name: string }> = {};
 
-        if (gameMode === 'stats-tally') {
-            Object.entries(tallyStats).forEach(([playerNum, stats]) => {
-                if (playerNum === 'Equipo') return; // Skip aggregate team entry
-                const fh = stats['First Half'];
-                const sh = stats['Second Half'];
+        Object.entries(tallyStats || {}).forEach(([playerNum, stats]) => {
+            if (playerNum === 'Equipo') return; // Skip aggregate team entry
+            const fh = stats['First Half'];
+            const sh = stats['Second Half'];
 
-                const pPoints = ((fh.goles + sh.goles) * 2) + ((fh.triples + sh.triples) * 3);
-                totalPoints += pPoints;
-                totalGoles += fh.goles + sh.goles;
-                totalTriples += fh.triples + sh.triples;
-                totalFallos += fh.fallos + sh.fallos;
-                totalRecuperos += fh.recuperos + sh.recuperos;
-                totalPerdidas += fh.perdidas + sh.perdidas;
+            const pPoints = (((fh?.goles || 0) + (sh?.goles || 0)) * 2) + (((fh?.triples || 0) + (sh?.triples || 0)) * 3);
+            totalPoints += pPoints;
+            totalGoles += (fh?.goles || 0) + (sh?.goles || 0);
+            totalTriples += (fh?.triples || 0) + (sh?.triples || 0);
+            totalFallos += (fh?.fallos || 0) + (sh?.fallos || 0);
+            totalRecuperos += (fh?.recuperos || 0) + (sh?.recuperos || 0);
+            totalPerdidas += (fh?.perdidas || 0) + (sh?.perdidas || 0);
 
-                playersMap[playerNum] = {
-                    points: pPoints,
-                    name: playerNames[playerNum] || `#${playerNum}`
-                };
-            });
-        } else {
-            // Shot chart mode
-            playerStats.forEach(p => {
-                totalPoints += p.totalPoints;
-                totalGoles += p.totalGoles;
-                // Triples not explicitly tracked in standard PlayerStats for shot-chart yet without recalculation
-                // Simplified for now based on available props
-                playersMap[p.playerNumber] = {
-                    points: p.totalPoints,
-                    name: playerNames[p.playerNumber] || `#${p.playerNumber}`
-                };
-            });
-            // Calculate totals from shots directly for accuracy
-            shots.forEach(s => {
-                if (!s.isGol) totalFallos++;
-            });
-        }
+            playersMap[playerNum] = {
+                points: pPoints,
+                name: playerNames[playerNum] || `#${playerNum}`
+            };
+        });
 
         const sortedPlayers = Object.values(playersMap).sort((a, b) => b.points - a.points);
         const topScorers = sortedPlayers.filter(p => p.points > 0).slice(0, 3);
@@ -71,7 +49,7 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
         const efficiency = totalShots > 0 ? ((totalGoles + totalTriples) / totalShots * 100).toFixed(0) : '0';
 
         return { totalPoints, totalGoles, totalTriples, totalFallos, totalRecuperos, totalPerdidas, topScorers, efficiency };
-    }, [gameState, playerStats]);
+    }, [gameState]);
 
 
     // --- VIRAL CARD LAYOUT (SUMMARY) ---
@@ -197,40 +175,10 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, playerStats, viewM
 
             <div className="space-y-8">
                 <StatisticsView
-                    externalStats={playerStats}
                     externalPlayerNames={playerNames}
-                    externalShots={shots}
                     isSharing={true}
-                    externalGameMode={gameMode}
                     externalTallyStats={tallyStats}
                 />
-
-                {showMaps && (
-                    <>
-                        <div className="bg-slate-800 p-6 rounded-lg shadow-lg break-inside-avoid">
-                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Mapa de Tiros</h2>
-                            <div className="w-full max-w-[400px] mx-auto">
-                                <Court shots={shots} showShotMarkers={true} />
-                            </div>
-                        </div>
-                        <div className="bg-slate-800 p-6 rounded-lg shadow-lg break-inside-avoid">
-                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Mapa de Calor</h2>
-                            <div className="w-full max-w-[400px] mx-auto">
-                                <Court shots={[]}>
-                                    <HeatmapOverlay shots={shots} />
-                                </Court>
-                            </div>
-                        </div>
-                        <div className="bg-slate-800 p-6 rounded-lg shadow-lg break-inside-avoid">
-                            <h2 className="text-3xl font-bold text-cyan-400 mb-4 text-center">Análisis de Zonas</h2>
-                            <div className="w-full max-w-[400px] mx-auto">
-                                <Court shots={[]}>
-                                    <ZoneChart shots={shots} />
-                                </Court>
-                            </div>
-                        </div>
-                    </>
-                )}
             </div>
             <footer className="w-full text-center text-slate-500 text-sm mt-10 pt-4 border-t border-slate-700">
                 Cesto Tracker 🏐 - Tu planilla digital

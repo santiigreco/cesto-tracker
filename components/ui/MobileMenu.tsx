@@ -6,7 +6,6 @@ import { WhatsappIcon } from '../icons';
 import { ClipboardIcon } from '../icons';
 import { ChartPieIcon } from '../icons';
 import { ChartBarIcon } from '../icons';
-import { QuestionMarkCircleIcon } from '../icons';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -20,11 +19,8 @@ interface MobileMenuProps {
 
 const MobileMenu: React.FC<MobileMenuProps> = React.memo(({ isOpen, onClose, activeTab, onSelectTab, onShare, tabTranslations, tabs }) => {
   const tabIcons: Record<AppTab, React.FC<{ className?: string }>> = {
-    logger: ClipboardIcon,
     tally: ClipboardIcon,
-    courtAnalysis: ChartPieIcon,
     statistics: ChartBarIcon,
-    faq: QuestionMarkCircleIcon,
   };
 
   useEffect(() => {

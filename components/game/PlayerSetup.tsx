@@ -143,28 +143,9 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         }
     }, [initialSettings.myTeam, initialSettings.gameName]);
 
-    // Default to 'stats-tally' (Anotador) if no mode provided
-    const [selectedMode, setSelectedMode] = useState<GameMode>(initialGameMode || 'stats-tally');
-
-    const togglePlayer = (playerNumber: string) => {
-        setSelectedPlayers(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(playerNumber)) {
-                newSet.delete(playerNumber);
-            } else {
-                newSet.add(playerNumber);
-            }
-            return newSet;
-        });
-    };
-
     const handleStart = () => {
         if (selectedPlayers.size < 1) {
             alert("Debes seleccionar al menos un jugador.");
-            return;
-        }
-        if (selectedMode === 'shot-chart' && selectedPlayers.size < 6) {
-            alert('El modo "Registro de Tiros" requiere un equipo de al menos 6 jugadores.');
             return;
         }
 
@@ -185,7 +166,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             }));
         } catch (e) { /* ignore */ }
 
-        onSetupComplete(sortedPlayers, finalSettings, selectedMode || 'stats-tally', localPlayerNames);
+        onSetupComplete(sortedPlayers, finalSettings, 'stats-tally', localPlayerNames);
     };
 
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
@@ -207,27 +188,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     };
 
     const isCorrection = initialSelectedPlayers.length > 0;
-    const [user, setUser] = useState<any>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
-
-    React.useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            setUser(user);
-            if (user) {
-                // Check if admin via profile
-                supabase
-                    .from('profiles')
-                    .select('is_admin, permission_role')
-                    .eq('id', user.id)
-                    .single()
-                    .then(({ data }) => {
-                        if (data) {
-                            setIsAdmin(data.is_admin === true || data.permission_role === 'admin');
-                        }
-                    });
-            }
-        });
-    }, []);
 
     return (
         <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center justify-center p-4 sm:p-6 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 relative">

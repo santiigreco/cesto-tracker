@@ -1,5 +1,5 @@
 import React from 'react';
-import { FeatureMapIcon, FeatureTapIcon } from '@/components/icons';
+import { ChartBarIcon, FeatureTapIcon } from '@/components/icons';
 
 export const HomeFeatures: React.FC = () => {
   return (
@@ -27,11 +27,11 @@ export const HomeFeatures: React.FC = () => {
 
       <div className="group bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-800/50 flex flex-col items-center text-center transition-all duration-500 hover:bg-slate-800/40 hover:-translate-y-2">
         <div className="w-16 h-16 bg-purple-500/10 rounded-3xl flex items-center justify-center mb-6 ring-1 ring-purple-500/20 group-hover:ring-purple-500/40 transition-all duration-500">
-          <FeatureMapIcon className="h-8 w-8 text-purple-400" />
+          <ChartBarIcon className="h-8 w-8 text-purple-400" />
         </div>
-        <h3 className="text-xl font-black text-white mb-4 tracking-tight">Foco Táctico</h3>
+        <h3 className="text-xl font-black text-white mb-4 tracking-tight">Control Total</h3>
         <p className="text-slate-400 leading-relaxed">
-          Entiende el flujo de tu equipo con mapas de calor y zonas de efectividad precisas.
+          Planilla técnica completa con registro de goles, triples, faltas, recuperos y asistencias en tiempo real.
         </p>
       </div>
     </div>

@@ -5,28 +5,20 @@ import { useUI } from '../../context/UIContext';
 const Scoreboard: React.FC = React.memo(() => {
   const { gameState, setGameState } = useGameContext();
   const { activeTab, setActiveTab, openModal } = useUI();
-  const { gameMode, shots, tallyStats, currentPeriod } = gameState;
+  const { tallyStats, currentPeriod } = gameState;
 
   const totalPoints = useMemo(() => {
-    if (gameMode === 'shot-chart') {
-      return shots.reduce((acc, shot) => acc + (shot.isGol ? shot.golValue : 0), 0);
-    }
+    return Object.entries(tallyStats || {}).reduce((total: number, [playerNumber, playerTally]) => {
+      if (playerNumber === 'Equipo') return total;
 
-    if (gameMode === 'stats-tally') {
-      // Calculate total points from individual players only, excluding 'Equipo' to prevent double counting
-      return Object.entries(tallyStats).reduce((total: number, [playerNumber, playerTally]) => {
-        if (playerNumber === 'Equipo') return total;
+      let playerTotal = 0;
+      Object.values(playerTally).forEach(periodStats => {
+        playerTotal += ((periodStats?.goles || 0) * 2) + ((periodStats?.triples || 0) * 3);
+      });
 
-        let playerTotal = 0;
-        Object.values(playerTally).forEach(periodStats => {
-          playerTotal += ((periodStats?.goles || 0) * 2) + ((periodStats?.triples || 0) * 3);
-        });
-
-        return total + playerTotal;
-      }, 0);
-    }
-    return 0;
-  }, [shots, tallyStats, gameMode]);
+      return total + playerTotal;
+    }, 0);
+  }, [tallyStats]);
 
   return (
     <div className="sticky top-0 z-50 -mx-4 px-4 sm:mx-0 sm:px-0 w-auto sm:w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-700 shadow-xl mb-4 py-3 flex items-center justify-between transition-all max-w-4xl mx-auto">

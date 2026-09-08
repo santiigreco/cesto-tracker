@@ -89,4 +89,42 @@ describe('Sync Logic & State Reconstruction', () => {
         const isOtherOwner = otherUserId === gameUserId;
         expect(isOtherOwner).toBe(false);
     });
+
+    it('reconstructs tallyStats from legacy shots when tally_stats table is empty', () => {
+        const loadedShots = [
+            { playerNumber: '10', isGol: true, golValue: 2, period: 'First Half' as GamePeriod },
+            { playerNumber: '10', isGol: true, golValue: 3, period: 'First Half' as GamePeriod },
+            { playerNumber: '10', isGol: false, golValue: 2, period: 'First Half' as GamePeriod },
+            { playerNumber: '7', isGol: true, golValue: 3, period: 'Second Half' as GamePeriod },
+        ];
+
+        const loadedTallyStats: Record<string, any> = {};
+
+        loadedShots.forEach((shot) => {
+            const pKey = shot.playerNumber;
+            if (!loadedTallyStats[pKey]) {
+                loadedTallyStats[pKey] = JSON.parse(JSON.stringify(initialPlayerTally));
+            }
+            const period = shot.period;
+            if (shot.isGol) {
+                if (shot.golValue === 3) {
+                    loadedTallyStats[pKey][period].triples = (loadedTallyStats[pKey][period].triples || 0) + 1;
+                } else {
+                    loadedTallyStats[pKey][period].goles = (loadedTallyStats[pKey][period].goles || 0) + 1;
+                }
+            } else {
+                loadedTallyStats[pKey][period].fallos = (loadedTallyStats[pKey][period].fallos || 0) + 1;
+            }
+        });
+
+        expect(loadedTallyStats['10']['First Half'].goles).toBe(1);
+        expect(loadedTallyStats['10']['First Half'].triples).toBe(1);
+        expect(loadedTallyStats['10']['First Half'].fallos).toBe(1);
+        expect(loadedTallyStats['7']['Second Half'].triples).toBe(1);
+
+        // Player 10 points: 1*2 + 1*3 = 5 pts
+        const p10Points = (loadedTallyStats['10']['First Half'].goles * 2) + (loadedTallyStats['10']['First Half'].triples * 3);
+        expect(p10Points).toBe(5);
+    });
 });
+

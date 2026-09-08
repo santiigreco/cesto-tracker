@@ -45,8 +45,8 @@ export const initialGameState: GameState = {
         manoFriaThreshold: 5,
     },
     playerStreaks: {},
-    tutorialStep: 1,
-    gameMode: null,
+    tutorialStep: 3,
+    gameMode: 'stats-tally',
     tallyStats: {},
     opponentScore: 0,
     teamFouls: {
@@ -63,8 +63,6 @@ export const initialGameState: GameState = {
 interface GameContextType {
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-    redoStack: Shot[];
-    setRedoStack: React.Dispatch<React.SetStateAction<Shot[]>>;
     resetGame: () => void;
 }
 
@@ -72,7 +70,6 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [gameState, setGameState] = useState<GameState>(initialGameState);
-    const [redoStack, setRedoStack] = useState<Shot[]>([]);
 
     // Load from LocalStorage
     useEffect(() => {
@@ -154,15 +151,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGameState(prev => ({
             ...initialGameState,
             hasSeenHomepage: true,
-            tutorialStep: prev.tutorialStep === 3 ? 3 : 1,
             gameId: null,
             isReadOnly: false,
         }));
-        setRedoStack([]);
     };
 
     return (
-        <GameContext.Provider value={{ gameState, setGameState, redoStack, setRedoStack, resetGame }}>
+        <GameContext.Provider value={{ gameState, setGameState, resetGame }}>
             {children}
         </GameContext.Provider>
     );

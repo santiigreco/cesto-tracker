@@ -45,16 +45,12 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // 1. Calculate current myScore for quick preview in lists
         let myScore = 0;
-        if (gameState.gameMode === 'shot-chart') {
-            myScore = gameState.shots.reduce((acc, s) => acc + (s.isGol ? s.golValue : 0), 0);
-        } else if (gameState.gameMode === 'stats-tally') {
-            Object.entries(gameState.tallyStats).forEach(([playerNumber, playerTally]) => {
-                if (playerNumber === 'Equipo') return;
-                Object.values(playerTally).forEach(periodStats => {
-                    myScore += ((periodStats?.goles || 0) * 2) + ((periodStats?.triples || 0) * 3);
-                });
+        Object.entries(gameState.tallyStats || {}).forEach(([playerNumber, playerTally]) => {
+            if (playerNumber === 'Equipo') return;
+            Object.values(playerTally).forEach(periodStats => {
+                myScore += ((periodStats?.goles || 0) * 2) + ((periodStats?.triples || 0) * 3);
             });
-        }
+        });
 
         // 2. Build clean game name without duplicating "vs" or date
         const myTeam = gameState.settings.myTeam?.trim() || '';
@@ -86,7 +82,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const gamePayload = {
                 id: gameState.gameId || undefined,
-                game_mode: gameState.gameMode,
+                game_mode: 'stats-tally',
                 settings: {
                     ...gameState.settings,
                     gameName: gameName.trim(),
@@ -115,26 +111,8 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const newGameId = gameData.id;
 
-            // Sync Shots
-            if (gameState.gameMode === 'shot-chart') {
-                await supabase.from('shots').delete().eq('game_id', newGameId);
-                if (gameState.shots.length > 0) {
-                    const shotsPayload = gameState.shots.map(shot => ({
-                        game_id: newGameId,
-                        player_number: shot.playerNumber,
-                        x: shot.position.x,
-                        y: shot.position.y,
-                        is_gol: shot.isGol,
-                        gol_value: shot.golValue,
-                        period: shot.period
-                    }));
-                    const { error: shotsError } = await supabase.from('shots').insert(shotsPayload);
-                    if (shotsError) console.error("Error syncing shots:", shotsError);
-                }
-            }
-
             // Sync Tally Stats
-            if (gameState.gameMode === 'stats-tally' && Object.keys(gameState.tallyStats).length > 0) {
+            if (gameState.tallyStats && Object.keys(gameState.tallyStats).length > 0) {
                 const statsPayload: any[] = [];
                 for (const playerNumber in gameState.tallyStats) {
                     const playerTally = gameState.tallyStats[playerNumber];
@@ -332,6 +310,34 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                 }
                             }
                         });
+                    }
+                });
+            }
+
+            // 3. Fallback: Reconstruct from relational `shots` table (for legacy shot-chart games in Supabase)
+            const hasTallyData = Object.values(loadedTallyStats).some((p: any) =>
+                Object.values(p).some((periodStats: any) =>
+                    (periodStats?.goles || 0) > 0 || (periodStats?.triples || 0) > 0 || (periodStats?.fallos || 0) > 0
+                )
+            );
+            if (!hasTallyData && loadedShots.length > 0) {
+                loadedShots.forEach((shot: any) => {
+                    const pKey = shot.playerNumber?.toString();
+                    if (!pKey) return;
+                    if (!loadedTallyStats[pKey]) {
+                        loadedTallyStats[pKey] = JSON.parse(JSON.stringify(initialPlayerTally));
+                    }
+                    const period = shot.period;
+                    if (loadedTallyStats[pKey] && loadedTallyStats[pKey][period]) {
+                        if (shot.isGol) {
+                            if (shot.golValue === 3) {
+                                loadedTallyStats[pKey][period].triples = (loadedTallyStats[pKey][period].triples || 0) + 1;
+                            } else {
+                                loadedTallyStats[pKey][period].goles = (loadedTallyStats[pKey][period].goles || 0) + 1;
+                            }
+                        } else {
+                            loadedTallyStats[pKey][period].fallos = (loadedTallyStats[pKey][period].fallos || 0) + 1;
+                        }
                     }
                 });
             }

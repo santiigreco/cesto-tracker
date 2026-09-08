@@ -1,21 +1,15 @@
 
 export type GamePeriod = 'First Half' | 'Second Half' | 'First Overtime' | 'Second Overtime';
-export type AppTab = 'logger' | 'tally' | 'courtAnalysis' | 'statistics' | 'faq';
-export type HeatmapFilter = 'all' | 'goles' | 'misses';
-export type MapPeriodFilter = GamePeriod | 'all';
-export type GameMode = 'shot-chart' | 'stats-tally' | null;
+export type AppTab = 'tally' | 'statistics';
+export type GameMode = 'stats-tally' | null;
 
-export interface ShotPosition {
-  x: number; // in meters, from top edge (length-wise)
-  y: number; // in meters, from left edge (width-wise)
-}
-
+// Legacy Shot interface preserved for backward-compatibility with historical matches in DB
 export interface Shot {
-  id: string; // Unique ID for React key prop
+  id: string;
   playerNumber: string;
-  position: ShotPosition;
+  position?: { x: number; y: number };
   isGol: boolean;
-  golValue: number; // 2 for regular gol, 3 for triple, 0 for miss
+  golValue: number;
   period: GamePeriod;
 }
 

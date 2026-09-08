@@ -75,7 +75,7 @@ export const HomePhonePreview: React.FC = () => {
       </div>
       <div className="lg:hidden mt-8 w-full bg-slate-800/50 border border-slate-700/50 p-6 rounded-2xl text-center backdrop-blur-sm">
         <p className="text-slate-200 font-bold text-lg mb-1">
-          Planilla digital y mapa de calor en tu bolsillo.
+          Planilla técnica y estadísticas en tu bolsillo.
         </p>
         <p className="text-cyan-400 text-sm font-medium">PWA · Sin instalar desde la tienda.</p>
       </div>

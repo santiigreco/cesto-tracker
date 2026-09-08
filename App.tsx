@@ -5,7 +5,6 @@ import Loader from '@/components/ui/Loader';
 const HomeRoute = lazy(() => import('./pages/HomeRoute'));
 const SetupRoute = lazy(() => import('./pages/SetupRoute'));
 const MatchRoute = lazy(() => import('./pages/MatchRoute'));
-const StandingsRoute = lazy(() => import('./pages/StandingsRoute'));
 const AdminRoute = lazy(() => import('./pages/AdminRoute'));
 const FaqRoute = lazy(() => import('./pages/FaqRoute'));
 
@@ -22,12 +21,6 @@ function App() {
       <Route path="/" element={<HomeRoute />} />
       <Route path="/setup" element={<SetupRoute />} />
       <Route path="/match/:id" element={<MatchRoute />} />
-
-      {/* Standings routes with parameters */}
-      <Route path="/standings" element={<Navigate to={`/standings/${new Date().getFullYear()}`} replace />} />
-      <Route path="/standings/:year" element={<StandingsRoute />} />
-      <Route path="/standings/:year/:tournament" element={<StandingsRoute />} />
-      <Route path="/standings/:year/:tournament/:category" element={<StandingsRoute />} />
 
       <Route path="/admin" element={<AdminRoute />} />
       <Route path="/faq" element={<FaqRoute />} />

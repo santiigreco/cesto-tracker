@@ -10,7 +10,7 @@ import GameMainContent from '@/components/game/GameMainContent';
 import AppModals from '@/components/ui/AppModals';
 import Loader from '@/components/ui/Loader';
 import Scoreboard from '@/components/game/Scoreboard';
-import { ShotPosition, GameEvent, StatAction, AppTab, SavedTeam } from '../types';
+import { GameEvent, StatAction, AppTab, SavedTeam } from '../types';
 import { STAT_LABELS } from '../constants';
 import { useProfile } from '../hooks/useProfile';
 import { useSync } from '../context/SyncContext';
@@ -20,7 +20,7 @@ export default function MatchRoute() {
     const [searchParams] = useSearchParams();
     const isEditRequested = searchParams.get('edit') === 'true';
     const navigate = useNavigate();
-    const { gameState, setGameState, redoStack } = useGameContext();
+    const { gameState, setGameState } = useGameContext();
     const { user, authLoading, handleLogin } = useAuth();
     const {
         activeTab, setActiveTab, openModal, closeModal,
@@ -32,20 +32,12 @@ export default function MatchRoute() {
     const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving } = useSync();
 
     const {
-        handlePlayerChange, handleSubstitution, updatePlayerName,
+        updatePlayerName,
         handleUpdateTallyStat, handleUndoTally, handleRedoTally,
-        handleOutcomeSelection, handleUndoShot, handleRedoShot,
         handleDeleteGameEvent, handleEditGameEvent
     } = useGameLogic();
 
-    const [pendingShotPosition, setPendingShotPosition] = useState<ShotPosition | null>(null);
     const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null);
-    const [isEditingHeaderPlayer, setIsEditingHeaderPlayer] = useState(false);
-    const [headerPlayerName, setHeaderPlayerName] = useState('');
-    const [mapView, setMapView] = useState<'shotmap' | 'heatmap' | 'zonemap'>('heatmap');
-    const [analysisPlayer, setAnalysisPlayer] = useState<string>('Todos');
-    const [analysisResultFilter, setAnalysisResultFilter] = useState('all');
-    const [analysisPeriodFilter, setAnalysisPeriodFilter] = useState('all');
     const [isCorrectionsVisible, setIsCorrectionsVisible] = useState(false);
 
     const isGameOwner = Boolean(user && gameState.userId && gameState.userId === user.id);
@@ -57,7 +49,7 @@ export default function MatchRoute() {
                 handleLoadGame(id, enableEditing).then((res) => {
                     if (res) {
                         if (enableEditing) {
-                            setActiveTab(res.gameMode === 'shot-chart' ? 'logger' : 'tally');
+                            setActiveTab('tally');
                         } else {
                             setActiveTab('statistics');
                         }
@@ -67,25 +59,17 @@ export default function MatchRoute() {
         }
     }, [id, gameState.gameId, isEditRequested, handleLoadGame, setActiveTab]);
 
-    const tabsForCurrentMode = useMemo(() => {
-        if (!gameState.gameMode) return ['logger', 'tally', 'statistics'] as const;
-        return gameState.gameMode === 'shot-chart'
-            ? ['logger', 'courtAnalysis', 'statistics'] as const
-            : ['tally', 'statistics'] as const;
-    }, [gameState.gameMode]);
+    const tabsForCurrentMode = useMemo(() => ['tally', 'statistics'] as const, []);
 
     useEffect(() => {
         if (!tabsForCurrentMode.includes(activeTab as any)) {
-            setActiveTab(tabsForCurrentMode[0]);
+            setActiveTab('tally');
         }
     }, [tabsForCurrentMode, activeTab, setActiveTab]);
 
-    const tabTranslations: Partial<Record<AppTab, string>> = {
-        logger: 'Cancha',
+    const tabTranslations: Record<AppTab, string> = {
         tally: 'Planilla',
-        courtAnalysis: 'Mapa',
-        statistics: 'Estadísticas',
-        faq: 'Ayuda'
+        statistics: 'Estadísticas'
     };
 
     if (authLoading || syncLoading) {
@@ -101,30 +85,11 @@ export default function MatchRoute() {
         return <Navigate to="/setup" replace />;
     }
 
-    const handleCourtClick = (position: ShotPosition) => {
-        if (gameState.isReadOnly) return;
-        if (!gameState.currentPlayer || gameState.currentPlayer === 'Todos') {
-            alert('Por favor, selecciona un jugador antes de marcar un tiro.');
-            return;
-        }
-        setPendingShotPosition(position);
-    };
-
-    const onOutcomeSelect = (isGol: boolean) => {
-        if (pendingShotPosition) {
-            handleOutcomeSelection(isGol, pendingShotPosition);
-            setPendingShotPosition(null);
-        }
-    }
-
     const renderModalsProps = {
         tabTranslations,
         tabs: tabsForCurrentMode as any,
         playersForTally: gameState.availablePlayers,
         actionLabel: actionToAssign ? STAT_LABELS[actionToAssign as any] : '',
-        pendingShotPosition,
-        setPendingShotPosition,
-        onOutcomeSelect,
         editingEvent,
         setEditingEvent,
         handleTeamLoadedFromHome: (_team: SavedTeam) => { }
@@ -140,42 +105,55 @@ export default function MatchRoute() {
                 <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 blur-[100px] rounded-full"></div>
             </div>
 
-            <div className="w-full max-w-4xl flex-grow relative z-10">
-                <AppHeader
-                    onOpenMobileMenu={() => openModal('mobileMenu')}
-                    onRequestReturnHome={() => openModal('returnHome')}
-                    isSetupComplete={gameState.isSetupComplete}
-                    gameName={gameState.settings.gameName}
-                    myTeam={gameState.settings.myTeam}
-                    gameMode={gameState.gameMode}
-                    isAutoSaving={isAutoSaving}
-                    lastSaved={lastSaved}
-                    gameId={gameState.gameId}
-                    activeTab={activeTab}
-                    onOpenSettings={() => openModal('settings')}
-                    isReadOnly={gameState.isReadOnly}
-                    isAdmin={isAdmin}
-                    currentPeriod={gameState.currentPeriod}
-                    onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
-                    user={user}
-                    userAvatarUrl={profile?.avatar_url}
-                    userInitial={profile?.full_name?.charAt(0) || user?.email?.charAt(0)}
-                    onLogin={handleLogin}
-                    onSave={() => handleSyncToSupabase(true)}
-                    onOpenProfile={() => openModal('profile')}
-                />
+            <AppHeader
+                user={user}
+                onLogin={handleLogin}
+                onOpenProfile={() => openModal('profile')}
+                onSaveGameClick={() => openModal('saveGame')}
+                onLoadGameClick={() => openModal('loadGame')}
+                onNewGameClick={() => openModal('newGame')}
+                onSettingsClick={() => openModal('settings')}
+                onExportExcelClick={() => openModal('share')}
+                gameName={gameState.settings.gameName}
+                myTeam={gameState.settings.myTeam}
+                currentPeriod={gameState.currentPeriod}
+                onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
+                isReadOnly={gameState.isReadOnly}
+                gameMode={gameState.gameMode}
+                activeTab={activeTab}
+                canAccessAdmin={isAdmin}
+                onAdminClick={() => navigate('/admin')}
+            />
 
+            {/* Sync Cloud Bar Indicator */}
+            {user && isGameOwner && (
+                <div className="w-full max-w-4xl flex items-center justify-between text-xs px-2 py-1 mb-2 bg-slate-800/40 rounded border border-slate-700/50">
+                    <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isAutoSaving ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
+                            <span className={`relative inline-flex rounded-full h-2 w-2 ${isAutoSaving ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+                        </span>
+                        <span className="text-slate-400 font-medium">
+                            {isAutoSaving ? 'Guardando cambios en la nube...' : lastSaved ? `Sincronizado: ${lastSaved.toLocaleTimeString()}` : 'En la nube (Autoguardado activo)'}
+                        </span>
+                    </div>
+                    {!isAutoSaving && (
+                        <button
+                            onClick={() => handleSyncToSupabase(true)}
+                            className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
+                        >
+                            Guardar ahora
+                        </button>
+                    )}
+                </div>
+            )}
+
+            <div className="w-full max-w-4xl flex flex-col z-10 flex-grow">
                 <Scoreboard />
 
-                {/* Owner Mode Toggle */}
+                {/* Read-Only Banner / Mode Switcher */}
                 {isGameOwner && (
-                    <div className="flex items-center justify-between bg-slate-800/80 border border-slate-700/80 rounded-2xl px-4 py-2.5 mb-4 backdrop-blur-sm shadow-md animate-fade-in">
-                        <div className="flex items-center gap-2">
-                            <span className={`w-2.5 h-2.5 rounded-full ${gameState.isReadOnly ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`}></span>
-                            <span className="text-xs font-bold text-slate-300">
-                                {gameState.isReadOnly ? 'Modo Lectura (Estadísticas)' : 'Modo Anotador (En Vivo)'}
-                            </span>
-                        </div>
+                    <div className="flex justify-end mb-3">
                         <button
                             onClick={() => {
                                 const nextReadOnly = !gameState.isReadOnly;
@@ -183,7 +161,7 @@ export default function MatchRoute() {
                                 if (nextReadOnly) {
                                     setActiveTab('statistics');
                                 } else {
-                                    setActiveTab(gameState.gameMode === 'shot-chart' ? 'logger' : 'tally');
+                                    setActiveTab('tally');
                                 }
                             }}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
@@ -210,7 +188,6 @@ export default function MatchRoute() {
                 </div>
 
                 <GameMainContent
-                    gameMode={gameState.gameMode!}
                     activeTab={activeTab}
                     isReadOnly={gameState.isReadOnly}
                     onActionSelect={(a: StatAction) => { setActionToAssign(a); openModal('playerSelection'); }}
@@ -221,40 +198,8 @@ export default function MatchRoute() {
                     isCorrectionsVisible={isCorrectionsVisible}
                     setIsCorrectionsVisible={setIsCorrectionsVisible}
                     playerNames={gameState.playerNames}
-                    currentPlayer={gameState.currentPlayer}
-                    currentPeriod={gameState.currentPeriod}
-                    setGameState={setGameState}
                     setEditingEvent={setEditingEvent}
                     setIsShareModalOpen={() => openModal('share')}
-                    showTutorial={gameState.hasSeenHomepage && gameState.tutorialStep === 1}
-                    tutorialStep={gameState.tutorialStep}
-                    isEditingHeaderPlayer={isEditingHeaderPlayer}
-                    headerPlayerName={headerPlayerName}
-                    setHeaderPlayerName={setHeaderPlayerName}
-                    saveHeaderPlayerName={() => { updatePlayerName(gameState.currentPlayer, headerPlayerName); setIsEditingHeaderPlayer(false); }}
-                    cancelEditingHeader={() => setIsEditingHeaderPlayer(false)}
-                    startEditingHeader={() => { setHeaderPlayerName(gameState.playerNames[gameState.currentPlayer] || ''); setIsEditingHeaderPlayer(true); }}
-                    handlePlayerChange={handlePlayerChange}
-                    activePlayers={gameState.activePlayers}
-                    availablePlayers={gameState.availablePlayers}
-                    setIsSubstitutionModalOpen={() => openModal('substitution')}
-                    filteredLoggerTabShots={gameState.shots.filter(s => s.period === gameState.currentPeriod)}
-                    handleCourtClick={handleCourtClick}
-                    handleUndoShot={handleUndoShot}
-                    handleRedoShot={handleRedoShot}
-                    redoStack={redoStack}
-                    handleRequestClearSheet={() => { }}
-                    shots={gameState.shots}
-                    mapView={mapView}
-                    setMapView={setMapView}
-                    analysisPlayer={analysisPlayer}
-                    setAnalysisPlayer={setAnalysisPlayer}
-                    playersWithShots={Array.from(new Set(gameState.shots.map(s => s.playerNumber))).sort((a: string, b: string) => Number(a) - Number(b))}
-                    filteredAnalysisShots={gameState.shots.filter(s => (analysisPeriodFilter === 'all' || s.period === analysisPeriodFilter) && (analysisPlayer === 'Todos' || s.playerNumber === analysisPlayer))}
-                    analysisResultFilter={analysisResultFilter}
-                    setAnalysisResultFilter={setAnalysisResultFilter as any}
-                    analysisPeriodFilter={analysisPeriodFilter}
-                    setAnalysisPeriodFilter={setAnalysisPeriodFilter as any}
                 />
             </div>
 

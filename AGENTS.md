@@ -6,10 +6,9 @@ Este archivo es la **fuente principal de verdad operativa** para los agentes de 
 
 ## 1. Propósito y Dominio del Proyecto
 **Cesto Tracker** es una Progressive Web Application (PWA) de alto rendimiento orientada a la comunidad del **Cestoball**. Su objetivo es digitalizar y profesionalizar la recolección, análisis y visualización de datos estadísticos en vivo durante partidos y torneos:
-- Registro de tiros sobre cancha interactiva (cálculo de distancias, zonas y mapa de calor).
 - Planilla técnica digital en tiempo real (goles, triples, pérdidas, recuperos, rebotes ofensivos/defensivos, asistencias y faltas personales).
-- Visualización analítica avanzada (gráficos temporales por período, efectividad por zona y rachas de tiro).
-- Gestión de fixtures, tablas de posiciones en vivo y cuadros eliminatorios (*knockout brackets*).
+- Visualización analítica avanzada (gráficos por período, efectividad acumulada y rachas de tiro).
+- Exportación automática a planilla técnica oficial en Excel para federaciones deportivas.
 - Panel de administración y gobernanza con roles de acceso y métricas comunitarias.
 
 ---
@@ -40,7 +39,6 @@ cesto-tracker/
 │   ├── HomeRoute.tsx       # Pantalla inicial, accesos rápidos y selector de modo
 │   ├── SetupRoute.tsx      # Configuración de partido (equipos, jugadores, modo)
 │   ├── MatchRoute.tsx      # Centro de comando del partido en vivo
-│   ├── StandingsRoute.tsx  # Tablas de posiciones, grupos y llaves de playoff
 │   ├── AdminRoute.tsx      # Panel de administración y gestión de usuarios
 │   └── FaqRoute.tsx        # Preguntas frecuentes y centro de ayuda
 ├── context/                # Estado Global (React Context API)
@@ -49,18 +47,15 @@ cesto-tracker/
 │   ├── SyncContext.tsx     # Orquestación de sincronización y autosave en Supabase
 │   └── UIContext.tsx       # Gestor unificado de modales, tabs, popups y notificaciones toast
 ├── hooks/                  # Custom Hooks de Lógica de Negocio y Fetching
-│   ├── useGameLogic.ts     # Lógica pura del juego (tiros, planilla, rachas, sustituciones, undo/redo)
-│   ├── useFixture.ts       # Consulta y ordenamiento cronológico/por rondas del fixture
-│   ├── useStandings.ts     # Cálculo en memoria de tablas (round-robin) y brackets eliminatorios
+│   ├── useGameLogic.ts     # Lógica pura del juego (planilla técnica, rachas, eventos, faltas, undo/redo)
 │   ├── useProfile.ts       # Perfil del usuario autenticado y validación de permisos
 │   ├── useCommunityStats.ts# Métricas globales agregadas de la comunidad
 │   └── useTeamManager.ts   # Guardado y carga local/remota de planteles de equipos
 ├── components/             # Componentes modulares categorizados por dominio
-│   ├── game/               # Componentes del partido: Court (SVG interactivo), Scoreboard, PlayerSetup, etc.
-│   ├── views/              # Vistas pesadas o compuestas (HomePage, StatisticsView, StandingsView, etc.)
-│   ├── modals/             # Modales independientes (SaveGame, LoadGame, Settings, Substitution, etc.)
+│   ├── game/               # Componentes del partido: Scoreboard, PlayerSetup, StatsTallyView, PlayerTallyCard, etc.
+│   ├── views/              # Vistas pesadas o compuestas (HomePage, StatisticsView, FaqView, etc.)
+│   ├── modals/             # Modales independientes (SaveGame, LoadGame, Settings, PlayerSelection, etc.)
 │   ├── ui/                 # Elementos genéricos y atómicos (AppHeader, BottomNavigation, Toast, Loader)
-│   ├── charts/             # Gráficos (HeatmapOverlay, ZoneChart, TemporalChart)
 │   ├── admin/              # Sub-módulo de administración (views, ui, hooks y types propios)
 │   └── icons/              # Sistema consolidado de iconos SVG (index.tsx)
 ├── supabase/               # Migraciones de base de datos, políticas RLS y RPCs
@@ -89,15 +84,13 @@ cesto-tracker/
 
 1. **Períodos de Juego:**
    - `First Half`, `Second Half`, `First Overtime`, `Second Overtime`.
-2. **Modos de Partido:**
-   - `shot-chart`: Registro espacial en cancha (tiros de 2 puntos, 3 puntos o fallos con coordenadas x/y).
+2. **Modo de Partido:**
    - `stats-tally`: Registro exhaustivo de planilla técnica (goles, triples, fallos, recuperos, pérdidas, rebotes ofensivos/defensivos, asistencias, goles en contra y faltas personales).
 3. **Métricas Especiales:**
    - **Mano Caliente / Mano Fría:** Detección configurable de rachas consecutivas de aciertos o fallos para alertar al cuerpo técnico.
    - **Faltas Acumuladas:** Conteo de faltas personales por jugador y acumuladas por período para el equipo.
-4. **Fixture y Posiciones:**
-   - Cálculo automático de puntos (Ganado/Perdido), diferencia de gol y rachas.
-   - Detección de etapas eliminatorias (`octavo`, `cuarto`, `semi`, `final`) para renderizar el árbol de playoffs.
+4. **Exportación Oficial:**
+   - Generación dinámica de la planilla oficial de la Confederación Argentina de Cestoball en formato Excel (.xlsx) con carga bajo demanda.
 
 ---
 
@@ -149,5 +142,6 @@ El sistema distingue dos niveles de roles en `UserProfile` ([types.ts](file:///c
 - **Optimización de Bundle:** Completada. Se implementó code-splitting con `React.lazy()` en todas las rutas de `App.tsx`, separación de vendors (`vendor-react`, `vendor-supabase`) y carga dinámica bajo demanda (`await import`) para `exceljs` en `exportToExcel.ts`, reduciendo la carga inicial en más de un 80%.
 - **Componentes Monolíticos Pendientes de Modularizar:**
   - `PlayerSetup.tsx` (~25 KB). (`StatisticsView.tsx` y `HomePage.tsx` fueron modularizados con éxito en submódulos atómicos bajo `components/views/statistics/` y `components/views/home/`).
-- **Próxima Limpieza de Código Muerto:**
-  - Deprecación y remoción de subsistemas de Fixture/Torneos en deshuso (`useFixture.ts`, `StandingsRoute.tsx`, vistas de torneo) para enfocar la app 100% en el seguimiento, análisis y planilla técnica en vivo.
+- **Limpieza de Código Muerto Realizada:**
+  - Poda y eliminación definitiva completada de subsistemas de Fixture/Torneos y Standings (`useFixture.ts`, `useStandings.ts`, `StandingsRoute.tsx`, `StandingsView.tsx`).
+  - Eliminación definitiva del modo Mapa de Tiros (`shot-chart`), canchas interactivas (`Court.tsx`), gráficos espaciales (`HeatmapOverlay.tsx`, `ZoneChart.tsx`, `TemporalChart.tsx`), vistas de tiro (`ShotChartStatisticsView.tsx`, `ShotLog.tsx`) y modales obsoletos (`OutcomeModal.tsx`, `SubstitutionModal.tsx`, `TutorialOverlay.tsx`, `HowToUseView.tsx`), consolidando la app 100% en la experiencia de planilla técnica digital.

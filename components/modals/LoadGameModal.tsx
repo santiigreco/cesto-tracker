@@ -162,8 +162,8 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
         }
     };
 
-    const getGameModeLabel = (mode: GameMode) => {
-        if (mode === 'shot-chart') return 'Mapa de Tiros';
+    const getGameModeLabel = (mode: string | null) => {
+        if (mode === 'shot-chart') return 'Mapa de Tiros (Legado)';
         if (mode === 'stats-tally') return 'Planilla';
         return 'Partido';
     };

@@ -1,31 +1,21 @@
 import React from 'react';
 import { AppTab, GameMode } from '../../types';
 import { ClipboardIcon } from '../icons';
-import { ChartPieIcon } from '../icons';
 import { ChartBarIcon } from '../icons';
 
 interface BottomNavigationProps {
   activeTab: AppTab;
   onSelectTab: (tab: AppTab) => void;
-  gameMode: GameMode;
+  gameMode?: GameMode;
 }
 
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onSelectTab, gameMode }) => {
+const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onSelectTab }) => {
+  const allTabs = [
+    { id: 'tally' as AppTab, label: 'Planilla', Icon: ClipboardIcon },
+    { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
+  ];
 
-  // Definimos las pestañas disponibles según el modo de juego
-  const allTabs = gameMode === 'shot-chart'
-    ? [
-      { id: 'logger' as AppTab, label: 'Cancha', Icon: ClipboardIcon },
-      { id: 'courtAnalysis' as AppTab, label: 'Análisis', Icon: ChartPieIcon },
-      { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
-    ]
-    : [
-      { id: 'tally' as AppTab, label: 'Planilla', Icon: ClipboardIcon },
-      { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
-    ];
-
-  // Calculamos la clase de la grilla dinámicamente según la cantidad de pestañas (3 o 4)
-  const gridColsClass = allTabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3';
+  const gridColsClass = 'grid-cols-2';
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-slate-800 border-t border-slate-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] safe-area-bottom">

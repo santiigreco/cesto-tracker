@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AppTab, Settings, GameState, StatAction, GameEvent, ShotPosition, SavedTeam } from '../../types';
+import { AppTab, Settings, GameState, StatAction, GameEvent, SavedTeam } from '../../types';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { useGameContext, initialGameState } from '../../context/GameContext';
@@ -12,8 +12,6 @@ import LoadGameModal from '@/components/modals/LoadGameModal';
 import SaveGameModal from '@/components/modals/SaveGameModal';
 import SettingsModal from '@/components/modals/SettingsModal';
 import ShareModal from '@/components/modals/ShareModal';
-import SubstitutionModal from '@/components/modals/SubstitutionModal';
-import OutcomeModal from '@/components/modals/OutcomeModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import NotificationPopup from '@/components/ui/NotificationPopup';
 import GameEventEditModal from '@/components/modals/GameEventEditModal';
@@ -25,10 +23,6 @@ interface AppModalsProps {
     tabs: AppTab[];
     playersForTally: string[];
     actionLabel?: string;
-
-    pendingShotPosition: ShotPosition | null;
-    setPendingShotPosition: (pos: ShotPosition | null) => void;
-    onOutcomeSelect: (isGol: boolean) => void;
 
     editingEvent: GameEvent | null;
     setEditingEvent: (e: GameEvent | null) => void;
@@ -46,7 +40,6 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
     const { syncState, setSyncState, handleSyncToSupabase, handleLoadGame } = useSync();
 
     const {
-        handleSubstitution,
         handleUpdateTallyStat,
         handleClearSheet,
         handleConfirmNewGame,
@@ -254,24 +247,6 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 gameState={gameState}
                 playerStats={[]}
             />
-
-            {modals.substitution?.isOpen && (
-                <SubstitutionModal
-                    isOpen={modals.substitution?.isOpen}
-                    onClose={() => closeModal('substitution')}
-                    onSubstitute={handleSubstitution}
-                    activePlayers={gameState.activePlayers}
-                    availablePlayers={gameState.availablePlayers}
-                    playerNames={gameState.playerNames}
-                />
-            )}
-
-            {props.pendingShotPosition && (
-                <OutcomeModal
-                    onOutcomeSelect={props.onOutcomeSelect}
-                    onClose={() => props.setPendingShotPosition(null)}
-                />
-            )}
 
             {modals.clearSheet?.isOpen && (
                 <ConfirmationModal
