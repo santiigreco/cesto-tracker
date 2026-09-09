@@ -59,107 +59,121 @@ export const HomeActionGrid: React.FC<HomeActionGridProps> = ({
   onLogin,
 }) => {
   return (
-    <div className="w-full grid grid-cols-6 gap-3 sm:gap-4 mt-4">
-      {/* Official Federation Badge */}
-      <div className="col-span-6 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 mb-2 shadow-sm pointer-events-none">
-        <div className="flex-shrink-0 w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-          <CloudDownloadIcon className="h-5 w-5 text-emerald-400" />
-        </div>
-        <div className="flex-grow">
-          <div className="flex items-center gap-2">
-            <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest">
-              Reporte para la Federación
-            </h4>
-            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[8px] font-bold text-emerald-300 uppercase">
-              Oficial
-            </span>
+    <div className="w-full grid grid-cols-6 gap-3 sm:gap-4 mt-2">
+      
+      {/* Official Federation Badge Header */}
+      <div className="col-span-6 flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 w-9 h-9 bg-emerald-500/20 rounded-xl flex items-center justify-center border border-emerald-500/30">
+            <span className="text-base">📋</span>
           </div>
-          <p className="text-xs text-slate-300 font-medium leading-tight">
-            Genera automáticamente la planilla de estadísticas para enviar a la Federación.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                Planilla Oficial CADC / Federaciones
+              </h4>
+              <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-[9px] font-black text-emerald-300 uppercase">
+                Excel .xlsx
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-medium">
+              Exportación técnica reglamentaria en tiempo real lista para enviar a la mesa.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Empezar Partido */}
+      {/* Main Start Action: Command Center Card */}
       <div
         onClick={onStartClick}
-        className="col-span-6 group relative h-40 rounded-[2.5rem] bg-slate-900 border border-slate-700/50 hover:border-cyan-500/50 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl"
+        className="col-span-6 group relative rounded-[2rem] bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-700/70 hover:border-cyan-400/70 transition-all duration-300 cursor-pointer overflow-hidden shadow-2xl p-6 sm:p-7"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-cyan-500/10 blur-3xl group-hover:bg-cyan-500/20 transition-all duration-500"></div>
-        <div className="relative h-full flex flex-col justify-center px-8">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="p-3 bg-cyan-500 rounded-2xl shadow-lg shadow-cyan-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-              <FeatureTapIcon className="h-8 w-8 text-white" />
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-cyan-500/15 blur-2xl group-hover:bg-cyan-500/25 transition-all"></div>
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl shadow-lg shadow-cyan-500/30 transform group-hover:scale-105 group-hover:rotate-1 transition-all">
+              <FeatureTapIcon className="h-7 w-7 text-slate-950 font-black" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">
-                Empezar Partido
-              </h3>
-              <p className="text-cyan-400/80 text-xs font-bold uppercase tracking-widest">
-                Planilla digital en vivo
+              <div className="flex items-center gap-2">
+                <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                  Nuevo Partido
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-black uppercase">
+                  En Vivo
+                </span>
+              </div>
+              <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">
+                Selecciona tu club de Metro o Corrientes y empieza a anotar.
               </p>
             </div>
           </div>
-          <p className="text-slate-400 text-sm max-w-[240px] leading-snug">
-            Planifica, registra y analiza cada jugada con herramientas profesionales.
-          </p>
-        </div>
-        <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500">
-          <svg className="h-12 w-12 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7-7 7" />
-          </svg>
+
+          <div className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 border border-slate-700 group-hover:border-cyan-400 text-slate-400 group-hover:text-cyan-400 transition-all">
+            <svg className="h-5 w-5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* Quick Start (si existe setup previo) */}
+      {/* Quick Resume Card (if previous setup exists) */}
       {lastSetup && (
-        <div className="col-span-6 flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-3">
-          <span className="text-lg">⚡</span>
-          <div className="flex-grow min-w-0">
-            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-              Acceso rápido
-            </p>
-            <p className="text-sm font-bold text-white truncate">
-              {lastSetup.myTeam}
-              {lastSetup.players && lastSetup.players.length > 0 && (
-                <span className="text-slate-400 font-normal"> · {lastSetup.players.length} jugadoras</span>
-              )}
-            </p>
+        <div className="col-span-6 flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 px-5 py-3.5 backdrop-blur-sm shadow-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xl">⚡</span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                Reanudar Plantel Habitual
+              </p>
+              <p className="text-sm font-black text-white truncate">
+                {lastSetup.myTeam}
+                {lastSetup.players && lastSetup.players.length > 0 && (
+                  <span className="text-slate-400 font-medium"> · {lastSetup.players.length} jugadores</span>
+                )}
+              </p>
+            </div>
           </div>
           <button
             onClick={onQuickStart}
-            className="flex-shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs uppercase tracking-widest px-4 py-2 rounded-xl transition-all hover:scale-105 shadow-lg shadow-emerald-900/20"
+            className="flex-shrink-0 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all hover:scale-105 shadow-md shadow-emerald-900/30"
           >
             Continuar →
           </button>
         </div>
       )}
 
-      {/* Historial de Partidos */}
+      {/* Historial de Partidos Guardados */}
       <div
         onClick={user ? onLoadGameClick : onLogin}
-        className="col-span-6 group relative h-32 rounded-[2rem] bg-slate-800/40 border border-slate-700/50 hover:border-emerald-400/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-md"
+        className="col-span-6 group relative rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md p-4 sm:p-5 shadow-lg"
       >
-        <div className="absolute inset-0 bg-gradient-to-l from-emerald-400/5 to-transparent" />
-        <div className="p-5 flex items-center justify-center sm:justify-start gap-4 h-full">
-          <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-emerald-500/10 transition-colors">
-            <CloudDownloadIcon className="h-6 w-6 text-emerald-400" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="p-2.5 bg-slate-800 rounded-xl group-hover:bg-emerald-500/20 group-hover:text-emerald-400 text-slate-400 transition-colors border border-slate-700/60">
+              <CloudDownloadIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <h5 className="text-base sm:text-lg font-black text-white uppercase tracking-tight">
+                Mis Partidos & Planillas Oficiales
+              </h5>
+              {!user ? (
+                <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1.5 mt-0.5">
+                  <LockIcon className="h-3.5 w-3.5 text-cyan-400" /> Inicia sesión para guardar y sincronizar con la nube
+                </span>
+              ) : (
+                <span className="text-[11px] text-emerald-400 font-bold block mt-0.5">
+                  Historial en la nube y visor comunitario disponible
+                </span>
+              )}
+            </div>
           </div>
-          <div>
-            <h5 className="text-xl font-black text-white uppercase tracking-tighter">
-              Historial de Partidos
-            </h5>
-            {!user ? (
-              <span className="text-[10px] text-slate-500 block flex items-center gap-1 font-bold mt-1">
-                <LockIcon className="h-3 w-3" /> INICIÁ SESIÓN PARA VER TUS PARTIDOS
-              </span>
-            ) : (
-              <span className="text-[10px] text-slate-400 block font-bold mt-1 uppercase">
-                Recuperá y continuá tracking
-              </span>
-            )}
-          </div>
+
+          <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
+            Explorar →
+          </span>
         </div>
       </div>
 
@@ -167,6 +181,7 @@ export const HomeActionGrid: React.FC<HomeActionGridProps> = ({
       <div className="col-span-6">
         <InstallApp variant="card" />
       </div>
+
     </div>
   );
 };

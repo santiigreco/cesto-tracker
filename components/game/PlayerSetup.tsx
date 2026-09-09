@@ -403,6 +403,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 onClose={() => setIsTeamSelectorOpen(false)}
                 onSelectTeam={handleTeamSelectedFromDropdown}
                 currentTeam={settings.myTeam || ''}
+                title="Selecciona tu Equipo"
+                isRival={false}
             />
 
             <TeamSelectorModal
@@ -413,6 +415,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                     setIsRivalSelectorOpen(false);
                 }}
                 currentTeam={settings.gameName || ''}
+                title="Selecciona el Rival"
+                isRival={true}
             />
 
             <TournamentSelectorModal

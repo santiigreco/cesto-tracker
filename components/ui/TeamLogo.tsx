@@ -101,15 +101,76 @@ const Logos: Record<string, React.FC> = {
             <circle cx="50" cy="50" r="30" stroke="white" strokeWidth="4" fill="none" />
             <text x="50" y="62" fontSize="30" textAnchor="middle" fill="white" fontWeight="black">L</text>
         </ShieldShape>
+    ),
+    // --- Clubes de Corrientes ---
+    "Jaguareté": () => (
+        <ShieldShape fill="#EA580C"> {/* Naranja Jaguareté */}
+            <path d="M0 0 L100 100" stroke="#18181B" strokeWidth="26" />
+            <circle cx="28" cy="72" r="10" fill="#18181B" />
+            <circle cx="72" cy="28" r="10" fill="#18181B" />
+            <text x="50" y="62" fontSize="26" textAnchor="middle" fill="white" fontWeight="black">J</text>
+        </ShieldShape>
+    ),
+    "Hércules": () => (
+        <ShieldShape fill="#2563EB"> {/* Azul Hércules */}
+            <rect x="0" y="35" width="100" height="30" fill="white" />
+            <text x="50" y="60" fontSize="28" textAnchor="middle" fill="#1E3A8A" fontWeight="black">H</text>
+        </ShieldShape>
+    ),
+    "Quilmes": () => (
+        <ShieldShape fill="white"> {/* Cervecero Blanco con franja azul */}
+            <path d="M0 0 L100 100 L100 70 L0 0 Z" fill="#1E3A8A" />
+            <circle cx="50" cy="50" r="24" fill="#1E3A8A" />
+            <text x="50" y="58" fontSize="22" textAnchor="middle" fill="white" fontWeight="black">Q</text>
+        </ShieldShape>
+    ),
+    "Regatas": () => (
+        <ShieldShape fill="#0F172A"> {/* Azul Marino Remero */}
+            <rect y="35" width="100" height="30" fill="#38BDF8" /> {/* Franja Celeste */}
+            <circle cx="50" cy="50" r="18" fill="white" />
+            <text x="50" y="56" fontSize="16" textAnchor="middle" fill="#0F172A" fontWeight="black">CRC</text>
+        </ShieldShape>
+    ),
+    "San Martín (Ctes)": () => (
+        <ShieldShape fill="#111827"> {/* Rojinegro franjeado */}
+            <rect x="25" width="25" height="100" fill="#DC2626" />
+            <rect x="75" width="25" height="100" fill="#DC2626" />
+            <circle cx="50" cy="50" r="20" fill="white" stroke="#111827" strokeWidth="2" />
+            <text x="50" y="56" fontSize="15" textAnchor="middle" fill="#DC2626" fontWeight="black">SM</text>
+        </ShieldShape>
+    ),
+    "Banco Provincia": () => (
+        <ShieldShape fill="#15803D"> {/* Verde y Blanco */}
+            <path d="M0 50 L50 0 L100 50 L50 100 Z" fill="white" />
+            <text x="50" y="58" fontSize="22" textAnchor="middle" fill="#15803D" fontWeight="black">BP</text>
+        </ShieldShape>
+    ),
+    "Córdoba": () => (
+        <ShieldShape fill="#DC2626"> {/* Rojo y Blanco */}
+            <rect y="40" width="100" height="20" fill="white" />
+            <text x="50" y="62" fontSize="26" textAnchor="middle" fill="white" fontWeight="black">C</text>
+        </ShieldShape>
+    ),
+    "Colón": () => (
+        <ShieldShape fill="#111827"> {/* Mitad Rojo mitad Negro */}
+            <rect x="50" width="50" height="100" fill="#DC2626" />
+            <circle cx="50" cy="50" r="18" fill="white" />
+            <text x="50" y="57" fontSize="18" textAnchor="middle" fill="#111827" fontWeight="black">C</text>
+        </ShieldShape>
     )
 };
 
 const TeamLogo: React.FC<TeamLogoProps> = ({ teamName, className = "h-12 w-12", fallbackClassName }) => {
     const safeTeamName = teamName || '';
 
-    // Logic to find logo: exact match first, then check if it's a "B" team
-    const findLogoKey = (name: string) =>
-        Object.keys(Logos).find(key => key.toLowerCase() === name.trim().toLowerCase());
+    // Logic to find logo: exact match first, then check if it's a "B" team or alias
+    const findLogoKey = (name: string) => {
+        const lower = name.trim().toLowerCase();
+        if (lower.includes('san martin') && (lower.includes('ctes') || lower.includes('corrientes'))) {
+            return "San Martín (Ctes)";
+        }
+        return Object.keys(Logos).find(key => key.toLowerCase() === lower);
+    };
 
     let normalizedName = findLogoKey(safeTeamName);
 

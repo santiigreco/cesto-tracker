@@ -28,24 +28,51 @@ export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 // Admin access is controlled via the `is_admin` column in the `profiles` table in Supabase.
 // To grant admin access, run: UPDATE profiles SET is_admin = TRUE WHERE id = '<user-id>';
 
-// Configuration for Teams (Strictly matches Aux!C1:C13)
+export type FederationId = 'femece' | 'corrientes';
+
+export interface FederationConfig {
+    id: FederationId;
+    name: string;
+    shortName: string;
+}
+
+export const FEDERATIONS_CONFIG: FederationConfig[] = [
+    { id: 'femece', name: 'Federación Metropolitana (FeMeCe)', shortName: 'FeMeCe' },
+    { id: 'corrientes', name: 'Federación Correntina (FeCoCe)', shortName: 'Corrientes' },
+];
+
+// Configuration for Teams
 export interface TeamConfig {
     name: string;
+    federation?: FederationId;
+    city?: string;
 }
+
 export const TEAMS_CONFIG: TeamConfig[] = [
-    { name: "APV" },
-    { name: "APV masc A" },
-    { name: "APV masc B" },
-    { name: "Avellaneda" },
-    { name: "Ballester" },
-    { name: "CEF La Plata" },
-    { name: "Ciudad" },
-    { name: "GEVP" },
-    { name: "Hacoaj" },
-    { name: "San Martín" },
-    { name: "SITAS" },
-    { name: "Social Parque" },
-    { name: "Vélez" }
+    // --- Federación Metropolitana (FeMeCe) ---
+    { name: "APV", federation: "femece" },
+    { name: "APV masc A", federation: "femece" },
+    { name: "APV masc B", federation: "femece" },
+    { name: "Avellaneda", federation: "femece" },
+    { name: "Ballester", federation: "femece" },
+    { name: "CEF La Plata", federation: "femece" },
+    { name: "Ciudad", federation: "femece" },
+    { name: "GEVP", federation: "femece" },
+    { name: "Hacoaj", federation: "femece" },
+    { name: "San Martín", federation: "femece" },
+    { name: "SITAS", federation: "femece" },
+    { name: "Social Parque", federation: "femece" },
+    { name: "Vélez", federation: "femece" },
+
+    // --- Federación Correntina de Cestoball ---
+    { name: "Jaguareté", federation: "corrientes", city: "Corrientes" },
+    { name: "Hércules", federation: "corrientes", city: "Corrientes" },
+    { name: "Quilmes", federation: "corrientes", city: "Corrientes" },
+    { name: "Regatas", federation: "corrientes", city: "Corrientes" },
+    { name: "San Martín (Ctes)", federation: "corrientes", city: "Corrientes" },
+    { name: "Banco Provincia", federation: "corrientes", city: "Corrientes" },
+    { name: "Córdoba", federation: "corrientes", city: "Corrientes" },
+    { name: "Colón", federation: "corrientes", city: "Corrientes" },
 ];
 
 // Configuration for Tournaments (Strictly matches Aux!E1:E14)
