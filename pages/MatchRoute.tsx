@@ -54,11 +54,14 @@ export default function MatchRoute() {
                         } else {
                             setActiveTab('statistics');
                         }
+                    } else {
+                        // Game not found or failed to load: redirect gracefully
+                        navigate('/', { replace: true });
                     }
                 });
             }
         }
-    }, [id, gameState.gameId, isEditRequested, handleLoadGame, setActiveTab]);
+    }, [id, gameState.gameId, isEditRequested, handleLoadGame, setActiveTab, navigate]);
 
     const tabsForCurrentMode = useMemo(() => ['tally', 'statistics'] as const, []);
 
@@ -110,20 +113,22 @@ export default function MatchRoute() {
                 user={user}
                 onLogin={handleLogin}
                 onOpenProfile={() => openModal('profile')}
-                onSaveGameClick={() => openModal('saveGame')}
-                onLoadGameClick={() => openModal('loadGame')}
-                onNewGameClick={() => openModal('newGame')}
-                onSettingsClick={() => openModal('settings')}
-                onExportExcelClick={() => openModal('share')}
+                onOpenSettings={() => openModal('settings')}
+                onOpenMobileMenu={() => openModal('mobileMenu')}
+                onRequestReturnHome={() => openModal('returnHome')}
+                onSave={() => handleSyncToSupabase(false)}
+                isAutoSaving={isAutoSaving}
+                lastSaved={lastSaved}
+                gameId={gameState.gameId}
                 gameName={gameState.settings.gameName}
                 myTeam={gameState.settings.myTeam}
                 currentPeriod={gameState.currentPeriod}
                 onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
                 isReadOnly={gameState.isReadOnly}
+                isSetupComplete={gameState.isSetupComplete}
                 gameMode={gameState.gameMode}
                 activeTab={activeTab}
-                canAccessAdmin={isAdmin}
-                onAdminClick={() => navigate('/admin')}
+                isAdmin={isAdmin}
             />
 
             {/* Sync Cloud Bar Indicator for Logged-in Owners */}

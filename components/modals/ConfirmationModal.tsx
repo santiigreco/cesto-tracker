@@ -12,6 +12,7 @@ interface ConfirmationModalProps {
   extraButtonText?: string;
   onExtraClick?: () => void;
   extraButtonColor?: string;
+  isLoading?: boolean;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({ 
@@ -24,7 +25,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({
   confirmButtonColor = 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
   extraButtonText,
   onExtraClick,
-  extraButtonColor = 'bg-slate-600 hover:bg-slate-700'
+  extraButtonColor = 'bg-slate-600 hover:bg-slate-700',
+  isLoading = false,
 }) => {
   return (
     <div 
@@ -42,21 +44,24 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(({
           <div className="flex justify-center gap-3">
             <button
               onClick={onClose}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-lg border border-slate-600/50"
+              disabled={isLoading}
+              className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-lg border border-slate-600/50 touch-manipulation"
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-lg ${confirmButtonColor}`}
+              disabled={isLoading}
+              className={`flex-1 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-lg disabled:opacity-50 touch-manipulation ${confirmButtonColor}`}
             >
-              {confirmText}
+              {isLoading ? 'Guardando...' : confirmText}
             </button>
           </div>
           {extraButtonText && onExtraClick && (
             <button
               onClick={onExtraClick}
-              className={`w-full text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-md border border-slate-600/30 ${extraButtonColor}`}
+              disabled={isLoading}
+              className={`w-full text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-95 shadow-md border border-slate-600/30 disabled:opacity-50 touch-manipulation ${extraButtonColor}`}
             >
               {extraButtonText}
             </button>

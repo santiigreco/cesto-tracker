@@ -40,21 +40,21 @@ const Scoreboard: React.FC = React.memo(() => {
             {currentPeriod === 'First Half' ? (
               <button
                 onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Half' }))}
-                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/10"
+                className="min-h-[44px] flex items-center gap-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-emerald-500/40 text-emerald-400 active:scale-95 transition-all outline-none rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-emerald-500/10 touch-manipulation"
               >
-                FIN 1° T <span className="text-lg leading-none">»</span>
+                <span>FIN 1° T</span> <span className="text-lg leading-none">»</span>
               </button>
             ) : currentPeriod === 'Second Half' ? (
               <>
                 <button
                   onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'First Overtime' }))}
-                  className="hidden sm:flex items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider"
+                  className="hidden sm:flex min-h-[44px] items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider touch-manipulation"
                 >
                   SUPLEMENTARIO
                 </button>
                 <button
                   onClick={() => openModal('finishMatch')}
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
+                  className="min-h-[44px] flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600 text-white active:scale-95 transition-all outline-none rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-red-900/50 touch-manipulation"
                   title="Finalizar e ir a estadísticas"
                 >
                   <span>🏁 FIN PARTIDO</span>
@@ -64,13 +64,13 @@ const Scoreboard: React.FC = React.memo(() => {
               <>
                 <button
                   onClick={() => setGameState(prev => ({ ...prev, currentPeriod: 'Second Overtime' }))}
-                  className="hidden sm:flex items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider"
+                  className="hidden sm:flex min-h-[44px] items-center bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 active:scale-95 transition-all outline-none rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider touch-manipulation"
                 >
                   FIN 1° S (+S)
                 </button>
                 <button
                   onClick={() => openModal('finishMatch')}
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
+                  className="min-h-[44px] flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600 text-white active:scale-95 transition-all outline-none rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-red-900/50 touch-manipulation"
                   title="Finalizar e ir a estadísticas"
                 >
                   <span>🏁 FIN PARTIDO</span>
@@ -79,7 +79,7 @@ const Scoreboard: React.FC = React.memo(() => {
             ) : currentPeriod === 'Second Overtime' ? (
               <button
                 onClick={() => openModal('finishMatch')}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-red-600/90 to-red-500/90 hover:from-red-500 hover:to-red-400 text-white active:scale-95 transition-all outline-none rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-red-900/50"
+                className="min-h-[44px] flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600 text-white active:scale-95 transition-all outline-none rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-red-900/50 touch-manipulation"
                 title="Finalizar e ir a estadísticas"
               >
                 <span>🏁 FIN PARTIDO</span>

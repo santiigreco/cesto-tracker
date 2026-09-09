@@ -303,7 +303,9 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
                     key={key}
                     title={title}
                     className={`p-2 text-sm tracking-wider font-semibold ${
-                      key === 'playerNumber' ? 'text-left' : 'text-center'
+                      key === 'playerNumber'
+                        ? 'text-left sticky left-0 z-20 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] min-w-[110px]'
+                        : 'text-center'
                     }`}
                   >
                     <button
@@ -322,7 +324,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
             <tbody>
               {sortedAggregatedStats.map(player => (
                 <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
-                  <td className="p-2 font-mono text-cyan-300 font-bold">
+                  <td className="p-2 font-mono text-cyan-300 font-bold sticky left-0 z-10 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] truncate max-w-[120px]">
                     {playerNames[player.playerNumber] ||
                       (player.playerNumber === 'Equipo' ? 'Equipo' : `#${player.playerNumber}`)}
                   </td>

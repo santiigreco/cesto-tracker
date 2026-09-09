@@ -68,74 +68,73 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [gameState, setGameState] = useState<GameState>(initialGameState);
+const hydrateInitialGameState = (): GameState => {
+    try {
+        const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
+        if (savedStateJSON) {
+            let savedState = JSON.parse(savedStateJSON);
 
-    // Load from LocalStorage
-    useEffect(() => {
-        try {
-            const savedStateJSON = localStorage.getItem(GAME_STATE_STORAGE_KEY);
-            if (savedStateJSON) {
-                let savedState = JSON.parse(savedStateJSON);
+            // Migrations and defaults
+            if (!savedState.gameId) savedState.gameId = null;
+            if (!savedState.gameMode) savedState.gameMode = null;
+            if (!savedState.tallyStats) savedState.tallyStats = {};
+            if (!savedState.opponentScore) savedState.opponentScore = 0;
 
-                // Migrations and defaults
-                if (!savedState.gameId) savedState.gameId = null;
-                if (!savedState.gameMode) savedState.gameMode = null;
-                if (!savedState.tallyStats) savedState.tallyStats = {};
-                if (!savedState.opponentScore) savedState.opponentScore = 0;
+            // Migrate teamFouls to include OTs
+            const defaultFouls = { 'First Half': 0, 'Second Half': 0, 'First Overtime': 0, 'Second Overtime': 0 };
+            savedState.teamFouls = { ...defaultFouls, ...savedState.teamFouls };
 
-                // Migrate teamFouls to include OTs
-                const defaultFouls = { 'First Half': 0, 'Second Half': 0, 'First Overtime': 0, 'Second Overtime': 0 };
-                savedState.teamFouls = { ...defaultFouls, ...savedState.teamFouls };
+            if (!savedState.gameLog) savedState.gameLog = [];
+            if (!savedState.tallyRedoLog) savedState.tallyRedoLog = [];
+            if (savedState.isReadOnly === undefined) savedState.isReadOnly = false;
 
-                if (!savedState.gameLog) savedState.gameLog = [];
-                if (!savedState.tallyRedoLog) savedState.tallyRedoLog = [];
-                if (savedState.isReadOnly === undefined) savedState.isReadOnly = false;
+            // Legacy Migration: tallyStats structure
+            if (savedState.tallyStats) {
+                const allPeriods: GamePeriod[] = ['First Half', 'Second Half', 'First Overtime', 'Second Overtime'];
 
-                // Legacy Migration: tallyStats structure
-                if (savedState.tallyStats) {
-                    const allPeriods: GamePeriod[] = ['First Half', 'Second Half', 'First Overtime', 'Second Overtime'];
+                Object.keys(savedState.tallyStats).forEach(playerNum => {
+                    const playerTally = savedState.tallyStats[playerNum];
 
-                    Object.keys(savedState.tallyStats).forEach(playerNum => {
-                        const playerTally = savedState.tallyStats[playerNum];
-
-                        // Ensure all periods exist
-                        allPeriods.forEach(period => {
-                            if (!playerTally[period]) {
-                                playerTally[period] = { ...initialTallyStatsPeriod };
-                            } else {
-                                // Default missing fields within a period
-                                if (playerTally[period].faltasPersonales === undefined) playerTally[period].faltasPersonales = 0;
-                                if (playerTally[period].triples === undefined) playerTally[period].triples = 0;
-                            }
-                        });
+                    // Ensure all periods exist
+                    allPeriods.forEach(period => {
+                        if (!playerTally[period]) {
+                            playerTally[period] = { ...initialTallyStatsPeriod };
+                        } else {
+                            // Default missing fields within a period
+                            if (playerTally[period].faltasPersonales === undefined) playerTally[period].faltasPersonales = 0;
+                            if (playerTally[period].triples === undefined) playerTally[period].triples = 0;
+                        }
                     });
-                }
-
-                if (savedState.availablePlayers && !savedState.activePlayers) {
-                    savedState.activePlayers = savedState.availablePlayers.slice(0, 6);
-                }
-
-                // Tutorial state migration
-                if (savedState.hasSeenTutorial === true && savedState.tutorialStep === undefined) {
-                    savedState.tutorialStep = 3;
-                } else if (savedState.hasSeenTutorial === false && savedState.tutorialStep === undefined) {
-                    savedState.tutorialStep = 1;
-                }
-                delete savedState.hasSeenTutorial;
-
-                if (savedState.hasSeenHomepage === undefined) {
-                    savedState.hasSeenHomepage = true;
-                }
-
-                const combinedSettings = { ...initialGameState.settings, ...savedState.settings };
-                setGameState({ ...initialGameState, ...savedState, settings: combinedSettings });
+                });
             }
-        } catch (error) {
-            console.error("Failed to load game state from localStorage:", error);
-            setGameState(initialGameState);
+
+            if (savedState.availablePlayers && !savedState.activePlayers) {
+                savedState.activePlayers = savedState.availablePlayers.slice(0, 6);
+            }
+
+            // Tutorial state migration
+            if (savedState.hasSeenTutorial === true && savedState.tutorialStep === undefined) {
+                savedState.tutorialStep = 3;
+            } else if (savedState.hasSeenTutorial === false && savedState.tutorialStep === undefined) {
+                savedState.tutorialStep = 1;
+            }
+            delete savedState.hasSeenTutorial;
+
+            if (savedState.hasSeenHomepage === undefined) {
+                savedState.hasSeenHomepage = true;
+            }
+
+            const combinedSettings = { ...initialGameState.settings, ...savedState.settings };
+            return { ...initialGameState, ...savedState, settings: combinedSettings };
         }
-    }, []);
+    } catch (error) {
+        console.error("Failed to load game state from localStorage:", error);
+    }
+    return initialGameState;
+};
+
+export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [gameState, setGameState] = useState<GameState>(hydrateInitialGameState);
 
     // Save to LocalStorage
     useEffect(() => {

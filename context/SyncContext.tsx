@@ -39,9 +39,17 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Track last saved signature to prevent duplicate background syncs
     const lastSavedSignatureRef = useRef<string>('');
     const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const isSyncingRef = useRef<boolean>(false);
 
     const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean): Promise<string | null> => {
         const isAutoSave = (typeof gameNameInput === 'boolean') ? gameNameInput : (isAutoSaveInput === true);
+
+        // Mutex lock to prevent duplicate records from rage clicks / double tap
+        if (isSyncingRef.current) {
+            console.warn('[PERSISTENCE_MUTEX] Sincronización en curso. Abortando petición duplicada.');
+            return null;
+        }
+        isSyncingRef.current = true;
 
         // 1. Calculate current myScore for quick preview in lists
         let myScore = 0;
@@ -217,6 +225,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return null;
         } finally {
+            isSyncingRef.current = false;
             setIsAutoSaving(false);
         }
     }, [gameState, setGameState, showToast]);

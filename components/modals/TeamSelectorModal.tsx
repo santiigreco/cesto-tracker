@@ -263,10 +263,11 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
                             <form onSubmit={handleCustomSubmit} className="flex gap-2">
                                 <input
                                     type="text"
+                                    maxLength={50}
                                     value={customTeam}
                                     onChange={(e) => setCustomTeam(e.target.value)}
                                     placeholder="Ej: Juventus, Taraguy, Cárdenas..."
-                                    className="flex-grow bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors placeholder:text-slate-500"
+                                    className="flex-grow bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-base font-medium focus:outline-none focus:border-cyan-500 transition-colors placeholder:text-slate-500"
                                 />
                                 <button
                                     type="submit"

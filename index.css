@@ -9,6 +9,16 @@
     @apply bg-[#0a0f18] text-slate-200;
     font-family: 'Outfit', sans-serif;
   }
+
+  /* Prevenir auto-zoom forzado en iOS Safari en inputs de formulario */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  @media (min-width: 640px) {
+    input, select, textarea {
+      font-size: inherit;
+    }
+  }
 }
 
 /* Custom Scrollbar */

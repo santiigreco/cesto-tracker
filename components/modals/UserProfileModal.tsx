@@ -227,6 +227,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Nombre Completo</label>
                                 <input
                                     type="text"
+                                    maxLength={50}
                                     value={fullName}
                                     onChange={e => setFullName(e.target.value)}
                                     placeholder="Ej: Juan Pérez"
@@ -244,7 +245,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                                     >
                                         <option value="">Seleccionar...</option>
                                         {TEAMS_CONFIG.map(team => (
-                                            <option key={team.name} value={team.name}>{team.name}</option>
+                                             <option key={team.name} value={team.name}>{team.name}</option>
                                         ))}
                                         <option value="Otro">Otro</option>
                                     </select>
@@ -272,7 +273,10 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, us
                                         min="1"
                                         max="99"
                                         value={playerNumber}
-                                        onChange={e => setPlayerNumber(e.target.value)}
+                                        onChange={e => {
+                                            const val = e.target.value.slice(0, 2);
+                                            setPlayerNumber(val);
+                                        }}
                                         placeholder="Ej: 7"
                                         className="w-32 bg-slate-800 border border-slate-600 rounded-lg p-3 text-white text-center text-2xl font-bold focus:border-emerald-500 outline-none transition-colors"
                                     />

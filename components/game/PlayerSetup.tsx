@@ -151,10 +151,11 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
         const sortedPlayers = Array.from(selectedPlayers).sort((a, b) => Number(a) - Number(b));
 
-        // Set default name if empty
+        // Set default name if empty and cap length
         const finalSettings = {
             ...settings,
-            gameName: settings.gameName?.trim() || 'Equipo Rival'
+            myTeam: settings.myTeam?.trim().slice(0, 50) || '',
+            gameName: (settings.gameName?.trim() || 'Equipo Rival').slice(0, 50)
         };
 
         // Save this team config for next time

@@ -27,14 +27,18 @@ interface SaveGameModalProps {
 const SaveGameModal: React.FC<SaveGameModalProps> = ({ isOpen, onClose, onSave, syncState, initialGameName }) => {
     const [gameName, setGameName] = useState('');
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     useEffect(() => {
         if (isOpen) {
+            setIsSubmitting(false);
             setGameName(initialGameName || `Partido del ${new Date().toLocaleDateString('es-AR')}`);
         }
     }, [isOpen, initialGameName]);
 
     const handleSave = () => {
-        if (gameName.trim()) {
+        if (gameName.trim() && !isSubmitting && syncState.status !== 'syncing' && syncState.status !== 'success') {
+            setIsSubmitting(true);
             onSave(gameName.trim());
         }
     };
@@ -44,12 +48,15 @@ const SaveGameModal: React.FC<SaveGameModalProps> = ({ isOpen, onClose, onSave, 
             const timer = setTimeout(onClose, 1500);
             return () => clearTimeout(timer);
         }
+        if(syncState.status === 'error') {
+            setIsSubmitting(false);
+        }
     }, [syncState.status, onClose]);
 
 
     if (!isOpen) return null;
 
-    const isSyncing = syncState.status === 'syncing';
+    const isSyncing = syncState.status === 'syncing' || isSubmitting;
     const isSuccess = syncState.status === 'success';
     const isError = syncState.status === 'error';
 
@@ -68,6 +75,7 @@ const SaveGameModal: React.FC<SaveGameModalProps> = ({ isOpen, onClose, onSave, 
                         <input
                             type="text"
                             id="gameName"
+                            maxLength={60}
                             value={gameName}
                             onChange={(e) => setGameName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -80,7 +88,7 @@ const SaveGameModal: React.FC<SaveGameModalProps> = ({ isOpen, onClose, onSave, 
                     <button
                         onClick={handleSave}
                         disabled={!gameName.trim() || isSyncing || isSuccess}
-                        className={`w-full flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform ${
+                        className={`w-full flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform touch-manipulation ${
                             isSyncing ? 'bg-slate-600 cursor-not-allowed' :
                             isSuccess ? 'bg-green-600' :
                             isError ? 'bg-red-600 hover:bg-red-700' :

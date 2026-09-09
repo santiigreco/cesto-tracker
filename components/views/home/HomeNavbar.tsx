@@ -55,7 +55,7 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
         {user ? (
           <button
             onClick={onOpenProfile}
-            className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-xs font-bold text-slate-200 overflow-hidden transition-colors"
+            className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-xs font-bold text-slate-200 overflow-hidden transition-colors active:scale-95 touch-manipulation"
             title={profile?.full_name || user.email || 'Mi Perfil'}
           >
             {profile?.avatar_url ? (
@@ -67,10 +67,11 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
         ) : (
           <button
             onClick={onLogin}
-            className="hidden sm:flex items-center gap-1.5 text-slate-400 hover:text-white text-xs font-bold px-2 py-1 transition-colors"
+            className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 hover:border-slate-500 transition-colors active:scale-95 touch-manipulation"
+            title="Iniciar sesión con Google"
           >
             <GoogleIcon className="h-3.5 w-3.5" />
-            <span>Ingresar</span>
+            <span className="hidden xs:inline">Ingresar</span>
           </button>
         )}
 

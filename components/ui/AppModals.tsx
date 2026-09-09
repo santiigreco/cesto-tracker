@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AppTab, Settings, GameState, StatAction, GameEvent, SavedTeam } from '../../types';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
@@ -93,11 +93,15 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         useUI().openModal('reselect');
     };
 
+    const [isFinalizing, setIsFinalizing] = useState(false);
+
     const handleConfirmFinalize = async () => {
-        closeModal('finishMatch');
+        if (isFinalizing) return;
+        setIsFinalizing(true);
         showToast('Finalizando y guardando partido...', 'info');
         try {
             const savedGameId = await handleSyncToSupabase(false);
+            closeModal('finishMatch');
             setActiveTab('statistics');
             if (savedGameId) {
                 showToast('¡Partido finalizado y guardado en la nube con éxito!', 'success');
@@ -105,8 +109,11 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 showToast('Partido finalizado localmente. Verificá tu conexión o sesión para sincronizarlo.', 'warning');
             }
         } catch (err: any) {
+            closeModal('finishMatch');
             showToast(`Error al guardar: ${err.message}`, 'error');
             setActiveTab('statistics');
+        } finally {
+            setIsFinalizing(false);
         }
     };
 
@@ -146,9 +153,10 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         gameState.availablePlayers.forEach(p => {
             statuses[p] = [];
             
-            // 1. Foul Check (4 fouls)
+            // 1. Foul Check (5 fouls = warning, 6 fouls = compulsory substitution)
             const playerFouls = log.filter(e => e.playerNumber === p && e.action === 'faltasPersonales').length;
-            if (playerFouls >= 4) statuses[p].push('⚠️');
+            if (playerFouls === 5) statuses[p].push('⚠️');
+            if (playerFouls >= 6) statuses[p].push('🛑');
 
             // 2. Streak Check (Last 3 shots of this player from gameLog)
             // This works for both Chart and Tally modes
@@ -322,6 +330,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     extraButtonText={hasMissingNames ? "Completar Nombres" : undefined}
                     onExtraClick={hasMissingNames ? handleGoToEditNames : undefined}
                     extraButtonColor="bg-slate-700 hover:bg-slate-600"
+                    isLoading={isFinalizing}
                 />
             )}
 
@@ -339,8 +348,9 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                                     </div>
                                     <input 
                                         type="text" 
+                                        maxLength={40}
                                         placeholder={`Nombre de jugador #${num}`}
-                                        className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all font-semibold"
+                                        className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-base focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all font-semibold"
                                         value={gameState.playerNames[num] || ''}
                                         onChange={(e) => updatePlayerName(num, e.target.value)}
                                     />
