@@ -13,7 +13,6 @@ interface SavedGame {
     player_names: Record<string, string>;
     settings: Settings;
     views: number;
-    tournament_id: string | null;
     user_id: string;
     profiles?: { full_name: string | null } | null;
 }
@@ -52,7 +51,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
         try {
             const { data: gamesData, error: gamesError } = await supabase
                 .from('games')
-                .select('id, created_at, game_mode, player_names, settings, views, tournament_id, user_id')
+                .select('id, created_at, game_mode, player_names, settings, views, user_id')
                 .limit(500)
                 .order('created_at', { ascending: false });
 

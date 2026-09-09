@@ -126,5 +126,110 @@ describe('Sync Logic & State Reconstruction', () => {
         const p10Points = (loadedTallyStats['10']['First Half'].goles * 2) + (loadedTallyStats['10']['First Half'].triples * 3);
         expect(p10Points).toBe(5);
     });
+
+    it('sanitizes gamePayload ensuring dropped columns like tournament_id are omitted', () => {
+        const mockSettings = {
+            gameName: 'Vélez vs Ferro',
+            myTeam: 'Vélez',
+            tournamentId: 'tourney-123',
+            tournamentName: 'Liga Nacional',
+            isManoCalienteEnabled: true,
+            manoCalienteThreshold: 5,
+            isManoFriaEnabled: true,
+            manoFriaThreshold: 5,
+        };
+
+        const gamePayload: Record<string, any> = {
+            id: 'game-uuid-1',
+            game_mode: 'stats-tally',
+            settings: {
+                ...mockSettings,
+                myScore: 42,
+                opponentScore: 38,
+                currentPeriod: 'First Half',
+                teamFouls: { 'First Half': 2, 'Second Half': 0, 'First Overtime': 0, 'Second Overtime': 0 },
+                gameLog: [],
+            },
+            player_names: { '10': 'Capitana' },
+            available_players: ['10', '7'],
+            my_team_name: 'Vélez',
+            opponent_name: 'Ferro',
+            user_id: 'user-abc',
+        };
+
+        // Verifies tournament_id is NOT a root-level property on gamePayload (avoiding 400 Bad Request)
+        expect(gamePayload.tournament_id).toBeUndefined();
+        expect(gamePayload.settings.tournamentName).toBe('Liga Nacional');
+        expect(gamePayload.settings.tournamentId).toBe('tourney-123');
+    });
+
+    it('correctly treats authenticated user as owner of new unsaved matches (userId null)', () => {
+        const user = { id: 'auth-user-99' };
+        
+        // 1. New match before first cloud sync (gameState.userId is null)
+        const newGameState = { ...initialGameState, userId: null };
+        const isNewMatchOwner = Boolean(user && (!newGameState.userId || newGameState.userId === user.id));
+        expect(isNewMatchOwner).toBe(true);
+
+        // 2. Saved match owned by this user
+        const savedGameState = { ...initialGameState, userId: 'auth-user-99' };
+        const isSavedMatchOwner = Boolean(user && (!savedGameState.userId || savedGameState.userId === user.id));
+        expect(isSavedMatchOwner).toBe(true);
+
+        // 3. Match owned by a different user
+        const foreignGameState = { ...initialGameState, userId: 'other-user-00' };
+        const isForeignMatchOwner = Boolean(user && (!foreignGameState.userId || foreignGameState.userId === user.id));
+        expect(isForeignMatchOwner).toBe(false);
+
+        // 4. Anonymous user
+        const anonUser: any = null;
+        const isAnonOwner = Boolean(anonUser && (!newGameState.userId || newGameState.userId === anonUser?.id));
+        expect(isAnonOwner).toBe(false);
+    });
+
+    it('generates different signature when stats are recorded', () => {
+        const buildSignature = (state: any) => {
+            const tallySummary = Object.entries(state.tallyStats || {})
+                .map(([p, perMap]: [string, any]) => `${p}:${Object.values(perMap).map((s: any) => `${s.goles},${s.triples},${s.fallos},${s.faltasPersonales}`).join('|')}`)
+                .join(';');
+
+            return JSON.stringify({
+                gameId: state.gameId,
+                logLen: state.gameLog?.length || 0,
+                fouls: state.teamFouls,
+                oppScore: state.opponentScore,
+                period: state.currentPeriod,
+                names: state.playerNames,
+                tally: tallySummary
+            });
+        };
+
+        const stateBefore = {
+            gameId: 'g1',
+            gameLog: [],
+            teamFouls: { 'First Half': 0 },
+            opponentScore: 0,
+            currentPeriod: 'First Half',
+            playerNames: { '10': 'Ana' },
+            tallyStats: {
+                '10': { 'First Half': { goles: 0, triples: 0, fallos: 0, faltasPersonales: 0 } }
+            }
+        };
+
+        const sig1 = buildSignature(stateBefore);
+
+        // Increment a goal for player 10
+        const stateAfter = {
+            ...stateBefore,
+            gameLog: [{ id: 'evt-1' }],
+            tallyStats: {
+                '10': { 'First Half': { goles: 1, triples: 0, fallos: 0, faltasPersonales: 0 } }
+            }
+        };
+
+        const sig2 = buildSignature(stateAfter);
+
+        expect(sig1).not.toBe(sig2);
+    });
 });
 

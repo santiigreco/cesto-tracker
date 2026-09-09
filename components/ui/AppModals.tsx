@@ -97,9 +97,13 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         closeModal('finishMatch');
         showToast('Finalizando y guardando partido...', 'info');
         try {
-            await handleSyncToSupabase(true);
+            const savedGameId = await handleSyncToSupabase(false);
             setActiveTab('statistics');
-            showToast('¡Partido finalizado y guardado con éxito!', 'success');
+            if (savedGameId) {
+                showToast('¡Partido finalizado y guardado en la nube con éxito!', 'success');
+            } else {
+                showToast('Partido finalizado localmente. Verificá tu conexión o sesión para sincronizarlo.', 'warning');
+            }
         } catch (err: any) {
             showToast(`Error al guardar: ${err.message}`, 'error');
             setActiveTab('statistics');

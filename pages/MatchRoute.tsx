@@ -29,7 +29,7 @@ export default function MatchRoute() {
     const { profile } = useProfile();
     const isAdmin = profile?.is_admin === true || profile?.permission_role === 'admin';
 
-    const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving } = useSync();
+    const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving, syncState } = useSync();
 
     const {
         updatePlayerName,
@@ -40,7 +40,8 @@ export default function MatchRoute() {
     const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null);
     const [isCorrectionsVisible, setIsCorrectionsVisible] = useState(false);
 
-    const isGameOwner = Boolean(user && gameState.userId && gameState.userId === user.id);
+    // If there is no userId assigned yet, the logged in user creating this match is the owner
+    const isGameOwner = Boolean(user && (!gameState.userId || gameState.userId === user.id));
 
     useEffect(() => {
         if (id && id !== 'new') {
@@ -125,26 +126,67 @@ export default function MatchRoute() {
                 onAdminClick={() => navigate('/admin')}
             />
 
-            {/* Sync Cloud Bar Indicator */}
+            {/* Sync Cloud Bar Indicator for Logged-in Owners */}
             {user && isGameOwner && (
-                <div className="w-full max-w-4xl flex items-center justify-between text-xs px-2 py-1 mb-2 bg-slate-800/40 rounded border border-slate-700/50">
+                <div className={`w-full max-w-4xl flex items-center justify-between text-xs px-3 py-1.5 mb-2 rounded border transition-colors ${
+                    syncState.status === 'error'
+                        ? 'bg-red-950/40 border-red-800/60'
+                        : 'bg-slate-800/40 border-slate-700/50'
+                }`}>
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-2 w-2">
-                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isAutoSaving ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
-                            <span className={`relative inline-flex rounded-full h-2 w-2 ${isAutoSaving ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                                syncState.status === 'error' ? 'bg-red-400' : isAutoSaving ? 'bg-amber-400' : 'bg-emerald-400'
+                            }`}></span>
+                            <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                                syncState.status === 'error' ? 'bg-red-500' : isAutoSaving ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}></span>
                         </span>
-                        <span className="text-slate-400 font-medium">
-                            {isAutoSaving ? 'Guardando cambios en la nube...' : lastSaved ? `Sincronizado: ${lastSaved.toLocaleTimeString()}` : 'En la nube (Autoguardado activo)'}
+                        <span className={`font-medium ${syncState.status === 'error' ? 'text-red-300' : 'text-slate-300'}`}>
+                            {syncState.status === 'error'
+                                ? `Error al sincronizar: ${syncState.message}`
+                                : isAutoSaving
+                                    ? 'Guardando cambios en la nube...'
+                                    : lastSaved
+                                        ? `Sincronizado en la nube: ${lastSaved.toLocaleTimeString('es-AR')}`
+                                        : 'En la nube (Autoguardado activo)'}
                         </span>
                     </div>
-                    {!isAutoSaving && (
-                        <button
-                            onClick={() => handleSyncToSupabase(true)}
-                            className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
-                        >
-                            Guardar ahora
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {syncState.status === 'error' ? (
+                            <button
+                                onClick={() => handleSyncToSupabase(false)}
+                                className="text-red-400 hover:text-red-300 font-black uppercase text-[10px] tracking-wider transition-colors underline"
+                            >
+                                Reintentar
+                            </button>
+                        ) : !isAutoSaving ? (
+                            <button
+                                onClick={() => handleSyncToSupabase(false)}
+                                className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
+                            >
+                                Guardar ahora
+                            </button>
+                        ) : null}
+                    </div>
+                </div>
+            )}
+
+            {/* Offline/Anonymous Notice for Non-logged Users */}
+            {!user && (
+                <div className="w-full max-w-4xl flex items-center justify-between text-xs px-3 py-2 mb-2 bg-amber-950/30 rounded-xl border border-amber-800/40 text-amber-200/90">
+                    <div className="flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>
+                            <strong>Modo local:</strong> Los datos se guardan en este dispositivo. Iniciá sesión con Google para sincronizar y respaldar en la nube.
+                        </span>
+                    </div>
+                    <button
+                        onClick={handleLogin}
+                        className="text-amber-400 hover:text-amber-300 font-bold underline whitespace-nowrap ml-2"
+                    >
+                        Iniciar Sesión
+                    </button>
                 </div>
             )}
 
