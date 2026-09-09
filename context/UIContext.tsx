@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { AppTab, StatAction } from '../types';
 
 export type ModalName =
+    | 'auth'
     | 'clearSheet'
     | 'newGame'
     | 'returnHome'
@@ -17,6 +18,14 @@ export type ModalName =
     | 'finishMatch'
     | 'completeNames';
 
+export interface AuthModalParams {
+    initialMode?: 'login' | 'signup' | 'reset';
+    title?: string;
+    subtitle?: string;
+    redirectPath?: string;
+    onSuccess?: () => void;
+}
+
 export interface ModalState {
     isOpen: boolean;
     params?: any;
@@ -30,6 +39,7 @@ interface UIContextType {
     modals: Record<ModalName, ModalState>;
     openModal: (name: ModalName, params?: any) => void;
     closeModal: (name: ModalName) => void;
+    openAuthModal: (params?: AuthModalParams) => void;
 
     // Actions
     actionToAssign: StatAction | null;
@@ -61,6 +71,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
     // Modal Manager State
     const [modals, setModals] = useState<Record<ModalName, ModalState>>({
+        auth: { isOpen: false },
         clearSheet: { isOpen: false },
         newGame: { isOpen: false },
         returnHome: { isOpen: false },
@@ -87,8 +98,12 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const closeModal = (name: ModalName) => {
         setModals(prev => ({
             ...prev,
-            [name]: { isOpen: false }
+            [name]: { isOpen: false, params: undefined }
         }));
+    };
+
+    const openAuthModal = (params?: AuthModalParams) => {
+        openModal('auth', params);
     };
 
     const handleShare = async () => {
@@ -112,7 +127,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     return (
         <UIContext.Provider value={{
             activeTab, setActiveTab,
-            modals, openModal, closeModal,
+            modals, openModal, closeModal, openAuthModal,
             actionToAssign, setActionToAssign,
             notificationPopup, setNotificationPopup,
             toast, showToast,

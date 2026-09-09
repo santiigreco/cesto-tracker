@@ -10,8 +10,8 @@ import { useCommunityStats } from '../hooks/useCommunityStats';
 
 export default function HomeRoute() {
     const navigate = useNavigate();
-    const { user, handleLogin } = useAuth();
-    const { modals, openModal, closeModal } = useUI();
+    const { user } = useAuth();
+    const { modals, openModal, closeModal, openAuthModal } = useUI();
     const { setGameState, resetGame } = useGameContext();
 
     const handleStartApp = (teamName?: string, roster?: any[]) => {
@@ -29,6 +29,10 @@ export default function HomeRoute() {
     const { profile } = useProfile();
     const isOwner = user && profile?.is_admin === true;
     const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
+
+    const handleLogin = () => {
+        openAuthModal({ initialMode: 'login' });
+    };
 
     return (
         <>

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { SyncState } from '../../context/SyncContext';
+import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import { XIcon } from '../icons';
 import { CheckIcon } from '../icons';
+import { GoogleIcon } from '../icons';
 
 const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -25,6 +28,8 @@ interface SaveGameModalProps {
 }
 
 const SaveGameModal: React.FC<SaveGameModalProps> = ({ isOpen, onClose, onSave, syncState, initialGameName }) => {
+    const { user } = useAuth();
+    const { openAuthModal } = useUI();
     const [gameName, setGameName] = useState('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,6 +64,77 @@ const SaveGameModal: React.FC<SaveGameModalProps> = ({ isOpen, onClose, onSave, 
     const isSyncing = syncState.status === 'syncing' || isSubmitting;
     const isSuccess = syncState.status === 'success';
     const isError = syncState.status === 'error';
+
+    // Si el usuario NO está autenticado, mostrar pantalla de conversión
+    if (!user) {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md">
+                    <div className="flex justify-between items-center p-4 border-b border-slate-700">
+                        <h2 className="text-2xl font-bold text-cyan-400">Guardar Partido</h2>
+                        <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar">
+                            <XIcon />
+                        </button>
+                    </div>
+                    <div className="p-6 space-y-5">
+                        {/* Icono destacado */}
+                        <div className="text-center">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-3xl mb-3">
+                                ☁️
+                            </div>
+                            <h3 className="text-lg font-black text-white">
+                                Creá tu cuenta para guardar este partido
+                            </h3>
+                            <p className="text-sm text-slate-400 mt-1">
+                                Tu planilla se respaldará en la nube y podrás acceder desde cualquier dispositivo.
+                            </p>
+                        </div>
+
+                        {/* Beneficios rápidos */}
+                        <div className="grid grid-cols-1 gap-2 text-xs text-slate-300 bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                            <div className="flex items-center gap-2">
+                                <span className="text-emerald-400">✓</span>
+                                <span>Tus planillas guardadas para siempre</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-emerald-400">✓</span>
+                                <span>Historial de partidos y estadísticas acumuladas</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-emerald-400">✓</span>
+                                <span>Exportación de reportes en Excel oficial</span>
+                            </div>
+                        </div>
+
+                        {/* CTA principal: abrir AuthModal */}
+                        <button
+                            onClick={() => {
+                                onClose();
+                                openAuthModal({
+                                    initialMode: 'signup',
+                                    title: 'Registrate para guardar tu partido',
+                                    subtitle: 'Creá tu cuenta en 1 clic y tu planilla se guardará automáticamente.',
+                                    onSuccess: () => {
+                                        // Al completar el registro, el autoguardado se encargará
+                                    }
+                                });
+                            }}
+                            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black py-3.5 px-4 rounded-xl text-sm uppercase tracking-wider shadow-lg shadow-cyan-500/20 transition-all hover:scale-[1.01] active:scale-[0.98]"
+                        >
+                            <span>🔐</span>
+                            <span>Crear Cuenta Gratis</span>
+                        </button>
+
+                        <p className="text-center text-[11px] text-slate-500">
+                            También podés continuar con Google en 1 toque.
+                            <br />
+                            Mientras tanto, tu partido se mantiene guardado localmente en este dispositivo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">

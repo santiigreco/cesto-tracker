@@ -21,10 +21,10 @@ export default function MatchRoute() {
     const isEditRequested = searchParams.get('edit') === 'true';
     const navigate = useNavigate();
     const { gameState, setGameState } = useGameContext();
-    const { user, authLoading, handleLogin } = useAuth();
+    const { user, authLoading } = useAuth();
     const {
         activeTab, setActiveTab, openModal, closeModal,
-        actionToAssign, setActionToAssign
+        actionToAssign, setActionToAssign, openAuthModal
     } = useUI();
     const { profile } = useProfile();
     const isAdmin = profile?.is_admin === true || profile?.permission_role === 'admin';
@@ -111,7 +111,7 @@ export default function MatchRoute() {
 
             <AppHeader
                 user={user}
-                onLogin={handleLogin}
+                onLogin={() => openAuthModal({ initialMode: 'login' })}
                 onOpenProfile={() => openModal('profile')}
                 onOpenSettings={() => openModal('settings')}
                 onOpenMobileMenu={() => openModal('mobileMenu')}
@@ -187,7 +187,7 @@ export default function MatchRoute() {
                         </span>
                     </div>
                     <button
-                        onClick={handleLogin}
+                        onClick={() => openAuthModal({ initialMode: 'login' })}
                         className="text-amber-400 hover:text-amber-300 font-bold underline whitespace-nowrap ml-2"
                     >
                         Iniciar Sesión

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleIcon } from '@/components/icons';
 import { UserProfile } from '@/types';
+import { useUI } from '@/context/UIContext';
 
 interface HomeNavbarProps {
   canAccessAdmin: boolean;
@@ -21,6 +22,11 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
   onStartClick,
 }) => {
   const navigate = useNavigate();
+  const { openAuthModal } = useUI();
+
+  const handleLoginClick = () => {
+    openAuthModal({ initialMode: 'login' });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5 flex justify-between items-center transition-all">
@@ -66,9 +72,9 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
           </button>
         ) : (
           <button
-            onClick={onLogin}
+            onClick={handleLoginClick}
             className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 hover:border-slate-500 transition-colors active:scale-95 touch-manipulation"
-            title="Iniciar sesión con Google"
+            title="Iniciar sesión o crear cuenta"
           >
             <GoogleIcon className="h-3.5 w-3.5" />
             <span className="hidden xs:inline">Ingresar</span>

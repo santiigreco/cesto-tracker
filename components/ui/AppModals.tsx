@@ -16,6 +16,7 @@ import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import NotificationPopup from '@/components/ui/NotificationPopup';
 import GameEventEditModal from '@/components/modals/GameEventEditModal';
 import UserProfileModal from '@/components/modals/UserProfileModal';
+import AuthModal from '@/components/modals/AuthModal';
 import Toast from '@/components/ui/Toast';
 
 interface AppModalsProps {
@@ -224,7 +225,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                         }
                     }}
                     user={user}
-                    onLogin={handleLogin}
+                    onLogin={() => openModal('auth', { initialMode: 'login' })}
                 />
             )}
 
@@ -249,7 +250,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     onRequestSaveGame={handleRequestSaveGame}
                     user={user}
                     onLogout={handleLogout}
-                    onLogin={handleLogin}
+                    onLogin={() => openModal('auth', { initialMode: 'login' })}
                 />
             )}
 
@@ -409,6 +410,18 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
+
+            {modals.auth?.isOpen && (
+                <AuthModal
+                    isOpen={modals.auth.isOpen}
+                    onClose={() => closeModal('auth')}
+                    initialMode={modals.auth.params?.initialMode}
+                    title={modals.auth.params?.title}
+                    subtitle={modals.auth.params?.subtitle}
+                    redirectPath={modals.auth.params?.redirectPath}
+                    onSuccess={modals.auth.params?.onSuccess}
+                />
+            )}
 
             {toast && <Toast message={toast.message} type={toast.type} />}
         </>

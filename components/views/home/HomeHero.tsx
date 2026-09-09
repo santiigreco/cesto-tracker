@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserProfile } from '@/types';
 import { LastSetupData } from './HomeActionGrid';
+import { useUI } from '@/context/UIContext';
 
 interface HomeHeroProps {
   user?: any;
@@ -20,6 +21,20 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   onLoadGameClick,
   onLogin,
 }) => {
+  const { openAuthModal } = useUI();
+
+  const handleSecondaryClick = () => {
+    if (user) {
+      onLoadGameClick();
+    } else {
+      openAuthModal({
+        initialMode: 'login',
+        title: 'Ingresá para sincronizar',
+        subtitle: 'Accedé a tu historial de partidos guardados en la nube.',
+      });
+    }
+  };
+
   return (
     <section className="text-center max-w-3xl mx-auto pt-6 sm:pt-10 pb-8 sm:pb-12 px-4 select-none">
       {/* Category Pill Tag */}
@@ -67,7 +82,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
       {/* Secondary saved games link */}
       <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
         <button
-          onClick={user ? onLoadGameClick : onLogin}
+          onClick={handleSecondaryClick}
           className="hover:text-cyan-400 transition-colors inline-flex items-center gap-1.5 underline decoration-slate-700 underline-offset-4"
         >
           <span>📂</span>
