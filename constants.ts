@@ -28,7 +28,7 @@ export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
 // Admin access is controlled via the `is_admin` column in the `profiles` table in Supabase.
 // To grant admin access, run: UPDATE profiles SET is_admin = TRUE WHERE id = '<user-id>';
 
-export type FederationId = 'femece' | 'corrientes';
+export type FederationId = 'capital' | 'corrientes';
 
 export interface FederationConfig {
     id: FederationId;
@@ -37,8 +37,8 @@ export interface FederationConfig {
 }
 
 export const FEDERATIONS_CONFIG: FederationConfig[] = [
-    { id: 'femece', name: 'Federación Metropolitana (FeMeCe)', shortName: 'FeMeCe' },
-    { id: 'corrientes', name: 'Federación Correntina (FeCoCe)', shortName: 'Corrientes' },
+    { id: 'capital', name: 'Capital', shortName: 'Capital' },
+    { id: 'corrientes', name: 'Corrientes', shortName: 'Corrientes' },
 ];
 
 // Configuration for Teams
@@ -49,22 +49,22 @@ export interface TeamConfig {
 }
 
 export const TEAMS_CONFIG: TeamConfig[] = [
-    // --- Federación Metropolitana (FeMeCe) ---
-    { name: "APV", federation: "femece" },
-    { name: "APV masc A", federation: "femece" },
-    { name: "APV masc B", federation: "femece" },
-    { name: "Avellaneda", federation: "femece" },
-    { name: "Ballester", federation: "femece" },
-    { name: "CEF La Plata", federation: "femece" },
-    { name: "Ciudad", federation: "femece" },
-    { name: "GEVP", federation: "femece" },
-    { name: "Hacoaj", federation: "femece" },
-    { name: "San Martín", federation: "femece" },
-    { name: "SITAS", federation: "femece" },
-    { name: "Social Parque", federation: "femece" },
-    { name: "Vélez", federation: "femece" },
+    // --- Capital ---
+    { name: "APV", federation: "capital" },
+    { name: "APV masc A", federation: "capital" },
+    { name: "APV masc B", federation: "capital" },
+    { name: "Avellaneda", federation: "capital" },
+    { name: "Ballester", federation: "capital" },
+    { name: "CEF La Plata", federation: "capital" },
+    { name: "Ciudad", federation: "capital" },
+    { name: "GEVP", federation: "capital" },
+    { name: "Hacoaj", federation: "capital" },
+    { name: "San Martín", federation: "capital" },
+    { name: "SITAS", federation: "capital" },
+    { name: "Social Parque", federation: "capital" },
+    { name: "Vélez", federation: "capital" },
 
-    // --- Federación Correntina de Cestoball ---
+    // --- Corrientes ---
     { name: "Jaguareté", federation: "corrientes", city: "Corrientes" },
     { name: "Hércules", federation: "corrientes", city: "Corrientes" },
     { name: "Quilmes", federation: "corrientes", city: "Corrientes" },

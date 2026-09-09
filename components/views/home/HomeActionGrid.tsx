@@ -106,7 +106,7 @@ export const HomeActionGrid: React.FC<HomeActionGridProps> = ({
                 </span>
               </div>
               <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">
-                Selecciona tu club de Metro o Corrientes y empieza a anotar.
+                Selecciona tu club de Capital o Corrientes y empieza a anotar.
               </p>
             </div>
           </div>

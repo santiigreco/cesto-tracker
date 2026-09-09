@@ -37,7 +37,7 @@ export const HomePhonePreview: React.FC = () => {
                 <TeamLogo teamName="Vélez" className="h-9 w-9 flex-shrink-0" />
                 <div>
                   <h4 className="text-sm font-black text-white leading-tight">Vélez</h4>
-                  <span className="text-[10px] font-bold text-cyan-400">FeMeCe</span>
+                  <span className="text-[10px] font-bold text-cyan-400">Capital</span>
                 </div>
               </div>
 
@@ -182,7 +182,7 @@ export const HomePhonePreview: React.FC = () => {
           Planilla técnica oficial de Cestoball en vivo.
         </p>
         <p className="text-cyan-400 text-xs font-bold mt-0.5">
-          Federación Metropolitana y Federación Correntina integradas.
+          Equipos oficiales de Capital y Corrientes integrados.
         </p>
       </div>
     </div>

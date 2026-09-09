@@ -16,7 +16,7 @@ interface TeamSelectorModalProps {
     isRival?: boolean;
 }
 
-type TabType = 'all' | 'femece' | 'corrientes' | 'saved';
+type TabType = 'all' | 'capital' | 'corrientes' | 'saved';
 
 const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
     isOpen,
@@ -57,7 +57,7 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
             if (!matchesSearch) return false;
 
             if (selectedTab === 'all') return true;
-            if (selectedTab === 'femece') return team.federation === 'femece';
+            if (selectedTab === 'capital') return team.federation === 'capital';
             if (selectedTab === 'corrientes') return team.federation === 'corrientes';
             return true;
         });
@@ -141,14 +141,14 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
                             Todos ({TEAMS_CONFIG.length})
                         </button>
                         <button
-                            onClick={() => setSelectedTab('femece')}
+                            onClick={() => setSelectedTab('capital')}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                                selectedTab === 'femece'
+                                selectedTab === 'capital'
                                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                                     : 'bg-slate-800/60 text-slate-400 hover:text-white border border-transparent'
                             }`}
                         >
-                            🏙️ FeMeCe (Metro)
+                            Capital
                         </button>
                         <button
                             onClick={() => setSelectedTab('corrientes')}
@@ -158,7 +158,7 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
                                     : 'bg-slate-800/60 text-slate-400 hover:text-white border border-transparent'
                             }`}
                         >
-                            🐊 Corrientes (FeCoCe)
+                            Corrientes
                         </button>
                         {!isRival && savedTeams.length > 0 && (
                             <button
@@ -213,8 +213,8 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
                         <div className="space-y-2.5">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                                    {selectedTab === 'corrientes' ? 'Equipos Federación Correntina' :
-                                     selectedTab === 'femece' ? 'Equipos Federación Metropolitana' : 'Equipos Federados'}
+                                    {selectedTab === 'corrientes' ? 'Equipos de Corrientes' :
+                                     selectedTab === 'capital' ? 'Equipos de Capital' : 'Equipos Federados'}
                                 </h3>
                                 <span className="text-[10px] font-bold text-slate-500">
                                     {filteredTeams.length} clubes
