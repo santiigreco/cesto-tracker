@@ -11,12 +11,13 @@ import Loader from '@/components/ui/Loader';
 
 interface AdminOverviewProps {
     isOwner: boolean;
+    isAdmin?: boolean;
 }
 
-export const AdminOverview: React.FC<AdminOverviewProps> = ({ isOwner }) => {
-    const { users, fetchUsers, loading: l1 } = useAdminUsers(isOwner);
-
-    const { games, fetchGames, loading: l3 } = useAdminGames();
+export const AdminOverview: React.FC<AdminOverviewProps> = ({ isOwner, isAdmin }) => {
+    const canAccessUsers = isAdmin ?? isOwner ?? true;
+    const { users, fetchUsers, loading: l1, error: usersError } = useAdminUsers(canAccessUsers);
+    const { games, fetchGames, loading: l3, error: gamesError } = useAdminGames();
 
     useEffect(() => {
         fetchUsers();
@@ -31,10 +32,17 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ isOwner }) => {
 
     return (
         <div className="space-y-6 lg:space-y-8 animate-fade-in pb-20 lg:pb-0">
+            {(usersError || gamesError) && (
+                <div className="bg-red-900/30 border border-red-700/50 p-3 rounded-lg text-red-300 text-xs flex flex-col gap-1">
+                    {usersError && <p>⚠️ Error al sincronizar usuarios: {usersError}</p>}
+                    {gamesError && <p>⚠️ Error al sincronizar partidos: {gamesError}</p>}
+                </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                 <AdminStatCard 
                     title="Usuarios" 
-                    value={isOwner ? users.length : '-'} 
+                    value={canAccessUsers ? users.length : '-'} 
                     icon={<UsersIcon />} 
                     colorClass="text-purple-400" 
                 />

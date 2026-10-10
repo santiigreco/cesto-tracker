@@ -4,32 +4,44 @@ import { supabase } from '../../../utils/supabaseClient';
 import { AdminProfile } from '../types';
 import { IdentityRole, PermissionRole } from '../../../types';
 
-export const useAdminUsers = (isOwner: boolean) => {
+export const useAdminUsers = (canAccess: boolean = true) => {
     const [users, setUsers] = useState<AdminProfile[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchUsers = useCallback(async () => {
-        if (!isOwner) return;
+        if (!canAccess) return;
         setLoading(true);
         setError(null);
         try {
             // Usamos la RPC get_admin_users() que hace JOIN entre auth.users y profiles.
-            // Esto garantiza ver TODOS los usuarios registrados, incluso los que
-            // no tienen fila en la tabla profiles todavía.
+            // Esto garantiza ver TODOS los usuarios registrados con su email.
             const { data, error: rpcError } = await supabase.rpc('get_admin_users');
 
-            if (rpcError) throw rpcError;
+            if (rpcError) {
+                console.warn('RPC get_admin_users falló, ejecutando fallback directo sobre tabla profiles...', rpcError);
+                const { data: profilesData, error: profilesError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .order('updated_at', { ascending: false });
 
-            if (data) {
+                if (profilesError) throw profilesError;
+                if (profilesData) {
+                    setUsers(profilesData.map(p => ({
+                        ...p,
+                        created_at: p.updated_at || new Date().toISOString()
+                    })) as AdminProfile[]);
+                }
+            } else if (data) {
                 setUsers(data as AdminProfile[]);
             }
         } catch (err: any) {
-            setError(err.message);
+            console.error('Error al obtener usuarios en panel admin:', err);
+            setError(err.message || 'Error al cargar usuarios');
         } finally {
             setLoading(false);
         }
-    }, [isOwner]);
+    }, [canAccess]);
 
     // Actualiza el rol autopercibido (Identidad)
     const updateUserIdentity = async (id: string, newRole: IdentityRole) => {
@@ -92,6 +104,12 @@ export const useAdminUsers = (isOwner: boolean) => {
     };
 
     const deleteUser = async (id: string) => {
+        const target = users.find(u => u.id === id);
+        if (target?.is_admin) {
+            alert("No se puede eliminar a un usuario con privilegios de Owner principal.");
+            return;
+        }
+
         if (!confirm("⚠️ ¿Eliminar usuario permanentemente? Esta acción intentará borrar la cuenta y el perfil.")) return;
         
         try {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabaseClient';
+import { UserProfile } from '../types';
 
 const AUTH_REDIRECT_STORAGE_KEY = 'cesto_auth_redirect';
 
@@ -8,6 +9,14 @@ export interface AuthContextType {
     user: User | null;
     session: Session | null;
     authLoading: boolean;
+    profile: UserProfile | null;
+    profileLoading: boolean;
+    profileError: string | null;
+    isOwner: boolean;
+    canAccessAdmin: boolean;
+    refreshProfile: () => Promise<void>;
+    updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
+    uploadAvatar: (file: File) => Promise<string | null>;
     signInWithGoogle: (redirectPath?: string) => Promise<{ error: any | null }>;
     signInWithPassword: (email: string, password: string) => Promise<{ error: any | null; user?: User | null }>;
     signUpWithPassword: (email: string, password: string, fullName?: string) => Promise<{ error: any | null; user?: User | null }>;
@@ -22,6 +31,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [profileLoading, setProfileLoading] = useState(true);
+    const [profileError, setProfileError] = useState<string | null>(null);
+
+    // Roles y accesos calculados
+    const isOwner = profile?.is_admin === true;
+    const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
 
     // Manejo de redirección inteligente post OAuth
     const checkAndExecutePostAuthRedirect = useCallback(() => {
@@ -40,6 +56,106 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, []);
 
+    // Cargar o crear perfil en Supabase
+    const fetchProfileForUser = useCallback(async (userId: string, authUser?: User | null) => {
+        setProfileLoading(true);
+        setProfileError(null);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+
+            if (data) {
+                let gamesCount = 0;
+                try {
+                    const { count } = await supabase
+                        .from('games')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', userId);
+                    gamesCount = count ?? 0;
+                } catch {
+                    // Ignorar error secundario de contador
+                }
+                setProfile({ ...(data as UserProfile), games_count: gamesCount });
+            } else {
+                const newProfile: UserProfile = {
+                    id: userId,
+                    full_name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Usuario',
+                    favorite_club: null,
+                    role: 'jugador',
+                    permission_role: null,
+                    is_admin: false,
+                    avatar_url: authUser?.user_metadata?.avatar_url || null,
+                    player_number: null,
+                    updated_at: new Date().toISOString()
+                };
+                setProfile(newProfile);
+                await supabase.from('profiles').upsert(newProfile);
+            }
+        } catch (err: any) {
+            console.error('[AUTH_PROFILE] Error cargando perfil:', err);
+            setProfileError(err.message || 'Error cargando perfil');
+        } finally {
+            setProfileLoading(false);
+        }
+    }, []);
+
+    const refreshProfile = useCallback(async () => {
+        if (user) {
+            await fetchProfileForUser(user.id, user);
+        }
+    }, [user, fetchProfileForUser]);
+
+    const updateProfile = useCallback(async (updates: Partial<UserProfile>): Promise<boolean> => {
+        if (!user) return false;
+        setProfileLoading(true);
+        setProfileError(null);
+        try {
+            const payload = {
+                id: user.id,
+                ...updates,
+                updated_at: new Date().toISOString()
+            };
+            const { error } = await supabase.from('profiles').upsert(payload);
+            if (error) throw error;
+            setProfile(prev => prev ? { ...prev, ...updates } : (payload as UserProfile));
+            return true;
+        } catch (err: any) {
+            console.error('[AUTH_PROFILE] Error actualizando perfil:', err);
+            setProfileError('No se pudo guardar el perfil.');
+            return false;
+        } finally {
+            setProfileLoading(false);
+        }
+    }, [user]);
+
+    const uploadAvatar = useCallback(async (file: File): Promise<string | null> => {
+        if (!user) return null;
+        setProfileLoading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+            await updateProfile({ avatar_url: publicUrl });
+            return publicUrl;
+        } catch (err: any) {
+            console.error('[AUTH_AVATAR] Error al subir avatar:', err);
+            setProfileError('Error al subir la imagen.');
+            return null;
+        } finally {
+            setProfileLoading(false);
+        }
+    }, [user, updateProfile]);
+
     useEffect(() => {
         // 1. Obtener sesión inicial
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -48,17 +164,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setAuthLoading(false);
 
             if (session?.user) {
+                fetchProfileForUser(session.user.id, session.user);
                 checkAndExecutePostAuthRedirect();
+            } else {
+                setProfile(null);
+                setProfileLoading(false);
             }
         }).catch((err) => {
             console.error('[AUTH] Error obteniendo sesión inicial:', err);
             setAuthLoading(false);
+            setProfileLoading(false);
         });
 
         // 2. Escuchar cambios de estado de autenticación en tiempo real
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
             setSession(newSession);
             setUser(newSession?.user ?? null);
+
+            if (newSession?.user) {
+                fetchProfileForUser(newSession.user.id, newSession.user);
+            } else {
+                setProfile(null);
+                setProfileLoading(false);
+            }
 
             if (event === 'SIGNED_IN' && newSession?.user) {
                 checkAndExecutePostAuthRedirect();
@@ -68,7 +196,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return () => {
             subscription.unsubscribe();
         };
-    }, [checkAndExecutePostAuthRedirect]);
+    }, [checkAndExecutePostAuthRedirect, fetchProfileForUser]);
 
     const signInWithGoogle = async (redirectPath?: string): Promise<{ error: any | null }> => {
         try {
@@ -104,6 +232,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setUser(data.user);
             setSession(data.session);
+            if (data.user) {
+                fetchProfileForUser(data.user.id, data.user);
+            }
             return { error: null, user: data.user };
         } catch (err: any) {
             console.error('[AUTH_PASSWORD_SIGNIN] Error:', err);
@@ -134,6 +265,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (data.user) {
                 setUser(data.user);
                 setSession(data.session);
+                fetchProfileForUser(data.user.id, data.user);
             }
             return { error: null, user: data.user };
         } catch (err: any) {
@@ -167,6 +299,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } finally {
             setUser(null);
             setSession(null);
+            setProfile(null);
+            setProfileLoading(false);
         }
     };
 
@@ -176,6 +310,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 user,
                 session,
                 authLoading,
+                profile,
+                profileLoading,
+                profileError,
+                isOwner,
+                canAccessAdmin,
+                refreshProfile,
+                updateProfile,
+                uploadAvatar,
                 signInWithGoogle,
                 signInWithPassword,
                 signUpWithPassword,

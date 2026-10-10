@@ -23,8 +23,9 @@ const PERMISSION_OPTIONS: { value: PermissionRole | 'user'; label: string; color
     { value: 'admin', label: 'Admin', color: 'bg-red-900/50 text-red-300 border-red-500 font-bold' },
 ];
 
-export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
-    const { users, fetchUsers, loading, error, deleteUser, updateUserIdentity, updateUserPermission, updateUserClub } = useAdminUsers(isOwner);
+export const AdminUsersView: React.FC<{ isOwner: boolean; isAdmin?: boolean }> = ({ isOwner, isAdmin }) => {
+    const canManageUsers = isAdmin ?? isOwner ?? true;
+    const { users, fetchUsers, loading, error, deleteUser, updateUserIdentity, updateUserPermission, updateUserClub } = useAdminUsers(canManageUsers);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [tempClub, setTempClub] = useState('');
@@ -78,13 +79,21 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
                     <div key={user.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm flex flex-col gap-3">
                         <div className="flex justify-between items-start">
                             <div>
-                                <div className="font-bold text-white text-lg">{user.full_name || 'Sin Nombre'}</div>
-                                <div className="text-xs text-cyan-500/80 truncate max-w-[200px]">{user.email}</div>
+                                <div className="font-bold text-white text-lg flex items-center gap-2">
+                                    <span>{user.full_name || 'Sin Nombre'}</span>
+                                    {user.is_admin && (
+                                        <span className="px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-sans font-bold rounded uppercase">
+                                            Owner
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="text-xs text-cyan-500/80 truncate max-w-[200px]">{user.email || 'Sin email'}</div>
                                 <div className="text-[10px] text-slate-500 font-mono mt-1">{user.id.substring(0, 8)}...</div>
                             </div>
                             <button 
                                 onClick={() => deleteUser(user.id)}
                                 className="p-2 bg-red-900/20 text-red-400 rounded-lg border border-red-900/50"
+                                title="Eliminar Usuario"
                             >
                                 <TrashIcon className="h-5 w-5" />
                             </button>
@@ -104,8 +113,8 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
                             <div className="flex flex-col gap-1">
                                 <span className="text-[10px] text-slate-400 uppercase font-bold">Permiso</span>
                                 <select 
-                                    value={user.permission_role || 'user'} 
-                                    onChange={(e) => updateUserPermission(user.id, e.target.value === 'user' ? null : e.target.value as PermissionRole)}
+                                    value={user.permission_role === 'admin' ? 'admin' : 'user'} 
+                                    onChange={(e) => updateUserPermission(user.id, e.target.value === 'user' ? null : 'admin')}
                                     className="bg-slate-900 border border-slate-600 rounded p-1 text-white text-xs"
                                 >
                                     {PERMISSION_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
@@ -155,7 +164,14 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
                         {filteredUsers.map(user => (
                             <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
                                 <td className="p-4">
-                                    <div className="font-bold text-white">{user.full_name || 'Sin Nombre'}</div>
+                                    <div className="font-bold text-white flex items-center gap-2">
+                                        <span>{user.full_name || 'Sin Nombre'}</span>
+                                        {user.is_admin && (
+                                            <span className="px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-sans font-bold rounded uppercase">
+                                                Owner
+                                            </span>
+                                        )}
+                                    </div>
                                     {user.email && <div className="text-xs text-cyan-500/80">{user.email}</div>}
                                     <div className="text-[10px] text-slate-500 font-mono">{user.id.substring(0, 16)}…</div>
                                     {user.last_sign_in_at && (
@@ -184,12 +200,12 @@ export const AdminUsersView: React.FC<{ isOwner: boolean }> = ({ isOwner }) => {
 
                                 <td className="p-4">
                                     <select 
-                                        value={user.permission_role || 'user'} 
+                                        value={user.permission_role === 'admin' ? 'admin' : 'user'} 
                                         onChange={(e) => {
-                                            const val = e.target.value === 'user' ? null : e.target.value as PermissionRole;
+                                            const val = e.target.value === 'user' ? null : 'admin';
                                             updateUserPermission(user.id, val);
                                         }}
-                                        className={`bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 focus:ring-cyan-500 outline-none font-bold uppercase tracking-wide cursor-pointer hover:border-slate-400 transition-colors ${PERMISSION_OPTIONS.find(r => r.value === (user.permission_role || 'user'))?.color || 'text-white'}`}
+                                        className={`bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1 focus:ring-cyan-500 outline-none font-bold uppercase tracking-wide cursor-pointer hover:border-slate-400 transition-colors ${PERMISSION_OPTIONS.find(r => r.value === (user.permission_role === 'admin' ? 'admin' : 'user'))?.color || 'text-white'}`}
                                     >
                                         {PERMISSION_OPTIONS.map(r => (
                                             <option key={r.value} value={r.value}>{r.label}</option>

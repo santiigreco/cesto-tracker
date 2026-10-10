@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialPlayerTally, initialGameState } from '../context/GameContext';
 import { GamePeriod, GameState } from '../types';
+import { computeGameStateSignature, mapTallyPeriodToDb, mapTallyPeriodFromDb } from '../utils/dbAdapters';
 
 describe('Sync Logic & State Reconstruction', () => {
     it('initialPlayerTally provides valid 0-initialized stats across all periods', () => {
@@ -187,23 +188,7 @@ describe('Sync Logic & State Reconstruction', () => {
         expect(isAnonOwner).toBe(false);
     });
 
-    it('generates different signature when stats are recorded', () => {
-        const buildSignature = (state: any) => {
-            const tallySummary = Object.entries(state.tallyStats || {})
-                .map(([p, perMap]: [string, any]) => `${p}:${Object.values(perMap).map((s: any) => `${s.goles},${s.triples},${s.fallos},${s.faltasPersonales}`).join('|')}`)
-                .join(';');
-
-            return JSON.stringify({
-                gameId: state.gameId,
-                logLen: state.gameLog?.length || 0,
-                fouls: state.teamFouls,
-                oppScore: state.opponentScore,
-                period: state.currentPeriod,
-                names: state.playerNames,
-                tally: tallySummary
-            });
-        };
-
+    it('generates different signature when ANY stat or event is modified (complete 10-metric coverage)', () => {
         const stateBefore = {
             gameId: 'g1',
             gameLog: [],
@@ -212,24 +197,89 @@ describe('Sync Logic & State Reconstruction', () => {
             currentPeriod: 'First Half',
             playerNames: { '10': 'Ana' },
             tallyStats: {
-                '10': { 'First Half': { goles: 0, triples: 0, fallos: 0, faltasPersonales: 0 } }
+                '10': { 'First Half': { ...initialPlayerTally['First Half'] } }
             }
         };
 
-        const sig1 = buildSignature(stateBefore);
+        const sigOriginal = computeGameStateSignature(stateBefore);
 
-        // Increment a goal for player 10
-        const stateAfter = {
+        // 1. Goal change alters signature
+        const stateWithGoal = {
             ...stateBefore,
-            gameLog: [{ id: 'evt-1' }],
             tallyStats: {
-                '10': { 'First Half': { goles: 1, triples: 0, fallos: 0, faltasPersonales: 0 } }
+                '10': { 'First Half': { ...initialPlayerTally['First Half'], goles: 1 } }
             }
         };
+        expect(computeGameStateSignature(stateWithGoal)).not.toBe(sigOriginal);
 
-        const sig2 = buildSignature(stateAfter);
+        // 2. Recupero change alters signature
+        const stateWithRecupero = {
+            ...stateBefore,
+            tallyStats: {
+                '10': { 'First Half': { ...initialPlayerTally['First Half'], recuperos: 1 } }
+            }
+        };
+        expect(computeGameStateSignature(stateWithRecupero)).not.toBe(sigOriginal);
 
-        expect(sig1).not.toBe(sig2);
+        // 3. Asistencia change alters signature
+        const stateWithAsistencia = {
+            ...stateBefore,
+            tallyStats: {
+                '10': { 'First Half': { ...initialPlayerTally['First Half'], asistencias: 1 } }
+            }
+        };
+        expect(computeGameStateSignature(stateWithAsistencia)).not.toBe(sigOriginal);
+
+        // 4. Rebote Ofensivo change alters signature
+        const stateWithRebote = {
+            ...stateBefore,
+            tallyStats: {
+                '10': { 'First Half': { ...initialPlayerTally['First Half'], reboteOfensivo: 1 } }
+            }
+        };
+        expect(computeGameStateSignature(stateWithRebote)).not.toBe(sigOriginal);
+
+        // 5. In-place event edit (same log length, different action/id) alters signature
+        const stateWithLogA = {
+            ...stateBefore,
+            gameLog: [{ id: 'evt-1', playerNumber: '10', action: 'goles', timestamp: 1000 }]
+        };
+        const stateWithLogB = {
+            ...stateBefore,
+            gameLog: [{ id: 'evt-1-edited', playerNumber: '10', action: 'triples', timestamp: 1000 }]
+        };
+        expect(computeGameStateSignature(stateWithLogA)).not.toBe(computeGameStateSignature(stateWithLogB));
+    });
+
+    it('dbAdapters mapTallyPeriodToDb and mapTallyPeriodFromDb provide complete, safe symmetry', () => {
+        const sampleTally = {
+            goles: 2,
+            triples: 1,
+            fallos: 3,
+            recuperos: 4,
+            perdidas: 1,
+            reboteOfensivo: 5,
+            reboteDefensivo: 6,
+            asistencias: 7,
+            golesContra: 0,
+            faltasPersonales: 2
+        };
+
+        const dbRow = mapTallyPeriodToDb(sampleTally);
+        expect(dbRow.rebote_ofensivo).toBe(5);
+        expect(dbRow.rebote_defensivo).toBe(6);
+        expect(dbRow.golescontra).toBe(0);
+        expect(dbRow.faltas_personales).toBe(2);
+
+        const restored = mapTallyPeriodFromDb(dbRow);
+        expect(restored).toEqual(sampleTally);
+
+        // Handles null/undefined DB records safely with 0-defaults
+        const emptyDbRow = mapTallyPeriodFromDb({});
+        expect(emptyDbRow.goles).toBe(0);
+        expect(emptyDbRow.triples).toBe(0);
+        expect(emptyDbRow.recuperos).toBe(0);
+        expect(emptyDbRow.faltasPersonales).toBe(0);
     });
 });
 

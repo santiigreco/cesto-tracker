@@ -44,7 +44,20 @@ export const useAdminGames = () => {
                         };
                     });
                 } else {
-                    console.warn("Could not fetch user profiles via RPC for games list", rpcError);
+                    console.warn("Could not fetch user profiles via RPC for games list, falling back to profiles table", rpcError);
+                    const { data: profilesData } = await supabase
+                        .from('profiles')
+                        .select('id, full_name')
+                        .in('id', userIds);
+
+                    if (profilesData) {
+                        profilesData.forEach((p: any) => {
+                            profilesMap[p.id] = {
+                                full_name: p.full_name || 'Anónimo',
+                                email: null
+                            };
+                        });
+                    }
                 }
             }
 

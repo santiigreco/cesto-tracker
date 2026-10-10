@@ -29,7 +29,16 @@ export default function MatchRoute() {
     const { profile } = useProfile();
     const isAdmin = profile?.is_admin === true || profile?.permission_role === 'admin';
 
-    const { handleLoadGame, isLoading: syncLoading, lastSaved, handleSyncToSupabase, isAutoSaving, syncState } = useSync();
+    const {
+        handleLoadGame,
+        isLoading: syncLoading,
+        lastSaved,
+        handleSyncToSupabase,
+        isAutoSaving,
+        syncState,
+        isOnline,
+        hasUnsavedChanges
+    } = useSync();
 
     const {
         updatePlayerName,
@@ -129,41 +138,79 @@ export default function MatchRoute() {
                 gameMode={gameState.gameMode}
                 activeTab={activeTab}
                 isAdmin={isAdmin}
+                syncStatus={syncState.status}
+                hasUnsavedChanges={hasUnsavedChanges}
+                isOnline={isOnline}
             />
 
             {/* Sync Cloud Bar Indicator for Logged-in Owners */}
             {user && isGameOwner && (
                 <div className={`w-full max-w-4xl flex items-center justify-between text-xs px-3 py-1.5 mb-2 rounded border transition-colors ${
-                    syncState.status === 'error'
-                        ? 'bg-red-950/40 border-red-800/60'
-                        : 'bg-slate-800/40 border-slate-700/50'
+                    !isOnline
+                        ? 'bg-amber-950/40 border-amber-800/60'
+                        : syncState.status === 'error'
+                            ? 'bg-red-950/40 border-red-800/60'
+                            : hasUnsavedChanges
+                                ? 'bg-amber-950/30 border-amber-700/40'
+                                : 'bg-slate-800/40 border-slate-700/50'
                 }`}>
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-2 w-2">
                             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                                syncState.status === 'error' ? 'bg-red-400' : isAutoSaving ? 'bg-amber-400' : 'bg-emerald-400'
+                                !isOnline
+                                    ? 'bg-amber-400'
+                                    : syncState.status === 'error'
+                                        ? 'bg-red-400'
+                                        : isAutoSaving
+                                            ? 'bg-cyan-400'
+                                            : hasUnsavedChanges
+                                                ? 'bg-amber-400'
+                                                : 'bg-emerald-400'
                             }`}></span>
                             <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                                syncState.status === 'error' ? 'bg-red-500' : isAutoSaving ? 'bg-amber-500' : 'bg-emerald-500'
+                                !isOnline
+                                    ? 'bg-amber-500'
+                                    : syncState.status === 'error'
+                                        ? 'bg-red-500'
+                                        : isAutoSaving
+                                            ? 'bg-cyan-500'
+                                            : hasUnsavedChanges
+                                                ? 'bg-amber-500'
+                                                : 'bg-emerald-500'
                             }`}></span>
                         </span>
-                        <span className={`font-medium ${syncState.status === 'error' ? 'text-red-300' : 'text-slate-300'}`}>
-                            {syncState.status === 'error'
-                                ? `Error al sincronizar: ${syncState.message}`
-                                : isAutoSaving
-                                    ? 'Guardando cambios en la nube...'
-                                    : lastSaved
-                                        ? `Sincronizado en la nube: ${lastSaved.toLocaleTimeString('es-AR')}`
-                                        : 'En la nube (Autoguardado activo)'}
+                        <span className={`font-medium ${
+                            !isOnline
+                                ? 'text-amber-300'
+                                : syncState.status === 'error'
+                                    ? 'text-red-300'
+                                    : hasUnsavedChanges
+                                        ? 'text-amber-200'
+                                        : 'text-slate-300'
+                        }`}>
+                            {!isOnline
+                                ? 'Sin conexión a internet. Los datos se guardan en este dispositivo.'
+                                : syncState.status === 'error'
+                                    ? `Error al sincronizar: ${syncState.message}`
+                                    : isAutoSaving
+                                        ? 'Guardando cambios en la nube...'
+                                        : hasUnsavedChanges
+                                            ? 'Cambios locales pendientes de sincronizar...'
+                                            : lastSaved
+                                                ? `Sincronizado en la nube: ${lastSaved.toLocaleTimeString('es-AR')}`
+                                                : 'En la nube (Autoguardado activo)'}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
-                        {syncState.status === 'error' ? (
+                        {(!isOnline || syncState.status === 'error') ? (
                             <button
                                 onClick={() => handleSyncToSupabase(false)}
-                                className="text-red-400 hover:text-red-300 font-black uppercase text-[10px] tracking-wider transition-colors underline"
+                                disabled={!isOnline}
+                                className={`text-[10px] font-black uppercase tracking-wider transition-colors underline ${
+                                    !isOnline ? 'text-slate-500 cursor-not-allowed no-underline' : 'text-red-400 hover:text-red-300'
+                                }`}
                             >
-                                Reintentar
+                                {!isOnline ? 'Offline' : 'Reintentar'}
                             </button>
                         ) : !isAutoSaving ? (
                             <button

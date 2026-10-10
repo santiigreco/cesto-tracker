@@ -9,10 +9,11 @@ import { AdminTab } from '../types';
 interface AdminSidebarProps {
     activeTab: AdminTab;
     setActiveTab: (tab: AdminTab) => void;
-    isOwner: boolean;
+    isOwner?: boolean;
+    isAdmin?: boolean;
 }
 
-export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, isOwner }) => {
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, isOwner, isAdmin }) => {
 
     // Desktop Classes
     const desktopContainer = "hidden lg:flex w-64 bg-slate-800 border-r border-slate-700 flex-col py-6 gap-2 h-full";
@@ -26,9 +27,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
     const mobileActive = "text-cyan-400";
     const mobileInactive = "text-slate-500";
 
+    const canViewUsers = isAdmin ?? isOwner ?? true;
+
     const tabs = [
         { id: 'dashboard' as AdminTab, label: 'Resumen', icon: <ChartBarIcon className="h-6 w-6" /> },
-        ...(isOwner ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-6 w-6" /> }] : []),
+        ...(canViewUsers ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-6 w-6" /> }] : []),
         { id: 'games' as AdminTab, label: 'Historial', icon: <CalendarIcon className="h-6 w-6" /> },
     ];
 

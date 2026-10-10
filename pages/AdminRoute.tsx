@@ -63,7 +63,7 @@ const AdminRoute: React.FC = () => {
 
             {/* --- SIDEBAR --- */}
             <div className="order-2 lg:order-1 shrink-0">
-                <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} isOwner={isOwner} />
+                <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} isOwner={isOwner} isAdmin={canAccessAdmin} />
             </div>
 
             {/* --- MAIN CONTENT AREA --- */}
@@ -73,7 +73,11 @@ const AdminRoute: React.FC = () => {
                 <div className="hidden lg:flex justify-between items-center p-6 border-b border-slate-700 bg-slate-800 shrink-0">
                     <div>
                         <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center gap-3">
-                            CONTROL DE MANDO {isOwner && <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded uppercase tracking-widest font-sans">Owner</span>}
+                            CONTROL DE MANDO {isOwner ? (
+                                <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded uppercase tracking-widest font-sans">Owner</span>
+                            ) : (
+                                <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded uppercase tracking-widest font-sans">Admin</span>
+                            )}
                         </h2>
                         <p className="text-slate-400 text-xs mt-1">Gestión integral del sistema Cesto Tracker</p>
                     </div>
@@ -96,8 +100,8 @@ const AdminRoute: React.FC = () => {
 
                 {/* Scrollable Content */}
                 <div className="flex-grow overflow-y-auto custom-scrollbar p-4 lg:p-6" key={refreshKey}>
-                    {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} />}
-                    {activeTab === 'users' && isOwner && <AdminUsersView isOwner={isOwner} />}
+                    {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} isAdmin={canAccessAdmin} />}
+                    {activeTab === 'users' && canAccessAdmin && <AdminUsersView isOwner={isOwner} isAdmin={canAccessAdmin} />}
 
 
                     {activeTab === 'games' && <AdminGamesView onLoadGame={(id, asOwner) => navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`)} />}

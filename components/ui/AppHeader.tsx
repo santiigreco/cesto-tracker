@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import CloudIndicator from '@/components/ui/CloudIndicator';
 import { GameMode, GamePeriod } from '../../types';
 import { PERIOD_NAMES } from '../../constants';
+import { SyncStatus } from '../../context/SyncContext';
 
 interface AppHeaderProps {
     onOpenMobileMenu: () => void;
@@ -17,6 +18,9 @@ interface AppHeaderProps {
     isAutoSaving: boolean;
     lastSaved: Date | null;
     gameId: string | null;
+    syncStatus?: SyncStatus;
+    hasUnsavedChanges?: boolean;
+    isOnline?: boolean;
     onOpenSettings: () => void;
     isReadOnly: boolean;
     isAdmin?: boolean;
@@ -41,6 +45,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     isAutoSaving,
     lastSaved,
     gameId,
+    syncStatus,
+    hasUnsavedChanges,
+    isOnline,
     onOpenSettings,
     isReadOnly,
     isAdmin,
@@ -181,7 +188,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
                 {/* Status Row (Cloud Sync Info) */}
                 <div className="flex justify-center">
-                    <CloudIndicator isSaving={isAutoSaving} lastSaved={lastSaved} gameId={gameId} />
+                    <CloudIndicator
+                        isSaving={isAutoSaving}
+                        lastSaved={lastSaved}
+                        gameId={gameId}
+                        syncStatus={syncStatus}
+                        hasUnsavedChanges={hasUnsavedChanges}
+                        isOnline={isOnline}
+                    />
                 </div>
             </header>
         </div>
