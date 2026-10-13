@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../utils/supabaseClient';
-import { XIcon, EyeIcon, SearchIcon, CalendarIcon, TrashIcon } from '../icons';
+import { XIcon, EyeIcon, SearchIcon, CalendarIcon, TrashIcon, GoogleIcon } from '../icons';
 import Loader from '@/components/ui/Loader';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { GameMode, Settings } from '../../types';
@@ -290,10 +290,12 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                             </p>
                             {onLogin && (
                                 <button
+                                    type="button"
                                     onClick={onLogin}
-                                    className="bg-white text-slate-900 hover:bg-slate-100 font-bold px-6 py-2.5 rounded-full text-sm transition-transform hover:scale-105 shadow-lg"
+                                    className="bg-white text-slate-900 hover:bg-slate-100 font-bold px-6 py-2.5 rounded-full text-sm transition-transform hover:scale-105 shadow-lg inline-flex items-center gap-2.5 cursor-pointer"
                                 >
-                                    Iniciar Sesión con Google
+                                    <GoogleIcon className="h-4 w-4 flex-shrink-0" />
+                                    <span>Iniciar Sesión con Google</span>
                                 </button>
                             )}
                         </div>

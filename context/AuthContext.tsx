@@ -205,14 +205,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 sessionStorage.setItem(AUTH_REDIRECT_STORAGE_KEY, targetPath);
             }
 
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: window.location.origin
                 }
             });
 
-            return { error };
+            if (error) {
+                return { error };
+            }
+
+            if (data?.url && typeof window !== 'undefined') {
+                window.location.assign(data.url);
+            }
+
+            return { error: null };
         } catch (err: any) {
             console.error('[AUTH_GOOGLE] Error al iniciar sesión con Google:', err);
             return { error: err };

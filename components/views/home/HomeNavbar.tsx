@@ -25,7 +25,11 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
   const { openAuthModal } = useUI();
 
   const handleLoginClick = () => {
-    openAuthModal({ initialMode: 'login' });
+    if (onLogin) {
+      onLogin();
+    } else {
+      openAuthModal({ initialMode: 'login' });
+    }
   };
 
   return (
