@@ -143,8 +143,8 @@ export default function MatchRoute() {
                 isOnline={isOnline}
             />
 
-            {/* Sync Cloud Bar Indicator for Logged-in Owners */}
-            {user && isGameOwner && (
+            {/* Sync Cloud Bar Indicator for Logged-in Owners (Displayed on error or offline) */}
+            {user && isGameOwner && (!isOnline || syncState.status === 'error') && (
                 <div className={`w-full max-w-4xl flex items-center justify-between text-xs px-3 py-1.5 mb-2 rounded border transition-colors ${
                     !isOnline
                         ? 'bg-amber-950/40 border-amber-800/60'
@@ -242,7 +242,7 @@ export default function MatchRoute() {
                 </div>
             )}
 
-            <div className="w-full max-w-4xl flex flex-col z-10 flex-grow">
+            <div className="w-full max-w-4xl flex flex-col flex-grow">
                 <Scoreboard />
 
                 {/* Read-Only Banner / Mode Switcher */}
