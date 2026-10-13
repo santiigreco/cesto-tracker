@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WhatsappIcon } from '@/components/icons';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -13,9 +14,11 @@ const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 export const HomeFooter: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <>
-      <section className="mt-32 max-w-2xl mx-auto px-6 text-center">
+      <section className="mt-12 sm:mt-16 max-w-2xl mx-auto px-6 text-center">
         <div className="p-8 rounded-[2.5rem] bg-gradient-to-b from-slate-800/40 to-transparent border border-slate-800/50">
           <span className="text-4xl mb-4 block">🏐❤️</span>
           <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tighter">
@@ -26,6 +29,12 @@ export const HomeFooter: React.FC = () => {
             publicidades, solo código y pasión. Si te sirve el proyecto, ¡compartilo en tu club!
           </p>
           <div className="flex flex-wrap justify-center gap-6">
+            <button
+              onClick={() => navigate('/faq')}
+              className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
+            >
+              <span>❓</span> Preguntas Frecuentes
+            </button>
             <a
               href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Quiero%20sumarme%20como%20admin..."
               target="_blank"

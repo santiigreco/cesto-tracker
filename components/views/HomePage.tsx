@@ -3,13 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { RosterPlayer } from '../../types';
 import TeamSelectorModal from '@/components/modals/TeamSelectorModal';
 import { useProfile } from '../../hooks/useProfile';
-import InstallApp from '@/components/views/InstallApp';
 
 import { HomeNavbar } from './home/HomeNavbar';
 import { HomeHero } from './home/HomeHero';
-import { HomeVisualShowcase } from './home/HomeVisualShowcase';
-import { HomeFeatures } from './home/HomeFeatures';
-import { HomeFaqSection } from './home/HomeFaqSection';
 import { HomeFooter } from './home/HomeFooter';
 import { LastSetupData } from './home/HomeActionGrid';
 
@@ -86,8 +82,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(
         />
 
         {/* Main Content Flow: Top-to-Bottom */}
-        <main className="flex-grow flex flex-col relative w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 z-10">
-          {/* 2. Hero Section Deportiva: Titular conciso + Subtítulo 2 líneas + CTA Grande Centrado */}
+        <main className="flex-grow flex flex-col justify-center relative w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 z-10">
+          {/* 2. Hero Section Deportiva: Titular conciso + Acciones directas */}
           <HomeHero
             user={user}
             profile={profile}
@@ -97,22 +93,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(
             onLoadGameClick={onLoadGameClick}
             onLogin={onLogin}
           />
-
-          {/* 3. Visual Showcase Minimalista: Mockup limpio de la interfaz de anotación */}
-          <section className="my-6 sm:my-10 w-full">
-            <HomeVisualShowcase />
-          </section>
-
-          {/* 4. Bento Grid de 3 Pilares Deportivos: Anotación Ágil, Precisión Técnica, Estadísticas Consolidadas */}
-          <HomeFeatures />
-
-          {/* Discreet PWA Install Banner */}
-          <div className="max-w-xl mx-auto w-full px-4 mt-16 sm:mt-20">
-            <InstallApp variant="card" />
-          </div>
-
-          {/* FAQ & Support */}
-          <HomeFaqSection />
 
           {/* Clean Community Footer */}
           <HomeFooter />
