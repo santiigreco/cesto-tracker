@@ -121,7 +121,7 @@ export default function MatchRoute() {
             <AppHeader
                 user={user}
                 onLogin={() => openAuthModal({ initialMode: 'login' })}
-                onOpenProfile={() => openModal('profile')}
+                onOpenProfile={() => navigate('/perfil')}
                 onOpenSettings={() => openModal('settings')}
                 onOpenMobileMenu={() => openModal('mobileMenu')}
                 onRequestReturnHome={() => openModal('returnHome')}

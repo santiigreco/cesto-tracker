@@ -1,6 +1,9 @@
 
 import type ExcelJS from 'exceljs';
 import { GameState } from '../types';
+import { supabase } from './supabaseClient';
+import { initialPlayerTally, initialGameState } from '../context/GameContext';
+import { mapTallyPeriodFromDb } from './dbAdapters';
 
 // Helper types for the specific stats structure
 interface CalculatedStats {
@@ -209,4 +212,91 @@ export const generateFederationExcel = async (gameState: GameState) => {
     const saveAs = (FileSaver as any).saveAs || FileSaver;
     saveAs(blob, fileName);
 };
+
+export const exportGameByIdToExcel = async (gameId: string): Promise<boolean> => {
+    const [gameRes, tallyRes] = await Promise.all([
+        supabase.from('games').select('*').eq('id', gameId).single(),
+        supabase.from('tally_stats').select('*').eq('game_id', gameId),
+    ]);
+
+    if (gameRes.error) throw gameRes.error;
+    const gameData = gameRes.data;
+    const loadedTallyStats: any = {};
+
+    if (tallyRes.data && tallyRes.data.length > 0) {
+        tallyRes.data.forEach((stat: any) => {
+            const player = stat.player_number?.toString();
+            if (!player) return;
+            if (!loadedTallyStats[player]) {
+                loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
+            }
+            const period = stat.period;
+            if (loadedTallyStats[player][period]) {
+                loadedTallyStats[player][period] = mapTallyPeriodFromDb(stat);
+            }
+        });
+    }
+
+    const sourceStats = gameData.settings?.tallyStats || gameData.tallyStats;
+    if (sourceStats && Object.keys(sourceStats).length > 0) {
+        Object.entries(sourceStats).forEach(([player, plStats]: [string, any]) => {
+            const pKey = player.toString();
+            if (!loadedTallyStats[pKey]) {
+                loadedTallyStats[pKey] = JSON.parse(JSON.stringify(initialPlayerTally));
+            }
+            if (plStats['First Half'] || plStats['Second Half']) {
+                Object.keys(plStats).forEach(period => {
+                    if (loadedTallyStats[pKey][period]) {
+                        loadedTallyStats[pKey][period] = {
+                            ...loadedTallyStats[pKey][period],
+                            ...plStats[period],
+                            reboteOfensivo: plStats[period].reboteOfensivo ?? plStats[period].rebote_ofensivo ?? 0,
+                            reboteDefensivo: plStats[period].reboteDefensivo ?? plStats[period].rebote_defensivo ?? 0,
+                            golesContra: plStats[period].golesContra ?? plStats[period].goles_contra ?? 0,
+                            faltasPersonales: plStats[period].faltasPersonales ?? plStats[period].faltas_personales ?? 0
+                        };
+                    }
+                });
+            }
+        });
+    }
+
+    const availablePlayers = gameData.available_players || [];
+    ['Equipo', ...availablePlayers].forEach(p => {
+        if (!loadedTallyStats[p]) {
+            loadedTallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
+        }
+    });
+
+    const reconstructedGameState: GameState = {
+        ...initialGameState,
+        gameId: gameData.id,
+        userId: gameData.user_id,
+        gameMode: gameData.game_mode,
+        isSetupComplete: true,
+        hasSeenHomepage: true,
+        settings: {
+            ...gameData.settings,
+            tournamentId: gameData.settings?.tournamentId || null,
+            tournamentName: gameData.settings?.tournamentName || null,
+            gameName: gameData.settings?.gameName || gameData.opponent_name || '',
+            myTeam: gameData.settings?.myTeam || '',
+        },
+        availablePlayers,
+        playerNames: gameData.player_names || {},
+        activePlayers: availablePlayers.slice(0, 6),
+        currentPeriod: gameData.settings?.currentPeriod || 'First Half',
+        opponentScore: gameData.settings?.opponentScore ?? 0,
+        shots: [],
+        tallyStats: loadedTallyStats,
+        teamFouls: gameData.settings?.teamFouls || gameData.team_fouls || initialGameState.teamFouls,
+        gameLog: gameData.settings?.gameLog || [],
+        tallyRedoLog: [],
+        isReadOnly: true,
+    };
+
+    await generateFederationExcel(reconstructedGameState);
+    return true;
+};
+
 

@@ -15,7 +15,6 @@ import ShareModal from '@/components/modals/ShareModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import NotificationPopup from '@/components/ui/NotificationPopup';
 import GameEventEditModal from '@/components/modals/GameEventEditModal';
-import UserProfileModal from '@/components/modals/UserProfileModal';
 
 interface AppModalsProps {
     tabTranslations: { [key in AppTab]: string };
@@ -389,25 +388,6 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     availablePlayers={props.playersForTally}
                 />
             )}
-
-            {user && modals.profile?.isOpen && (
-                <UserProfileModal
-                    isOpen={modals.profile.isOpen}
-                    onClose={() => closeModal('profile')}
-                    user={user}
-                    onLogout={handleLogout}
-                    onLoadGame={async (id, asOwner) => {
-                        try {
-                            await handleLoadGame(id, asOwner);
-                            closeModal('profile');
-                            setActiveTab('statistics');
-                        } catch (err: any) {
-                            showToast(`No se pudo cargar el partido: ${err.message}`, 'error');
-                        }
-                    }}
-                />
-            )}
-
         </>
     );
 };

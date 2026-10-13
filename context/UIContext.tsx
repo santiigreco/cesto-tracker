@@ -14,7 +14,6 @@ export type ModalName =
     | 'loadGame'
     | 'mobileMenu'
     | 'playerSelection'
-    | 'profile'
     | 'finishMatch'
     | 'completeNames';
 

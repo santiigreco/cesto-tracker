@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RosterPlayer } from '../../types';
-import UserProfileModal from '@/components/modals/UserProfileModal';
 import TeamSelectorModal from '@/components/modals/TeamSelectorModal';
-import { supabase } from '../../utils/supabaseClient';
 import { useProfile } from '../../hooks/useProfile';
 import InstallApp from '@/components/views/InstallApp';
 
@@ -27,7 +26,7 @@ const LAST_SETUP_KEY = 'cesto_last_team_setup';
 
 const HomePage: React.FC<HomePageProps> = React.memo(
   ({ onStart, onLoadGameClick, user, onLogin, onLoadGame, canAccessAdmin }) => {
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const navigate = useNavigate();
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const { profile } = useProfile();
@@ -44,11 +43,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(
       }
       return null;
     })();
-
-    const handleLogout = async () => {
-      await (supabase.auth as any).signOut();
-      setIsProfileOpen(false);
-    };
 
     const handleStartClick = () => {
       setIsTeamSelectorOpen(true);
@@ -87,7 +81,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(
           user={user}
           profile={profile}
           onLogin={onLogin}
-          onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenProfile={() => navigate('/perfil')}
           onStartClick={handleStartClick}
         />
 
@@ -123,17 +117,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(
           {/* Clean Community Footer */}
           <HomeFooter />
         </main>
-
-        {/* Modals */}
-        {user && (
-          <UserProfileModal
-            isOpen={isProfileOpen}
-            onClose={() => setIsProfileOpen(false)}
-            user={user}
-            onLogout={handleLogout}
-            onLoadGame={onLoadGame}
-          />
-        )}
 
         {isTeamSelectorOpen && (
           <TeamSelectorModal

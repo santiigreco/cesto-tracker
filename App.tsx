@@ -11,6 +11,7 @@ const SetupRoute = lazy(() => import('./pages/SetupRoute'));
 const MatchRoute = lazy(() => import('./pages/MatchRoute'));
 const AdminRoute = lazy(() => import('./pages/AdminRoute'));
 const FaqRoute = lazy(() => import('./pages/FaqRoute'));
+const ProfileRoute = lazy(() => import('./pages/ProfileRoute'));
 
 const RouteLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
@@ -29,6 +30,7 @@ function App() {
           <Route path="/setup" element={<SetupRoute />} />
           <Route path="/match/:id" element={<MatchRoute />} />
 
+          <Route path="/perfil" element={<ProfileRoute />} />
           <Route path="/admin" element={<AdminRoute />} />
           <Route path="/faq" element={<FaqRoute />} />
 

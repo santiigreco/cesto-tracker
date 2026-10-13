@@ -85,6 +85,26 @@ export const useTeamManager = () => {
         }
     };
 
+    const updateTeam = async (id: string, name: string, players: RosterPlayer[], category?: string) => {
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('saved_teams')
+                .update({ name, players, category })
+                .eq('id', id);
+
+            if (error) throw error;
+            setTeams(prev => prev.map(t => (t.id === id ? { ...t, name, players, category } : t)));
+            return true;
+        } catch (err: any) {
+            console.error(err);
+            setError('Error al actualizar el equipo.');
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const deleteTeam = async (id: string) => {
         try {
             const { error } = await supabase
@@ -106,6 +126,7 @@ export const useTeamManager = () => {
         error,
         fetchTeams,
         saveTeam,
+        updateTeam,
         deleteTeam
     };
 };
