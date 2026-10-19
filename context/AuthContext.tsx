@@ -174,6 +174,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [user, updateProfile]);
 
     useEffect(() => {
+        // Registers real user activity (throttled to once per hour per browser)
+        const touchLastSeen = (userId: string) => {
+            const key = `cesto_last_seen_${userId}`;
+            const last = Number(localStorage.getItem(key) || 0);
+            if (Date.now() - last < 60 * 60 * 1000) return;
+            supabase.rpc('touch_last_seen').then(({ error }) => {
+                if (error) {
+                    console.warn('[AUTH] No se pudo registrar last_seen:', error.message);
+                } else {
+                    localStorage.setItem(key, String(Date.now()));
+                }
+            });
+        };
+
         // 1. Obtener sesión inicial
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
@@ -181,6 +195,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setAuthLoading(false);
 
             if (session?.user) {
+                touchLastSeen(session.user.id);
                 fetchProfileForUser(session.user.id, session.user);
                 checkAndExecutePostAuthRedirect();
             } else {

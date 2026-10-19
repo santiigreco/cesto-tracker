@@ -13,72 +13,37 @@ const InstagramIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const LINK_CLASS =
+  'flex items-center gap-2 min-h-[44px] px-2 text-slate-400 hover:text-white transition-colors text-sm font-bold';
+
+/** Single-line footer: secondary links only. Admin recruitment and the project story live in /faq. */
 export const HomeFooter: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <>
-      <section className="mt-12 sm:mt-16 max-w-2xl mx-auto px-6 text-center">
-        <div className="p-8 rounded-[2.5rem] bg-gradient-to-b from-slate-800/40 to-transparent border border-slate-800/50">
-          <span className="text-4xl mb-4 block">🏐❤️</span>
-          <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tighter">
-            Hecho a pulmón para el Cestoball
-          </h3>
-          <p className="text-slate-400 text-sm leading-relaxed mb-6">
-            Cesto Tracker es un proyecto independiente desarrollado para jerarquizar el deporte. Sin sponsors ni
-            publicidades, solo código y pasión. Si te sirve el proyecto, ¡compartilo en tu club!
-          </p>
-          <div className="flex flex-wrap justify-center gap-6">
-            <button
-              onClick={() => navigate('/faq')}
-              className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
-            >
-              <span>❓</span> Preguntas Frecuentes
-            </button>
-            <a
-              href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Quiero%20sumarme%20como%20admin..."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
-            >
-              <span>🛠️</span> Sumate como Admin
-            </a>
-            <a
-              href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20idea%20o%20comentario%20sobre%20la%20app..."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
-            >
-              <WhatsappIcon className="h-4 w-4" /> Ideas & Feedback
-            </a>
-            <a
-              href="https://instagram.com/gresolutions"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
-            >
-              <InstagramIcon className="h-4 w-4" /> Instagram
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <footer className="w-full py-12 text-center border-t border-slate-800/50 bg-slate-950/50 backdrop-blur-md">
-        <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2">
-          Cesto Tracker © 2026
-        </p>
-        <p className="text-slate-500 text-[10px] items-center justify-center gap-1 hidden sm:flex">
-          Desarrollado con pasión por{' '}
-          <a
-            href="https://instagram.com/gresolutions"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-400 hover:text-cyan-400 transition-colors underline decoration-slate-700 underline-offset-4"
-          >
-            Gresolutions
-          </a>
-        </p>
-      </footer>
-    </>
+    <footer className="w-full mt-12 py-6 border-t border-slate-800/50 text-center">
+      <div className="flex flex-wrap justify-center items-center gap-x-4">
+        <button onClick={() => navigate('/faq')} className={LINK_CLASS}>
+          Preguntas frecuentes
+        </button>
+        <a
+          href="https://api.whatsapp.com/send/?phone=5491163303194&text=Hola!%20Tengo%20una%20idea%20o%20comentario%20sobre%20la%20app..."
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK_CLASS}
+        >
+          <WhatsappIcon className="h-4 w-4" /> Feedback
+        </a>
+        <a
+          href="https://instagram.com/gresolutions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK_CLASS}
+        >
+          <InstagramIcon className="h-4 w-4" /> Instagram
+        </a>
+      </div>
+      <p className="text-slate-500 text-xs mt-2">Cesto Tracker © 2026 · Proyecto independiente</p>
+    </footer>
   );
 };

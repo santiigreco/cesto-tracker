@@ -134,3 +134,10 @@ export interface UserProfile {
   games_count?: number; // Contador de partidos registrados (gamificación)
   updated_at?: string;
 }
+
+/** Last team setup persisted locally, used for the "resume" quick-start on the landing page. */
+export interface LastSetupData {
+  myTeam: string;
+  players?: string[];
+  playerNames?: Record<string, string>;
+}

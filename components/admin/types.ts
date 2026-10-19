@@ -16,6 +16,8 @@ export interface AdminProfile {
     created_at: string;
     updated_at: string;
     last_sign_in_at?: string | null;
+    last_seen_at?: string | null;
+    last_game_at?: string | null;
 }
 
 

@@ -174,9 +174,14 @@ export const AdminUsersView: React.FC<{ isOwner: boolean; isAdmin?: boolean }> =
                                     </div>
                                     {user.email && <div className="text-xs text-cyan-500/80">{user.email}</div>}
                                     <div className="text-[10px] text-slate-500 font-mono">{user.id.substring(0, 16)}…</div>
-                                    {user.last_sign_in_at && (
+                                    {(user.last_seen_at || user.last_sign_in_at) && (
                                         <div className="text-[10px] text-slate-600 mt-0.5">
-                                            Último acceso: {new Date(user.last_sign_in_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            Última actividad: {new Date((user.last_seen_at || user.last_sign_in_at) as string).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </div>
+                                    )}
+                                    {user.last_game_at && (
+                                        <div className="text-[10px] text-slate-600">
+                                            Último partido: {new Date(user.last_game_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </div>
                                     )}
                                     {user.created_at && (

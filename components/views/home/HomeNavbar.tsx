@@ -10,7 +10,6 @@ interface HomeNavbarProps {
   profile?: UserProfile | null;
   onLogin?: () => void;
   onOpenProfile: () => void;
-  onStartClick: () => void;
 }
 
 export const HomeNavbar: React.FC<HomeNavbarProps> = React.memo(({
@@ -19,7 +18,6 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = React.memo(({
   profile,
   onLogin,
   onOpenProfile,
-  onStartClick,
 }) => {
   const navigate = useNavigate();
   const { openAuthModal } = useUI();
@@ -37,14 +35,9 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = React.memo(({
       {/* Clean Project Logo */}
       <div className="flex items-center gap-2.5 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
         <span className="text-2xl filter drop-shadow">🏐</span>
-        <div className="flex flex-col">
-          <span className="font-black text-lg tracking-tight text-white leading-none">
-            Cesto Tracker
-          </span>
-          <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest leading-none mt-1">
-            Planilla Oficial
-          </span>
-        </div>
+        <span className="font-black text-lg tracking-tight text-white leading-none">
+          Cesto Tracker
+        </span>
       </div>
 
       {/* Right Action: Single Prominent CTA */}
@@ -77,22 +70,13 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = React.memo(({
         ) : (
           <button
             onClick={handleLoginClick}
-            className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 hover:border-slate-500 transition-colors active:scale-95 touch-manipulation"
+            className="flex items-center gap-1.5 text-slate-200 hover:text-white text-sm font-bold px-3.5 min-h-[44px] rounded-xl bg-slate-900/90 border border-slate-700 hover:border-slate-500 transition-colors active:scale-95 touch-manipulation"
             title="Iniciar sesión o crear cuenta"
           >
-            <GoogleIcon className="h-3.5 w-3.5" />
-            <span className="hidden xs:inline">Ingresar</span>
+            <GoogleIcon className="h-4 w-4" />
+            <span>Ingresar</span>
           </button>
         )}
-
-        {/* The Single Clear Primary CTA: "Anotar Partido" */}
-        <button
-          onClick={onStartClick}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-        >
-          <span>⚡</span>
-          <span>Anotar Partido</span>
-        </button>
       </div>
     </header>
   );

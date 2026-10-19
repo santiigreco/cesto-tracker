@@ -1,12 +1,9 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { UserProfile } from '@/types';
-import { LastSetupData } from './HomeActionGrid';
-import { useUI } from '@/context/UIContext';
+import { LastSetupData, UserProfile } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
 
 interface HomeHeroProps {
-  user?: any;
+  user?: unknown;
   profile?: UserProfile | null;
   lastSetup: LastSetupData | null;
   onStartClick: () => void;
@@ -15,6 +12,10 @@ interface HomeHeroProps {
   onLogin?: () => void;
 }
 
+/**
+ * Landing hero: headline + single primary CTA + one secondary text link.
+ * Everything else (profile, login) lives in the navbar to avoid duplicated actions.
+ */
 export const HomeHero: React.FC<HomeHeroProps> = ({
   user,
   profile,
@@ -23,27 +24,9 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   onQuickStart,
   onLoadGameClick,
 }) => {
-  const navigate = useNavigate();
-  const { openAuthModal } = useUI();
-
   return (
     <section className="text-center max-w-3xl mx-auto pt-6 sm:pt-12 pb-6 px-4 select-none">
-      {/* Category Pill Tag + Optional Club */}
-      <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-xs font-black uppercase tracking-widest">
-          <span>🏐</span>
-          <span>Planilla Técnica Oficial · Cestoball</span>
-        </div>
-
-        {profile?.favorite_club && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold shadow-sm">
-            <TeamLogo teamName={profile.favorite_club} className="h-4 w-4" />
-            <span>{profile.favorite_club}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Titular Conciso y Directo */}
+      {/* Titular */}
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.08] mb-5">
         Llevá las estadísticas de tu partido <br className="hidden sm:inline" />
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-300 to-cyan-400">
@@ -51,61 +34,54 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         </span>
       </h1>
 
-      {/* Subtítulo Simplificado */}
-      <p className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto leading-relaxed font-normal mb-8">
-        La planilla digital para planilleros, técnicos y clubes.
-        Registrá goles, faltas y recuperos al instante con precisión reglamentaria.
+      {/* Subtítulo */}
+      <p className="text-base sm:text-lg text-slate-300 max-w-xl mx-auto leading-relaxed font-normal mb-8">
+        La planilla digital de cestoball para planilleros, técnicos y clubes.
       </p>
 
-      {/* CTA Principal Hero */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
+      {/* CTA principal único */}
+      <div className="flex flex-col items-center justify-center gap-3">
         <button
-          onClick={onStartClick}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-400 via-cyan-500 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-base sm:text-lg px-8 py-4 rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          onClick={lastSetup ? onQuickStart : onStartClick}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-400 via-cyan-500 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-base sm:text-lg px-8 py-4 min-h-[56px] rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
         >
-          <span className="text-xl">📋</span>
-          <span>Crear Nueva Planilla</span>
+          {lastSetup ? (
+            <>
+              <TeamLogo teamName={lastSetup.myTeam} className="h-6 w-6" />
+              <span>Empezar planilla · {lastSetup.myTeam}</span>
+            </>
+          ) : profile?.favorite_club ? (
+            <>
+              <TeamLogo teamName={profile.favorite_club} className="h-6 w-6" />
+              <span>Empezar planilla</span>
+            </>
+          ) : (
+            <span>Empezar planilla</span>
+          )}
         </button>
 
-        {/* Quick Resume Button if last team setup exists */}
+        {/* Con plantel previo, elegir otro club sigue siendo posible */}
         {lastSetup && (
           <button
-            onClick={onQuickStart}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900/90 hover:bg-slate-800/90 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-sm px-6 py-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+            onClick={onStartClick}
+            className="min-h-[44px] px-3 text-sm font-bold text-slate-300 hover:text-white underline underline-offset-4 decoration-slate-600 transition-colors"
           >
-            <span>⚡</span>
-            <span>Reanudar {lastSetup.myTeam}</span>
+            Elegir otro equipo
           </button>
         )}
-      </div>
 
-      {/* Secondary Clean Action Chips */}
-      <div className="flex flex-wrap items-center justify-center gap-2.5 mt-6">
+        {/* Promesa de fricción baja */}
+        <p className="text-sm text-slate-300 font-medium">
+          Sin registro · Se guarda en tu dispositivo · Exporta a Excel
+        </p>
+
+        {/* Acceso a resultados */}
         <button
           onClick={onLoadGameClick}
-          className="hover:text-cyan-400 text-xs font-bold text-slate-400 bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
+          className="min-h-[44px] px-3 text-sm font-bold text-cyan-300 hover:text-cyan-200 transition-colors"
         >
-          <span>📂</span>
-          <span>Historial de Partidos</span>
+          {user ? 'Mis partidos →' : 'Ver partidos de la comunidad →'}
         </button>
-
-        {user ? (
-          <button
-            onClick={() => navigate('/perfil')}
-            className="hover:text-emerald-400 text-xs font-bold text-slate-400 bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
-          >
-            <span>👤</span>
-            <span>Mi Perfil & Planteles</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => openAuthModal({ initialMode: 'login', title: 'Ingresá para sincronizar' })}
-            className="hover:text-cyan-400 text-xs font-bold text-slate-400 bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
-          >
-            <span>🔑</span>
-            <span>Ingresar con Google</span>
-          </button>
-        )}
       </div>
     </section>
   );

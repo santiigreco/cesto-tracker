@@ -1,12 +1,12 @@
 import React, { Suspense, lazy, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RosterPlayer } from '../../types';
+import { RosterPlayer, LastSetupData } from '../../types';
 import { useProfile } from '../../hooks/useProfile';
 
 import { HomeNavbar } from './home/HomeNavbar';
 import { HomeHero } from './home/HomeHero';
 import { HomeFooter } from './home/HomeFooter';
-import { LastSetupData } from './home/HomeActionGrid';
+import { HomeShowcase } from './home/HomeShowcase';
 
 const TeamSelectorModal = lazy(() => import('@/components/modals/TeamSelectorModal'));
 
@@ -59,10 +59,10 @@ const HomePage: React.FC<HomePageProps> = React.memo(
       onStart(name, roster);
     }, [onStart]);
 
+    // Closing the selector only dismisses it; it must not start a new sheet.
     const handleCloseTeamSelector = useCallback(() => {
       setIsTeamSelectorOpen(false);
-      onStart(profile?.favorite_club || undefined);
-    }, [onStart, profile?.favorite_club]);
+    }, []);
 
     const handleOpenProfile = useCallback(() => {
       navigate('/perfil');
@@ -70,25 +70,21 @@ const HomePage: React.FC<HomePageProps> = React.memo(
 
     return (
       <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
-        {/* Subtle Ambient Background Gradients */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full"></div>
-          <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/10 blur-[120px] rounded-full"></div>
-        </div>
+        {/* Static ambient gradient (no blur filters for mobile performance) */}
+        <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_top_left,rgba(6,182,212,0.10),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(16,185,129,0.08),transparent_45%)]" />
 
-        {/* 1. Header Simplificado: Logo limpio + Solo CTA claro 'Anotar Partido' */}
+        {/* 1. Header minimalista: logo + acceso/perfil */}
         <HomeNavbar
           canAccessAdmin={canAccessAdmin}
           user={user}
           profile={profile}
           onLogin={onLogin}
           onOpenProfile={handleOpenProfile}
-          onStartClick={handleStartClick}
         />
 
         {/* Main Content Flow: Top-to-Bottom */}
         <main className="flex-grow flex flex-col justify-center relative w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 z-10">
-          {/* 2. Hero Section Deportiva: Titular conciso + Acciones directas */}
+          {/* 2. Hero: titular + CTA único + vista previa de la planilla */}
           <HomeHero
             user={user}
             profile={profile}
@@ -98,6 +94,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(
             onLoadGameClick={onLoadGameClick}
             onLogin={onLogin}
           />
+
+          <HomeShowcase />
 
           {/* Clean Community Footer */}
           <HomeFooter />
