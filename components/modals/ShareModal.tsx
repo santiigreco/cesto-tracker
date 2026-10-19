@@ -1,13 +1,29 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { GameState, PlayerStats } from '../../types';
-import { XIcon } from '../icons';
-import { ShareIcon } from '../icons';
-import { ClipboardIcon } from '../icons';
+import { XIcon, ShareIcon, ClipboardIcon } from '../icons';
 import ShareReport from '@/components/game/ShareReport';
 
-// TypeScript declaration for html2canvas global variable
-declare const html2canvas: any;
+// Lazy loader for html2canvas (avoids loading 200 KB on initial page load)
+let html2canvasPromise: Promise<any> | null = null;
+const loadHtml2Canvas = (): Promise<any> => {
+    if (typeof window !== 'undefined' && (window as any).html2canvas) {
+        return Promise.resolve((window as any).html2canvas);
+    }
+    if (html2canvasPromise) return html2canvasPromise;
+
+    html2canvasPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        script.async = true;
+        script.onload = () => resolve((window as any).html2canvas);
+        script.onerror = () => {
+            html2canvasPromise = null;
+            reject(new Error('No se pudo cargar el generador de imágenes (html2canvas).'));
+        };
+        document.head.appendChild(script);
+    });
+    return html2canvasPromise;
+};
 
 interface ShareModalProps {
     isOpen: boolean;
@@ -49,6 +65,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, gameState, pla
         if (!reportRef.current || isCapturing) return;
         setIsCapturing(true);
         try {
+            const html2canvas = await loadHtml2Canvas();
             const canvas = await html2canvas(reportRef.current, {
                 backgroundColor: '#0f172a',
                 useCORS: true,

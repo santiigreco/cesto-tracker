@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useGameContext } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,10 +10,15 @@ import GameMainContent from '@/components/game/GameMainContent';
 import AppModals from '@/components/ui/AppModals';
 import Loader from '@/components/ui/Loader';
 import Scoreboard from '@/components/game/Scoreboard';
-import { GameEvent, StatAction, AppTab, SavedTeam } from '../types';
+import { GameEvent, StatAction, AppTab, GamePeriod } from '../types';
 import { STAT_LABELS } from '../constants';
 import { useProfile } from '../hooks/useProfile';
 import { useSync } from '../context/SyncContext';
+
+const TAB_TRANSLATIONS: Record<AppTab, string> = {
+    tally: 'Planilla',
+    statistics: 'Estadísticas'
+};
 
 export default function MatchRoute() {
     const { id } = useParams();
@@ -23,7 +28,7 @@ export default function MatchRoute() {
     const { gameState, setGameState } = useGameContext();
     const { user, authLoading } = useAuth();
     const {
-        activeTab, setActiveTab, openModal, closeModal,
+        activeTab, setActiveTab, openModal,
         actionToAssign, setActionToAssign, openAuthModal
     } = useUI();
     const { profile } = useProfile();
@@ -41,9 +46,7 @@ export default function MatchRoute() {
     } = useSync();
 
     const {
-        updatePlayerName,
-        handleUpdateTallyStat, handleUndoTally, handleRedoTally,
-        handleDeleteGameEvent, handleEditGameEvent
+        handleUndoTally, handleRedoTally
     } = useGameLogic();
 
     const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null);
@@ -72,18 +75,50 @@ export default function MatchRoute() {
         }
     }, [id, gameState.gameId, isEditRequested, handleLoadGame, setActiveTab, navigate]);
 
-    const tabsForCurrentMode = useMemo(() => ['tally', 'statistics'] as const, []);
+    const tabsForCurrentMode = useMemo(() => ['tally', 'statistics'] as AppTab[], []);
 
     useEffect(() => {
-        if (!tabsForCurrentMode.includes(activeTab as any)) {
+        if (!tabsForCurrentMode.includes(activeTab)) {
             setActiveTab('tally');
         }
     }, [tabsForCurrentMode, activeTab, setActiveTab]);
 
-    const tabTranslations: Record<AppTab, string> = {
-        tally: 'Planilla',
-        statistics: 'Estadísticas'
-    };
+    const handleLogin = useCallback(() => {
+        openAuthModal({ initialMode: 'login' });
+    }, [openAuthModal]);
+
+    const handleOpenProfile = useCallback(() => {
+        navigate('/perfil');
+    }, [navigate]);
+
+    const handleOpenSettings = useCallback(() => {
+        openModal('settings');
+    }, [openModal]);
+
+    const handleOpenMobileMenu = useCallback(() => {
+        openModal('mobileMenu');
+    }, [openModal]);
+
+    const handleRequestReturnHome = useCallback(() => {
+        openModal('returnHome');
+    }, [openModal]);
+
+    const handleManualSave = useCallback(() => {
+        handleSyncToSupabase(false);
+    }, [handleSyncToSupabase]);
+
+    const handlePeriodChange = useCallback((p: GamePeriod) => {
+        setGameState(prev => ({ ...prev, currentPeriod: p }));
+    }, [setGameState]);
+
+    const handleActionSelect = useCallback((a: StatAction) => {
+        setActionToAssign(a);
+        openModal('playerSelection');
+    }, [setActionToAssign, openModal]);
+
+    const handleOpenShareModal = useCallback(() => {
+        openModal('share');
+    }, [openModal]);
 
     if (authLoading || syncLoading) {
         return (
@@ -98,15 +133,7 @@ export default function MatchRoute() {
         return <Navigate to="/setup" replace />;
     }
 
-    const renderModalsProps = {
-        tabTranslations,
-        tabs: tabsForCurrentMode as any,
-        playersForTally: gameState.availablePlayers,
-        actionLabel: actionToAssign ? STAT_LABELS[actionToAssign as any] : '',
-        editingEvent,
-        setEditingEvent,
-        handleTeamLoadedFromHome: (_team: SavedTeam) => { }
-    };
+    const actionLabel = actionToAssign ? STAT_LABELS[actionToAssign] : '';
 
     return (
         <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 pb-24 md:pb-8 relative">
@@ -120,19 +147,19 @@ export default function MatchRoute() {
 
             <AppHeader
                 user={user}
-                onLogin={() => openAuthModal({ initialMode: 'login' })}
-                onOpenProfile={() => navigate('/perfil')}
-                onOpenSettings={() => openModal('settings')}
-                onOpenMobileMenu={() => openModal('mobileMenu')}
-                onRequestReturnHome={() => openModal('returnHome')}
-                onSave={() => handleSyncToSupabase(false)}
+                onLogin={handleLogin}
+                onOpenProfile={handleOpenProfile}
+                onOpenSettings={handleOpenSettings}
+                onOpenMobileMenu={handleOpenMobileMenu}
+                onRequestReturnHome={handleRequestReturnHome}
+                onSave={handleManualSave}
                 isAutoSaving={isAutoSaving}
                 lastSaved={lastSaved}
                 gameId={gameState.gameId}
                 gameName={gameState.settings.gameName}
                 myTeam={gameState.settings.myTeam}
                 currentPeriod={gameState.currentPeriod}
-                onPeriodChange={(p) => setGameState(prev => ({ ...prev, currentPeriod: p }))}
+                onPeriodChange={handlePeriodChange}
                 isReadOnly={gameState.isReadOnly}
                 isSetupComplete={gameState.isSetupComplete}
                 gameMode={gameState.gameMode}
@@ -204,7 +231,7 @@ export default function MatchRoute() {
                     <div className="flex items-center gap-2">
                         {(!isOnline || syncState.status === 'error') ? (
                             <button
-                                onClick={() => handleSyncToSupabase(false)}
+                                onClick={handleManualSave}
                                 disabled={!isOnline}
                                 className={`text-[10px] font-black uppercase tracking-wider transition-colors underline ${
                                     !isOnline ? 'text-slate-500 cursor-not-allowed no-underline' : 'text-red-400 hover:text-red-300'
@@ -214,7 +241,7 @@ export default function MatchRoute() {
                             </button>
                         ) : !isAutoSaving ? (
                             <button
-                                onClick={() => handleSyncToSupabase(false)}
+                                onClick={handleManualSave}
                                 className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
                             >
                                 Guardar ahora
@@ -234,7 +261,7 @@ export default function MatchRoute() {
                         </span>
                     </div>
                     <button
-                        onClick={() => openAuthModal({ initialMode: 'login' })}
+                        onClick={handleLogin}
                         className="text-amber-400 hover:text-amber-300 font-bold underline whitespace-nowrap ml-2"
                     >
                         Iniciar Sesión
@@ -276,7 +303,7 @@ export default function MatchRoute() {
                             onClick={() => setActiveTab(tab)}
                             className={`relative z-20 flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${activeTab === tab ? 'border-b-4 border-cyan-500 text-cyan-400' : 'text-slate-500 hover:text-cyan-400'}`}
                         >
-                            {tabTranslations[tab]}
+                            {TAB_TRANSLATIONS[tab]}
                         </button>
                     ))}
                 </div>
@@ -284,7 +311,7 @@ export default function MatchRoute() {
                 <GameMainContent
                     activeTab={activeTab}
                     isReadOnly={gameState.isReadOnly}
-                    onActionSelect={(a: StatAction) => { setActionToAssign(a); openModal('playerSelection'); }}
+                    onActionSelect={handleActionSelect}
                     handleUndoTally={handleUndoTally}
                     handleRedoTally={handleRedoTally}
                     gameLog={gameState.gameLog}
@@ -293,7 +320,7 @@ export default function MatchRoute() {
                     setIsCorrectionsVisible={setIsCorrectionsVisible}
                     playerNames={gameState.playerNames}
                     setEditingEvent={setEditingEvent}
-                    setIsShareModalOpen={() => openModal('share')}
+                    setIsShareModalOpen={handleOpenShareModal}
                 />
             </div>
 
@@ -315,7 +342,14 @@ export default function MatchRoute() {
                 </button>
             )}
 
-            <AppModals {...renderModalsProps} />
+            <AppModals
+                tabTranslations={TAB_TRANSLATIONS}
+                tabs={tabsForCurrentMode}
+                playersForTally={gameState.availablePlayers}
+                actionLabel={actionLabel}
+                editingEvent={editingEvent}
+                setEditingEvent={setEditingEvent}
+            />
         </div>
     );
 }

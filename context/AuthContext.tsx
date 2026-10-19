@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabaseClient';
 import { UserProfile } from '../types';
@@ -35,6 +35,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [profileLoading, setProfileLoading] = useState(true);
     const [profileError, setProfileError] = useState<string | null>(null);
 
+    // Deduplication refs to prevent duplicate profile + games count queries on INITIAL_SESSION / TOKEN_REFRESHED
+    const inFlightProfilePromiseRef = useRef<Promise<void> | null>(null);
+    const lastFetchedUserIdRef = useRef<string | null>(null);
+
     // Roles y accesos calculados
     const isOwner = profile?.is_admin === true;
     const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
@@ -56,59 +60,72 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, []);
 
-    // Cargar o crear perfil en Supabase
-    const fetchProfileForUser = useCallback(async (userId: string, authUser?: User | null) => {
+    // Cargar o crear perfil en Supabase (con deduplicación en vuelo y consultas paralelas)
+    const fetchProfileForUser = useCallback(async (userId: string, authUser?: User | null, forceRefresh = false) => {
+        if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
+            if (inFlightProfilePromiseRef.current) {
+                return inFlightProfilePromiseRef.current;
+            }
+            return;
+        }
+
+        lastFetchedUserIdRef.current = userId;
         setProfileLoading(true);
         setProfileError(null);
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
 
-            if (error && error.code !== 'PGRST116') {
-                throw error;
-            }
-
-            if (data) {
-                let gamesCount = 0;
-                try {
-                    const { count } = await supabase
+        const promise = (async () => {
+            try {
+                const [profileRes, countRes] = await Promise.all([
+                    supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', userId)
+                        .single(),
+                    supabase
                         .from('games')
                         .select('id', { count: 'exact', head: true })
-                        .eq('user_id', userId);
-                    gamesCount = count ?? 0;
-                } catch {
-                    // Ignorar error secundario de contador
+                        .eq('user_id', userId)
+                ]);
+
+                if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+                    throw profileRes.error;
                 }
-                setProfile({ ...(data as UserProfile), games_count: gamesCount });
-            } else {
-                const newProfile: UserProfile = {
-                    id: userId,
-                    full_name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Usuario',
-                    favorite_club: null,
-                    role: 'jugador',
-                    permission_role: null,
-                    is_admin: false,
-                    avatar_url: authUser?.user_metadata?.avatar_url || null,
-                    player_number: null,
-                    updated_at: new Date().toISOString()
-                };
-                setProfile(newProfile);
-                await supabase.from('profiles').upsert(newProfile);
+
+                if (profileRes.data) {
+                    const gamesCount = countRes.count ?? 0;
+                    setProfile({ ...(profileRes.data as UserProfile), games_count: gamesCount });
+                } else {
+                    const newProfile: UserProfile = {
+                        id: userId,
+                        full_name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Usuario',
+                        favorite_club: null,
+                        role: 'jugador',
+                        permission_role: null,
+                        is_admin: false,
+                        avatar_url: authUser?.user_metadata?.avatar_url || null,
+                        player_number: null,
+                        updated_at: new Date().toISOString()
+                    };
+                    setProfile(newProfile);
+                    await supabase.from('profiles').upsert(newProfile);
+                }
+            } catch (err: any) {
+                lastFetchedUserIdRef.current = null;
+                console.error('[AUTH_PROFILE] Error cargando perfil:', err);
+                setProfileError(err.message || 'Error cargando perfil');
+            } finally {
+                inFlightProfilePromiseRef.current = null;
+                setProfileLoading(false);
             }
-        } catch (err: any) {
-            console.error('[AUTH_PROFILE] Error cargando perfil:', err);
-            setProfileError(err.message || 'Error cargando perfil');
-        } finally {
-            setProfileLoading(false);
-        }
+        })();
+
+        inFlightProfilePromiseRef.current = promise;
+        return promise;
     }, []);
 
     const refreshProfile = useCallback(async () => {
         if (user) {
-            await fetchProfileForUser(user.id, user);
+            await fetchProfileForUser(user.id, user, true);
         }
     }, [user, fetchProfileForUser]);
 
@@ -167,6 +184,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 fetchProfileForUser(session.user.id, session.user);
                 checkAndExecutePostAuthRedirect();
             } else {
+                lastFetchedUserIdRef.current = null;
                 setProfile(null);
                 setProfileLoading(false);
             }
@@ -180,10 +198,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
             setSession(newSession);
             setUser(newSession?.user ?? null);
+            setAuthLoading(false);
 
             if (newSession?.user) {
                 fetchProfileForUser(newSession.user.id, newSession.user);
             } else {
+                lastFetchedUserIdRef.current = null;
                 setProfile(null);
                 setProfileLoading(false);
             }
@@ -198,7 +218,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, [checkAndExecutePostAuthRedirect, fetchProfileForUser]);
 
-    const signInWithGoogle = async (redirectPath?: string): Promise<{ error: any | null }> => {
+    const signInWithGoogle = useCallback(async (redirectPath?: string): Promise<{ error: any | null }> => {
         try {
             const targetPath = redirectPath || (window.location.pathname + window.location.search);
             if (targetPath && targetPath !== '/') {
@@ -225,9 +245,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('[AUTH_GOOGLE] Error al iniciar sesión con Google:', err);
             return { error: err };
         }
-    };
+    }, []);
 
-    const signInWithPassword = async (email: string, password: string): Promise<{ error: any | null; user?: User | null }> => {
+    const signInWithPassword = useCallback(async (email: string, password: string): Promise<{ error: any | null; user?: User | null }> => {
         try {
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email.trim(),
@@ -248,9 +268,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('[AUTH_PASSWORD_SIGNIN] Error:', err);
             return { error: err };
         }
-    };
+    }, [fetchProfileForUser]);
 
-    const signUpWithPassword = async (
+    const signUpWithPassword = useCallback(async (
         email: string,
         password: string,
         fullName?: string
@@ -280,9 +300,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('[AUTH_PASSWORD_SIGNUP] Error:', err);
             return { error: err };
         }
-    };
+    }, [fetchProfileForUser]);
 
-    const resetPassword = async (email: string): Promise<{ error: any | null }> => {
+    const resetPassword = useCallback(async (email: string): Promise<{ error: any | null }> => {
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
                 redirectTo: `${window.location.origin}/`
@@ -292,14 +312,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('[AUTH_RESET_PASSWORD] Error:', err);
             return { error: err };
         }
-    };
+    }, []);
 
     // Método legacy para compatibilidad directa
-    const handleLogin = async (redirectPath?: string) => {
+    const handleLogin = useCallback(async (redirectPath?: string) => {
         await signInWithGoogle(redirectPath);
-    };
+    }, [signInWithGoogle]);
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         try {
             await supabase.auth.signOut();
         } catch (err) {
@@ -310,30 +330,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setProfile(null);
             setProfileLoading(false);
         }
-    };
+    }, []);
+
+    const contextValue = useMemo(() => ({
+        user,
+        session,
+        authLoading,
+        profile,
+        profileLoading,
+        profileError,
+        isOwner,
+        canAccessAdmin,
+        refreshProfile,
+        updateProfile,
+        uploadAvatar,
+        signInWithGoogle,
+        signInWithPassword,
+        signUpWithPassword,
+        resetPassword,
+        handleLogin,
+        handleLogout
+    }), [
+        user,
+        session,
+        authLoading,
+        profile,
+        profileLoading,
+        profileError,
+        isOwner,
+        canAccessAdmin,
+        refreshProfile,
+        updateProfile,
+        uploadAvatar,
+        signInWithGoogle,
+        signInWithPassword,
+        signUpWithPassword,
+        resetPassword,
+        handleLogin,
+        handleLogout
+    ]);
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                session,
-                authLoading,
-                profile,
-                profileLoading,
-                profileError,
-                isOwner,
-                canAccessAdmin,
-                refreshProfile,
-                updateProfile,
-                uploadAvatar,
-                signInWithGoogle,
-                signInWithPassword,
-                signUpWithPassword,
-                resetPassword,
-                handleLogin,
-                handleLogout
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

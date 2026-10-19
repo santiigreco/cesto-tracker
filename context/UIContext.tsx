@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { AppTab, StatAction } from '../types';
 
 export type ModalName =
@@ -48,8 +48,8 @@ interface UIContextType {
     setNotificationPopup: (popup: { type: 'caliente' | 'fria'; playerNumber: string } | null) => void;
 
     // Toast
-    toast: { message: string; type: 'success' | 'error' | 'info' } | null;
-    showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+    toast: { message: string; type: 'success' | 'error' | 'info' | 'warning' } | null;
+    showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 
     // General actions
     handleShare: () => Promise<void>;
@@ -58,15 +58,17 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [activeTab, setActiveTab] = useState<AppTab>('logger');
+    const [activeTab, setActiveTab] = useState<AppTab>('tally');
     const [actionToAssign, setActionToAssign] = useState<StatAction | null>(null);
     const [notificationPopup, setNotificationPopup] = useState<{ type: 'caliente' | 'fria'; playerNumber: string } | null>(null);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
+    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
         setToast({ message, type });
-        setTimeout(() => setToast(null), 3000);
-    };
+        toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+    }, []);
 
     // Modal Manager State
     const [modals, setModals] = useState<Record<ModalName, ModalState>>({
@@ -82,30 +84,32 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         loadGame: { isOpen: false },
         mobileMenu: { isOpen: false },
         playerSelection: { isOpen: false },
-        profile: { isOpen: false },
         finishMatch: { isOpen: false },
         completeNames: { isOpen: false }
     });
 
-    const openModal = (name: ModalName, params?: any) => {
+    const openModal = useCallback((name: ModalName, params?: any) => {
         setModals(prev => ({
             ...prev,
             [name]: { isOpen: true, params }
         }));
-    };
+    }, []);
 
-    const closeModal = (name: ModalName) => {
-        setModals(prev => ({
-            ...prev,
-            [name]: { isOpen: false, params: undefined }
-        }));
-    };
+    const closeModal = useCallback((name: ModalName) => {
+        setModals(prev => {
+            if (!prev[name]?.isOpen) return prev;
+            return {
+                ...prev,
+                [name]: { isOpen: false, params: undefined }
+            };
+        });
+    }, []);
 
-    const openAuthModal = (params?: AuthModalParams) => {
+    const openAuthModal = useCallback((params?: AuthModalParams) => {
         openModal('auth', params);
-    };
+    }, [openModal]);
 
-    const handleShare = async () => {
+    const handleShare = useCallback(async () => {
         const shareData = {
             title: 'Cesto Tracker App',
             text: '¡Prueba Cesto Tracker para registrar y analizar los tiros de Cestoball!',
@@ -121,17 +125,26 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         } catch (error) {
             console.error('Error sharing:', error);
         }
-    };
+    }, []);
+
+    const contextValue = useMemo(() => ({
+        activeTab, setActiveTab,
+        modals, openModal, closeModal, openAuthModal,
+        actionToAssign, setActionToAssign,
+        notificationPopup, setNotificationPopup,
+        toast, showToast,
+        handleShare
+    }), [
+        activeTab,
+        modals, openModal, closeModal, openAuthModal,
+        actionToAssign,
+        notificationPopup,
+        toast, showToast,
+        handleShare
+    ]);
 
     return (
-        <UIContext.Provider value={{
-            activeTab, setActiveTab,
-            modals, openModal, closeModal, openAuthModal,
-            actionToAssign, setActionToAssign,
-            notificationPopup, setNotificationPopup,
-            toast, showToast,
-            handleShare
-        }}>
+        <UIContext.Provider value={contextValue}>
             {children}
         </UIContext.Provider>
     );

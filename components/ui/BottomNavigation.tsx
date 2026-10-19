@@ -1,7 +1,6 @@
 import React from 'react';
 import { AppTab, GameMode } from '../../types';
-import { ClipboardIcon } from '../icons';
-import { ChartBarIcon } from '../icons';
+import { ClipboardIcon, ChartBarIcon } from '../icons';
 
 interface BottomNavigationProps {
   activeTab: AppTab;
@@ -9,18 +8,18 @@ interface BottomNavigationProps {
   gameMode?: GameMode;
 }
 
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onSelectTab }) => {
-  const allTabs = [
-    { id: 'tally' as AppTab, label: 'Planilla', Icon: ClipboardIcon },
-    { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
-  ];
+const ALL_TABS = [
+  { id: 'tally' as AppTab, label: 'Planilla', Icon: ClipboardIcon },
+  { id: 'statistics' as AppTab, label: 'Estadísticas', Icon: ChartBarIcon },
+];
 
+const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({ activeTab, onSelectTab }) => {
   const gridColsClass = 'grid-cols-2';
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-slate-800 border-t border-slate-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] safe-area-bottom">
       <div className={`grid h-full ${gridColsClass} mx-auto font-medium w-full`}>
-        {allTabs.map(({ id, label, Icon }) => {
+        {ALL_TABS.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           return (
             <button
@@ -40,6 +39,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onSelect
       </div>
     </div>
   );
-};
+});
 
 export default BottomNavigation;

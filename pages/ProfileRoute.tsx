@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
@@ -6,10 +6,20 @@ import { supabase } from '@/utils/supabaseClient';
 import Loader from '@/components/ui/Loader';
 import { GoogleIcon } from '@/components/icons';
 import { ProfileHeader } from '@/components/views/profile/ProfileHeader';
-import { ProfileMatchesTab, UserSavedGame } from '@/components/views/profile/ProfileMatchesTab';
-import { ProfileTeamsTab } from '@/components/views/profile/ProfileTeamsTab';
-import { ProfileStatsTab } from '@/components/views/profile/ProfileStatsTab';
-import { ProfileSettingsTab } from '@/components/views/profile/ProfileSettingsTab';
+import type { UserSavedGame } from '@/components/views/profile/ProfileMatchesTab';
+
+const ProfileMatchesTab = lazy(() =>
+  import('@/components/views/profile/ProfileMatchesTab').then(m => ({ default: m.ProfileMatchesTab }))
+);
+const ProfileTeamsTab = lazy(() =>
+  import('@/components/views/profile/ProfileTeamsTab').then(m => ({ default: m.ProfileTeamsTab }))
+);
+const ProfileStatsTab = lazy(() =>
+  import('@/components/views/profile/ProfileStatsTab').then(m => ({ default: m.ProfileStatsTab }))
+);
+const ProfileSettingsTab = lazy(() =>
+  import('@/components/views/profile/ProfileSettingsTab').then(m => ({ default: m.ProfileSettingsTab }))
+);
 
 type ProfileActiveTab = 'matches' | 'teams' | 'stats' | 'settings';
 
@@ -23,7 +33,7 @@ export default function ProfileRoute() {
   const [gamesLoading, setGamesLoading] = useState(false);
   const [teamsCount, setTeamsCount] = useState(0);
 
-  // Fetch games owned by this user
+  // Fetch games owned by this user (omitting unused player_names JSONB)
   const fetchUserGames = useCallback(async () => {
     if (!user) {
       setGames([]);
@@ -33,7 +43,7 @@ export default function ProfileRoute() {
     try {
       const { data, error } = await supabase
         .from('games')
-        .select('id, opponent_name, game_mode, created_at, player_names, settings, views')
+        .select('id, opponent_name, game_mode, created_at, settings, views')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -52,7 +62,7 @@ export default function ProfileRoute() {
     try {
       const { count, error } = await supabase
         .from('saved_teams')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id);
       if (!error && typeof count === 'number') {
         setTeamsCount(count);
@@ -64,8 +74,7 @@ export default function ProfileRoute() {
 
   useEffect(() => {
     if (user) {
-      fetchUserGames();
-      fetchTeamsCount();
+      Promise.all([fetchUserGames(), fetchTeamsCount()]);
     }
   }, [user, fetchUserGames, fetchTeamsCount]);
 
@@ -234,34 +243,42 @@ export default function ProfileRoute() {
 
         {/* Tab Views Content */}
         <div className="pt-2">
-          {activeTab === 'matches' && (
-            <ProfileMatchesTab
-              games={games}
-              loading={gamesLoading}
-              onRefresh={fetchUserGames}
-            />
-          )}
+          <Suspense
+            fallback={
+              <div className="flex justify-center items-center py-16">
+                <Loader className="h-8 w-8 text-cyan-400" />
+              </div>
+            }
+          >
+            {activeTab === 'matches' && (
+              <ProfileMatchesTab
+                games={games}
+                loading={gamesLoading}
+                onRefresh={fetchUserGames}
+              />
+            )}
 
-          {activeTab === 'teams' && (
-            <ProfileTeamsTab
-              onTeamsCountChange={count => setTeamsCount(count)}
-            />
-          )}
+            {activeTab === 'teams' && (
+              <ProfileTeamsTab
+                onTeamsCountChange={count => setTeamsCount(count)}
+              />
+            )}
 
-          {activeTab === 'stats' && (
-            <ProfileStatsTab
-              games={games}
-              loading={gamesLoading}
-            />
-          )}
+            {activeTab === 'stats' && (
+              <ProfileStatsTab
+                games={games}
+                loading={gamesLoading}
+              />
+            )}
 
-          {activeTab === 'settings' && (
-            <ProfileSettingsTab
-              profile={profile}
-              user={user}
-              onProfileUpdated={refreshProfile}
-            />
-          )}
+            {activeTab === 'settings' && (
+              <ProfileSettingsTab
+                profile={profile}
+                user={user}
+                onProfileUpdated={refreshProfile}
+              />
+            )}
+          </Suspense>
         </div>
       </main>
     </div>

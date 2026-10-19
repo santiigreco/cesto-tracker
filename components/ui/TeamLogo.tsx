@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useId } from 'react';
 import { ShieldIcon } from '../icons';
 
 interface TeamLogoProps {
@@ -10,29 +9,32 @@ interface TeamLogoProps {
 
 // --- SVG LOGO DEFINITIONS ---
 
-// Base Shield Path for consistent shape
-const ShieldShape = ({ children, fill = "white" }: { children?: React.ReactNode, fill?: string }) => (
-    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <clipPath id="shieldClip">
-                <path d="M50 0 C95 0 100 25 100 45 C100 80 50 100 50 100 C50 100 0 80 0 45 C0 25 5 0 50 0 Z" />
-            </clipPath>
-        </defs>
-        <g clipPath="url(#shieldClip)">
-            <rect width="100" height="100" fill={fill} />
-            {children}
-            {/* Shield Border/Gloss */}
-            <path d="M50 0 C95 0 100 25 100 45 C100 80 50 100 50 100 C50 100 0 80 0 45 C0 25 5 0 50 0 Z" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="2" />
-            <path d="M50 0 C95 0 100 25 100 45 C100 80 50 100 50 100 C50 100 0 80 0 45 C0 25 5 0 50 0 Z" fill="url(#gloss)" style={{ mixBlendMode: 'overlay', opacity: 0.3 }} />
-        </g>
-        <defs>
-            <linearGradient id="gloss" x1="0" x2="1" y1="0" y2="1">
-                <stop offset="0%" stopColor="white" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="white" stopOpacity="0" />
-            </linearGradient>
-        </defs>
-    </svg>
-);
+// Base Shield Path for consistent shape (uses unique IDs per instance to avoid SVG clipPath/gradient collisions)
+const ShieldShape = ({ children, fill = "white" }: { children?: React.ReactNode, fill?: string }) => {
+    const uid = useId();
+    const clipId = `shieldClip-${uid}`;
+    const glossId = `gloss-${uid}`;
+    return (
+        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <clipPath id={clipId}>
+                    <path d="M50 0 C95 0 100 25 100 45 C100 80 50 100 50 100 C50 100 0 80 0 45 C0 25 5 0 50 0 Z" />
+                </clipPath>
+                <linearGradient id={glossId} x1="0" x2="1" y1="0" y2="1">
+                    <stop offset="0%" stopColor="white" stopOpacity="0.8" />
+                    <stop offset="50%" stopColor="white" stopOpacity="0" />
+                </linearGradient>
+            </defs>
+            <g clipPath={`url(#${clipId})`}>
+                <rect width="100" height="100" fill={fill} />
+                {children}
+                {/* Shield Border/Gloss */}
+                <path d="M50 0 C95 0 100 25 100 45 C100 80 50 100 50 100 C50 100 0 80 0 45 C0 25 5 0 50 0 Z" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="2" />
+                <path d="M50 0 C95 0 100 25 100 45 C100 80 50 100 50 100 C50 100 0 80 0 45 C0 25 5 0 50 0 Z" fill={`url(#${glossId})`} style={{ mixBlendMode: 'overlay', opacity: 0.3 }} />
+            </g>
+        </svg>
+    );
+};
 
 const Logos: Record<string, React.FC> = {
     "Vélez": () => (
@@ -41,37 +43,37 @@ const Logos: Record<string, React.FC> = {
         </ShieldShape>
     ),
     "Ciudad": () => (
-        <ShieldShape fill="#0EA5E9"> {/* Light Blue */}
+        <ShieldShape fill="#0EA5E9">
             <rect y="33" width="100" height="34" fill="white" />
             <rect y="45" width="100" height="10" fill="#0EA5E9" />
         </ShieldShape>
     ),
     "Ballester": () => (
-        <ShieldShape fill="#171717"> {/* Black */}
+        <ShieldShape fill="#171717">
             <rect x="33" width="34" height="100" fill="white" />
             <rect x="45" width="10" height="100" fill="#171717" />
         </ShieldShape>
     ),
     "APV": () => (
-        <ShieldShape fill="#0EA5E9"> {/* Celeste (same as Ciudad) */}
+        <ShieldShape fill="#0EA5E9">
             <rect x="33" width="34" height="100" fill="white" />
-            <rect x="67" width="33" height="100" fill="#FACC15" /> {/* Yellow */}
+            <rect x="67" width="33" height="100" fill="#FACC15" />
         </ShieldShape>
     ),
     "SITAS": () => (
         <ShieldShape fill="white">
-            <rect width="33" height="100" fill="#16A34A" /> {/* Green */}
-            <rect x="67" width="33" height="100" fill="#DC2626" /> {/* Red */}
+            <rect width="33" height="100" fill="#16A34A" />
+            <rect x="67" width="33" height="100" fill="#DC2626" />
             <text x="50" y="30" fontSize="20" textAnchor="middle" fill="#333" fontWeight="bold">S</text>
         </ShieldShape>
     ),
     "GEVP": () => (
-        <ShieldShape fill="#0EA5E9"> {/* Light Blue */}
+        <ShieldShape fill="#0EA5E9">
             <path d="M0 0 L100 100" stroke="white" strokeWidth="25" />
         </ShieldShape>
     ),
     "Hacoaj": () => (
-        <ShieldShape fill="#1E3A8A"> {/* Navy Blue */}
+        <ShieldShape fill="#1E3A8A">
             <circle cx="50" cy="40" r="15" stroke="white" strokeWidth="6" fill="none" />
             <path d="M50 55 V85 M35 70 H65" stroke="white" strokeWidth="6" strokeLinecap="round" />
             <path d="M0 60 Q25 50 50 60 T100 60 V100 H0 Z" fill="white" />
@@ -79,32 +81,32 @@ const Logos: Record<string, React.FC> = {
         </ShieldShape>
     ),
     "Social Parque": () => (
-        <ShieldShape fill="#15803d"> {/* Green (Top) */}
+        <ShieldShape fill="#15803d">
             <rect x="0" y="30" width="100" height="40" fill="white" />
-            <rect x="0" y="70" width="100" height="30" fill="#DC2626" /> {/* Red (Bottom) */}
+            <rect x="0" y="70" width="100" height="30" fill="#DC2626" />
             <text x="50" y="58" fontSize="18" textAnchor="middle" fill="black" fontWeight="bold">PARQUE</text>
         </ShieldShape>
     ),
     "Avellaneda": () => (
-        <ShieldShape fill="#16A34A"> {/* Green Left */}
-            <rect x="50" width="50" height="100" fill="#38BDF8" /> {/* Celeste Right */}
+        <ShieldShape fill="#16A34A">
+            <rect x="50" width="50" height="100" fill="#38BDF8" />
         </ShieldShape>
     ),
     "CEF": () => (
-        <ShieldShape fill="#F59E0B"> {/* Amber */}
+        <ShieldShape fill="#F59E0B">
             <circle cx="50" cy="50" r="30" fill="none" stroke="white" strokeWidth="8" />
             <text x="50" y="58" fontSize="25" textAnchor="middle" fill="white" fontWeight="bold">CEF</text>
         </ShieldShape>
     ),
     "Lanús": () => (
-        <ShieldShape fill="#5D1B24"> {/* Granate / Brownish */}
+        <ShieldShape fill="#5D1B24">
             <circle cx="50" cy="50" r="30" stroke="white" strokeWidth="4" fill="none" />
             <text x="50" y="62" fontSize="30" textAnchor="middle" fill="white" fontWeight="black">L</text>
         </ShieldShape>
     ),
     // --- Clubes de Corrientes ---
     "Jaguareté": () => (
-        <ShieldShape fill="#EA580C"> {/* Naranja Jaguareté */}
+        <ShieldShape fill="#EA580C">
             <path d="M0 0 L100 100" stroke="#18181B" strokeWidth="26" />
             <circle cx="28" cy="72" r="10" fill="#18181B" />
             <circle cx="72" cy="28" r="10" fill="#18181B" />
@@ -112,27 +114,27 @@ const Logos: Record<string, React.FC> = {
         </ShieldShape>
     ),
     "Hércules": () => (
-        <ShieldShape fill="#2563EB"> {/* Azul Hércules */}
+        <ShieldShape fill="#2563EB">
             <rect x="0" y="35" width="100" height="30" fill="white" />
             <text x="50" y="60" fontSize="28" textAnchor="middle" fill="#1E3A8A" fontWeight="black">H</text>
         </ShieldShape>
     ),
     "Quilmes": () => (
-        <ShieldShape fill="white"> {/* Cervecero Blanco con franja azul */}
+        <ShieldShape fill="white">
             <path d="M0 0 L100 100 L100 70 L0 0 Z" fill="#1E3A8A" />
             <circle cx="50" cy="50" r="24" fill="#1E3A8A" />
             <text x="50" y="58" fontSize="22" textAnchor="middle" fill="white" fontWeight="black">Q</text>
         </ShieldShape>
     ),
     "Regatas": () => (
-        <ShieldShape fill="#0F172A"> {/* Azul Marino Remero */}
-            <rect y="35" width="100" height="30" fill="#38BDF8" /> {/* Franja Celeste */}
+        <ShieldShape fill="#0F172A">
+            <rect y="35" width="100" height="30" fill="#38BDF8" />
             <circle cx="50" cy="50" r="18" fill="white" />
             <text x="50" y="56" fontSize="16" textAnchor="middle" fill="#0F172A" fontWeight="black">CRC</text>
         </ShieldShape>
     ),
     "San Martín (Ctes)": () => (
-        <ShieldShape fill="#111827"> {/* Rojinegro franjeado */}
+        <ShieldShape fill="#111827">
             <rect x="25" width="25" height="100" fill="#DC2626" />
             <rect x="75" width="25" height="100" fill="#DC2626" />
             <circle cx="50" cy="50" r="20" fill="white" stroke="#111827" strokeWidth="2" />
@@ -140,19 +142,19 @@ const Logos: Record<string, React.FC> = {
         </ShieldShape>
     ),
     "Banco Provincia": () => (
-        <ShieldShape fill="#15803D"> {/* Verde y Blanco */}
+        <ShieldShape fill="#15803D">
             <path d="M0 50 L50 0 L100 50 L50 100 Z" fill="white" />
             <text x="50" y="58" fontSize="22" textAnchor="middle" fill="#15803D" fontWeight="black">BP</text>
         </ShieldShape>
     ),
     "Córdoba": () => (
-        <ShieldShape fill="#DC2626"> {/* Rojo y Blanco */}
+        <ShieldShape fill="#DC2626">
             <rect y="40" width="100" height="20" fill="white" />
             <text x="50" y="62" fontSize="26" textAnchor="middle" fill="white" fontWeight="black">C</text>
         </ShieldShape>
     ),
     "Colón": () => (
-        <ShieldShape fill="#111827"> {/* Mitad Rojo mitad Negro */}
+        <ShieldShape fill="#111827">
             <rect x="50" width="50" height="100" fill="#DC2626" />
             <circle cx="50" cy="50" r="18" fill="white" />
             <text x="50" y="57" fontSize="18" textAnchor="middle" fill="#111827" fontWeight="black">C</text>
@@ -160,28 +162,32 @@ const Logos: Record<string, React.FC> = {
     )
 };
 
-const TeamLogo: React.FC<TeamLogoProps> = ({ teamName, className = "h-12 w-12", fallbackClassName }) => {
-    const safeTeamName = teamName || '';
+// Precomputed O(1) lowercase lookup table
+const LOWERCASE_LOGO_KEYS: Record<string, string> = Object.keys(Logos).reduce((acc, key) => {
+    acc[key.toLowerCase()] = key;
+    return acc;
+}, {} as Record<string, string>);
 
-    // Logic to find logo: exact match first, then check if it's a "B" team or alias
-    const findLogoKey = (name: string) => {
-        const lower = name.trim().toLowerCase();
-        if (lower.includes('san martin') && (lower.includes('ctes') || lower.includes('corrientes'))) {
-            return "San Martín (Ctes)";
-        }
-        return Object.keys(Logos).find(key => key.toLowerCase() === lower);
-    };
+const findLogoKey = (name: string): string | undefined => {
+    const lower = name.trim().toLowerCase();
+    if (!lower) return undefined;
+    if (lower.includes('san martin') && (lower.includes('ctes') || lower.includes('corrientes'))) {
+        return "San Martín (Ctes)";
+    }
+    return LOWERCASE_LOGO_KEYS[lower];
+};
+
+const TeamLogo: React.FC<TeamLogoProps> = React.memo(({ teamName, className = "h-12 w-12", fallbackClassName = "" }) => {
+    const safeTeamName = teamName || '';
 
     let normalizedName = findLogoKey(safeTeamName);
 
     // Fallback for "Team A" or "Team B" -> "Base Team"
     if (!normalizedName) {
         const trimmed = safeTeamName.trim();
-        // Check for suffixes like " A", " B", " C"
         const suffixMatch = trimmed.match(/^(.*)\s+[A-B]$/i);
         if (suffixMatch) {
-            const baseName = suffixMatch[1].trim();
-            normalizedName = findLogoKey(baseName);
+            normalizedName = findLogoKey(suffixMatch[1].trim());
         }
     }
 
@@ -201,6 +207,6 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ teamName, className = "h-12 w-12", 
             <ShieldIcon className="h-3/5 w-3/5 text-slate-400" />
         </div>
     );
-};
+});
 
 export default TeamLogo;

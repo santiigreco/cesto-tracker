@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RosterPlayer } from '../../types';
-import TeamSelectorModal from '@/components/modals/TeamSelectorModal';
 import { useProfile } from '../../hooks/useProfile';
 
 import { HomeNavbar } from './home/HomeNavbar';
 import { HomeHero } from './home/HomeHero';
 import { HomeFooter } from './home/HomeFooter';
 import { LastSetupData } from './home/HomeActionGrid';
+
+const TeamSelectorModal = lazy(() => import('@/components/modals/TeamSelectorModal'));
 
 interface HomePageProps {
   onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
@@ -21,14 +22,14 @@ interface HomePageProps {
 const LAST_SETUP_KEY = 'cesto_last_team_setup';
 
 const HomePage: React.FC<HomePageProps> = React.memo(
-  ({ onStart, onLoadGameClick, user, onLogin, onLoadGame, canAccessAdmin }) => {
+  ({ onStart, onLoadGameClick, user, onLogin, canAccessAdmin }) => {
     const navigate = useNavigate();
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
     const { profile } = useProfile();
 
-    // Último setup guardado en localStorage
-    const lastSetup: LastSetupData | null = (() => {
+    // Último setup guardado en localStorage (memoizado al montar)
+    const lastSetup = useMemo<LastSetupData | null>(() => {
       try {
         const raw = localStorage.getItem(LAST_SETUP_KEY);
         if (!raw) return null;
@@ -38,30 +39,34 @@ const HomePage: React.FC<HomePageProps> = React.memo(
         /* ignore */
       }
       return null;
-    })();
+    }, []);
 
-    const handleStartClick = () => {
+    const handleStartClick = useCallback(() => {
       setIsTeamSelectorOpen(true);
-    };
+    }, []);
 
-    const handleQuickStart = () => {
+    const handleQuickStart = useCallback(() => {
       if (!lastSetup) return;
       const roster: RosterPlayer[] = (lastSetup.players || []).map(num => ({
         number: num,
         name: lastSetup.playerNames?.[num] || '',
       }));
       onStart(lastSetup.myTeam, roster.length > 0 ? roster : undefined);
-    };
+    }, [lastSetup, onStart]);
 
-    const handleTeamSelected = (name: string, roster?: RosterPlayer[]) => {
+    const handleTeamSelected = useCallback((name: string, roster?: RosterPlayer[]) => {
       setIsTeamSelectorOpen(false);
       onStart(name, roster);
-    };
+    }, [onStart]);
 
-    const handleCloseTeamSelector = () => {
+    const handleCloseTeamSelector = useCallback(() => {
       setIsTeamSelectorOpen(false);
       onStart(profile?.favorite_club || undefined);
-    };
+    }, [onStart, profile?.favorite_club]);
+
+    const handleOpenProfile = useCallback(() => {
+      navigate('/perfil');
+    }, [navigate]);
 
     return (
       <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
@@ -77,7 +82,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(
           user={user}
           profile={profile}
           onLogin={onLogin}
-          onOpenProfile={() => navigate('/perfil')}
+          onOpenProfile={handleOpenProfile}
           onStartClick={handleStartClick}
         />
 
@@ -99,12 +104,14 @@ const HomePage: React.FC<HomePageProps> = React.memo(
         </main>
 
         {isTeamSelectorOpen && (
-          <TeamSelectorModal
-            isOpen={isTeamSelectorOpen}
-            onClose={handleCloseTeamSelector}
-            onSelectTeam={handleTeamSelected}
-            currentTeam={profile?.favorite_club || ''}
-          />
+          <Suspense fallback={null}>
+            <TeamSelectorModal
+              isOpen={isTeamSelectorOpen}
+              onClose={handleCloseTeamSelector}
+              onSelectTeam={handleTeamSelected}
+              currentTeam={profile?.favorite_club || ''}
+            />
+          </Suspense>
         )}
       </div>
     );

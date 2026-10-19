@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { GameEvent, StatAction } from '../../types';
 import { PencilIcon } from '../icons';
@@ -9,23 +8,22 @@ interface GameLogViewProps {
     onEventClick?: (event: GameEvent) => void;
 }
 
-const GameLogView: React.FC<GameLogViewProps> = ({ log, playerNames, onEventClick }) => {
-    const getActionLabel = (action: StatAction) => {
-        const labels: Record<StatAction, string> = {
-            goles: "GOL",
-            triples: "TRIPLE",
-            fallos: "FALLO",
-            recuperos: "RECUPERO",
-            perdidas: "PÉRDIDA",
-            reboteOfensivo: "REB. OFENSIVO",
-            reboteDefensivo: "REB. DEFENSIVO",
-            asistencias: "ASISTENCIA",
-            golesContra: "GOL EN CONTRA",
-            faltasPersonales: "FALTA PERSONAL",
-        };
-        return labels[action] || action.toUpperCase();
-    };
+const ACTION_LABELS: Record<StatAction, string> = {
+    goles: "GOL",
+    triples: "TRIPLE",
+    fallos: "FALLO",
+    recuperos: "RECUPERO",
+    perdidas: "PÉRDIDA",
+    reboteOfensivo: "REB. OFENSIVO",
+    reboteDefensivo: "REB. DEFENSIVO",
+    asistencias: "ASISTENCIA",
+    golesContra: "GOL EN CONTRA",
+    faltasPersonales: "FALTA PERSONAL",
+};
 
+const getActionLabel = (action: StatAction) => ACTION_LABELS[action] || action.toUpperCase();
+
+const GameLogView: React.FC<GameLogViewProps> = React.memo(({ log, playerNames, onEventClick }) => {
     return (
         <div className="bg-slate-800 p-3 sm:p-4 rounded-lg shadow-lg">
             <h3 className="text-lg font-bold text-cyan-400 mb-2 text-center">Registro de Juego</h3>
@@ -60,6 +58,6 @@ const GameLogView: React.FC<GameLogViewProps> = ({ log, playerNames, onEventClic
             )}
         </div>
     );
-};
+});
 
 export default GameLogView;

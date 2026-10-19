@@ -3,15 +3,22 @@ import { supabase } from '../../utils/supabaseClient';
 import { XIcon, EyeIcon, SearchIcon, CalendarIcon, TrashIcon, GoogleIcon } from '../icons';
 import Loader from '@/components/ui/Loader';
 import TeamLogo from '@/components/ui/TeamLogo';
-import { GameMode, Settings } from '../../types';
+import { GameMode } from '../../types';
 import { useSync } from '../../context/SyncContext';
+
+interface LightweightSettings {
+    gameName?: string;
+    myTeam?: string;
+    tournamentName?: string | null;
+    myScore?: number;
+    opponentScore?: number;
+}
 
 interface SavedGame {
     id: string;
     created_at: string;
     game_mode: GameMode;
-    player_names: Record<string, string>;
-    settings: Settings;
+    settings: LightweightSettings;
     views: number;
     user_id: string;
     profiles?: { full_name: string | null } | null;
@@ -25,12 +32,16 @@ interface LoadGameModalProps {
     onLogin?: () => void;
 }
 
+// Short-lived cache (20s) to avoid redundant network waterfalls when reopening the modal
+const GAMES_LIST_CACHE_TTL_MS = 20_000;
+let cachedGamesList: { games: SavedGame[]; timestamp: number } | null = null;
+
 const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, onLoadGame, user, onLogin }) => {
     const { handleDeleteGame } = useSync();
 
     // Data State
-    const [games, setGames] = useState<SavedGame[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [games, setGames] = useState<SavedGame[]>(() => cachedGamesList?.games || []);
+    const [loading, setLoading] = useState(!cachedGamesList);
     const [error, setError] = useState<string | null>(null);
 
     // Active Tab: 'myGames' | 'community'
@@ -44,26 +55,42 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-    // --- FETCH DATA ---
-    const fetchGames = useCallback(async () => {
+    // --- FETCH DATA (Projection excludes heavy settings.gameLog and player_names JSONB) ---
+    const fetchGames = useCallback(async (forceRefresh = false) => {
+        const now = Date.now();
+        if (!forceRefresh && cachedGamesList && now - cachedGamesList.timestamp < GAMES_LIST_CACHE_TTL_MS) {
+            setGames(cachedGamesList.games);
+            setLoading(false);
+            if (user) {
+                const hasMyGames = cachedGamesList.games.some(g => g.user_id === user.id);
+                setActiveTab(hasMyGames ? 'myGames' : 'community');
+            } else {
+                setActiveTab('community');
+            }
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
             const { data: gamesData, error: gamesError } = await supabase
                 .from('games')
-                .select('id, created_at, game_mode, player_names, settings, views, user_id')
-                .limit(500)
-                .order('created_at', { ascending: false });
+                .select(
+                    'id, created_at, game_mode, views, user_id, my_team_name, opponent_name, gameName:settings->>gameName, myTeam:settings->>myTeam, tournamentName:settings->>tournamentName, myScore:settings->myScore, opponentScore:settings->opponentScore'
+                )
+                .order('created_at', { ascending: false })
+                .limit(100);
 
             if (gamesError) throw gamesError;
 
             if (!gamesData || gamesData.length === 0) {
+                cachedGamesList = { games: [], timestamp: Date.now() };
                 setGames([]);
                 return;
             }
 
-            const uniqueUserIds = Array.from(new Set(gamesData.map(g => g.user_id).filter(Boolean)));
-            let profilesMap: Record<string, { full_name: string | null }> = {};
+            const uniqueUserIds = Array.from(new Set(gamesData.map((g: any) => g.user_id).filter(Boolean)));
+            const profilesMap: Record<string, { full_name: string | null }> = {};
 
             if (uniqueUserIds.length > 0) {
                 const { data: profilesData, error: profilesError } = await supabase
@@ -78,11 +105,23 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                 }
             }
 
-            const enrichedGames: SavedGame[] = gamesData.map(game => ({
-                ...game,
+            const enrichedGames: SavedGame[] = gamesData.map((game: any) => ({
+                id: game.id,
+                created_at: game.created_at,
+                game_mode: game.game_mode,
+                views: game.views,
+                user_id: game.user_id,
+                settings: {
+                    gameName: game.gameName || game.opponent_name || '',
+                    myTeam: game.myTeam || game.my_team_name || '',
+                    tournamentName: game.tournamentName || null,
+                    myScore: typeof game.myScore === 'number' ? game.myScore : undefined,
+                    opponentScore: typeof game.opponentScore === 'number' ? game.opponentScore : undefined,
+                },
                 profiles: profilesMap[game.user_id] || null
             }));
 
+            cachedGamesList = { games: enrichedGames, timestamp: Date.now() };
             setGames(enrichedGames);
 
             // Default tab: if user has games, 'myGames', otherwise 'community'
@@ -128,6 +167,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
     }, [games]);
 
     const filteredGames = useMemo(() => {
+        const term = searchTerm.toLowerCase();
         return games.filter(game => {
             // Tab filter
             if (activeTab === 'myGames') {
@@ -136,9 +176,10 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
 
             // Search filter
             const matchesSearch =
-                (game.settings?.gameName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (game.profiles?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (game.settings?.myTeam || '').toLowerCase().includes(searchTerm.toLowerCase());
+                !term ||
+                (game.settings?.gameName || '').toLowerCase().includes(term) ||
+                (game.profiles?.full_name || '').toLowerCase().includes(term) ||
+                (game.settings?.myTeam || '').toLowerCase().includes(term);
 
             // Team filter
             const teamName = game.settings?.myTeam || 'Sin Equipo';
@@ -153,7 +194,11 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
         try {
             const ok = await handleDeleteGame(gameId);
             if (ok) {
-                setGames(prev => prev.filter(g => g.id !== gameId));
+                setGames(prev => {
+                    const updated = prev.filter(g => g.id !== gameId);
+                    cachedGamesList = { games: updated, timestamp: Date.now() };
+                    return updated;
+                });
                 setConfirmDeleteId(null);
             }
         } finally {

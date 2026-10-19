@@ -23,6 +23,11 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest">
 
+  <!-- Google Fonts Preconnect & Non-Chained Stylesheet (Outfit 400..900) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" />
+
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://cestotracker.com/" />
@@ -34,7 +39,7 @@
   <meta property="og:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Dashboard de estadísticas de Cestoball en Cesto Tracker." />
+  <meta property="og:image:alt" content="Dashboard de estadísticas de Cesto Tracker." />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
@@ -43,22 +48,6 @@
   <meta name="twitter:description"
     content="Analiza el rendimiento de tu equipo con datos reales. Mapas de tiros y estadísticas." />
   <meta name="twitter:image" content="https://cestotracker.com/cesto-tracker-og-image.png" />
-
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@^19.1.1",
-        "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
-        "react/": "https://esm.sh/react@^19.1.1/",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.45.0",
-        "exceljs": "https://esm.sh/exceljs@4.4.0",
-        "file-saver": "https://esm.sh/file-saver@2.0.5"
-      }
-    }
-    </script>
-
 
   <!-- JSON-LD Structured Data: SoftwareApplication (Optimized for App Discovery) -->
   <script type="application/ld+json">

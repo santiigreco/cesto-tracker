@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { StatAction } from '../../types';
 
@@ -6,23 +5,23 @@ interface QuickActionsPanelProps {
     onActionSelect: (action: StatAction) => void;
 }
 
-const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect }) => {
-    const mainActions: { action: StatAction, label: string }[] = [
-        { action: 'recuperos', label: 'Recupero' },
-        { action: 'perdidas', label: 'Pérdida' },
-        { action: 'asistencias', label: 'Asistencia' },
-        { action: 'faltasPersonales', label: 'Falta' },
-        { action: 'reboteOfensivo', label: 'Reb. Of.' },
-        { action: 'reboteDefensivo', label: 'Reb. Def.' },
-    ];
+const MAIN_ACTIONS: { action: StatAction, label: string }[] = [
+    { action: 'recuperos', label: 'Recupero' },
+    { action: 'perdidas', label: 'Pérdida' },
+    { action: 'asistencias', label: 'Asistencia' },
+    { action: 'faltasPersonales', label: 'Falta' },
+    { action: 'reboteOfensivo', label: 'Reb. Of.' },
+    { action: 'reboteDefensivo', label: 'Reb. Def.' },
+];
 
+const QuickActionsPanel: React.FC<QuickActionsPanelProps> = React.memo(({ onActionSelect }) => {
     return (
         <div className="w-full bg-slate-800 p-4 rounded-lg shadow-lg">
             <h3 className="text-xl font-bold text-cyan-400 mb-4 text-center">Acción de juego</h3>
             <div className="flex gap-3">
                 {/* Left Side: Grid of stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-grow">
-                    {mainActions.map(({ action, label }) => (
+                    {MAIN_ACTIONS.map(({ action, label }) => (
                         <button
                             key={action}
                             onClick={() => onActionSelect(action)}
@@ -57,6 +56,6 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onActionSelect })
             </div>
         </div>
     );
-};
+});
 
 export default QuickActionsPanel;

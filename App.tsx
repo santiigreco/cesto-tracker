@@ -1,8 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Loader from '@/components/ui/Loader';
-
-import AuthModal from '@/components/modals/AuthModal';
 import Toast from '@/components/ui/Toast';
 import { useUI } from '@/context/UIContext';
 
@@ -12,6 +10,7 @@ const MatchRoute = lazy(() => import('./pages/MatchRoute'));
 const AdminRoute = lazy(() => import('./pages/AdminRoute'));
 const FaqRoute = lazy(() => import('./pages/FaqRoute'));
 const ProfileRoute = lazy(() => import('./pages/ProfileRoute'));
+const AuthModal = lazy(() => import('@/components/modals/AuthModal'));
 
 const RouteLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
@@ -39,15 +38,17 @@ function App() {
       </Suspense>
 
       {modals.auth?.isOpen && (
-        <AuthModal
-          isOpen={modals.auth.isOpen}
-          onClose={() => closeModal('auth')}
-          initialMode={modals.auth.params?.initialMode}
-          title={modals.auth.params?.title}
-          subtitle={modals.auth.params?.subtitle}
-          redirectPath={modals.auth.params?.redirectPath}
-          onSuccess={modals.auth.params?.onSuccess}
-        />
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={modals.auth.isOpen}
+            onClose={() => closeModal('auth')}
+            initialMode={modals.auth.params?.initialMode}
+            title={modals.auth.params?.title}
+            subtitle={modals.auth.params?.subtitle}
+            redirectPath={modals.auth.params?.redirectPath}
+            onSuccess={modals.auth.params?.onSuccess}
+          />
+        </Suspense>
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} />}

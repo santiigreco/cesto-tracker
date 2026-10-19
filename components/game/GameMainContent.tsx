@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { Suspense, lazy, useCallback } from 'react';
 import { AppTab, GameEvent, StatAction } from '../../types';
 import QuickActionsPanel from '@/components/ui/QuickActionsPanel';
-import { UndoIcon } from '../icons';
-import { RedoIcon } from '../icons';
+import { UndoIcon, RedoIcon, ChevronDownIcon } from '../icons';
 import GameLogView from '@/components/game/GameLogView';
-import { ChevronDownIcon } from '../icons';
 import StatsTallyView from '@/components/game/StatsTallyView';
-import StatisticsView from '@/components/views/StatisticsView';
+import Loader from '@/components/ui/Loader';
+
+const StatisticsView = lazy(() => import('@/components/views/StatisticsView'));
 
 interface GameMainContentProps {
     activeTab: AppTab;
@@ -27,10 +27,23 @@ interface GameMainContentProps {
     setIsShareModalOpen: (v: boolean) => void;
 }
 
-const GameMainContent: React.FC<GameMainContentProps> = (props) => {
+const GameMainContent: React.FC<GameMainContentProps> = React.memo((props) => {
     const {
-        activeTab, isReadOnly, playerNames
+        activeTab,
+        isReadOnly,
+        playerNames,
+        setIsCorrectionsVisible,
+        setIsShareModalOpen,
+        setEditingEvent
     } = props;
+
+    const handleToggleCorrections = useCallback(() => {
+        setIsCorrectionsVisible((prev: boolean) => !prev);
+    }, [setIsCorrectionsVisible]);
+
+    const handleShareClick = useCallback(() => {
+        setIsShareModalOpen(true);
+    }, [setIsShareModalOpen]);
 
     return (
         <main className="flex flex-col gap-6">
@@ -62,33 +75,44 @@ const GameMainContent: React.FC<GameMainContentProps> = (props) => {
                     <GameLogView
                         log={props.gameLog}
                         playerNames={playerNames}
-                        onEventClick={!isReadOnly ? (event) => props.setEditingEvent(event) : undefined}
+                        onEventClick={!isReadOnly ? setEditingEvent : undefined}
                     />
 
                     <div className="bg-slate-800 rounded-lg shadow-lg mb-4">
                         <button
-                            onClick={() => props.setIsCorrectionsVisible((prev: boolean) => !prev)}
+                            onClick={handleToggleCorrections}
                             className="w-full flex justify-between items-center text-left p-4 font-bold text-xl text-cyan-400 hover:bg-slate-700/50 transition-colors rounded-lg"
                         >
                             <span>Planilla de Jugadores</span>
                             <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${props.isCorrectionsVisible ? 'rotate-180' : ''}`} />
                         </button>
-                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${props.isCorrectionsVisible ? 'max-h-[8000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                            <div className="p-4 border-t border-slate-700">
-                                <StatsTallyView />
+                        {props.isCorrectionsVisible && (
+                            <div className="transition-all duration-500 ease-in-out overflow-hidden max-h-[8000px] opacity-100">
+                                <div className="p-4 border-t border-slate-700">
+                                    <StatsTallyView />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
 
             {activeTab === 'statistics' && (
                 <div className="flex flex-col gap-8">
-                    <StatisticsView onShareClick={() => props.setIsShareModalOpen(true)} />
+                    <Suspense
+                        fallback={
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <Loader />
+                                <p className="text-slate-400 mt-3 text-sm">Cargando estadísticas...</p>
+                            </div>
+                        }
+                    >
+                        <StatisticsView onShareClick={handleShareClick} />
+                    </Suspense>
                 </div>
             )}
         </main>
     );
-};
+});
 
 export default GameMainContent;

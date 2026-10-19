@@ -33,11 +33,13 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            fetchTeams();
+            if (!isRival) {
+                fetchTeams();
+            }
             setSearchQuery('');
             setCustomTeam('');
         }
-    }, [isOpen]);
+    }, [isOpen, isRival, fetchTeams]);
 
     const handleSelect = (name: string, roster?: RosterPlayer[]) => {
         onSelectTeam(name, roster);

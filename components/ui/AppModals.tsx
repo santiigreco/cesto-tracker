@@ -1,20 +1,21 @@
-import React, { useMemo, useState } from 'react';
-import { AppTab, Settings, GameState, StatAction, GameEvent, SavedTeam } from '../../types';
+import React, { Suspense, lazy, useMemo, useState, useCallback } from 'react';
+import { AppTab, Settings, GameEvent, SavedTeam } from '../../types';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { useGameContext, initialGameState } from '../../context/GameContext';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useNavigate } from 'react-router-dom';
+import { useSync } from '../../context/SyncContext';
 
-import MobileMenu from '@/components/ui/MobileMenu';
-import PlayerSelectionModal from '@/components/modals/PlayerSelectionModal';
-import LoadGameModal from '@/components/modals/LoadGameModal';
-import SaveGameModal from '@/components/modals/SaveGameModal';
-import SettingsModal from '@/components/modals/SettingsModal';
-import ShareModal from '@/components/modals/ShareModal';
-import ConfirmationModal from '@/components/modals/ConfirmationModal';
-import NotificationPopup from '@/components/ui/NotificationPopup';
-import GameEventEditModal from '@/components/modals/GameEventEditModal';
+const MobileMenu = lazy(() => import('@/components/ui/MobileMenu'));
+const PlayerSelectionModal = lazy(() => import('@/components/modals/PlayerSelectionModal'));
+const LoadGameModal = lazy(() => import('@/components/modals/LoadGameModal'));
+const SaveGameModal = lazy(() => import('@/components/modals/SaveGameModal'));
+const SettingsModal = lazy(() => import('@/components/modals/SettingsModal'));
+const ShareModal = lazy(() => import('@/components/modals/ShareModal'));
+const ConfirmationModal = lazy(() => import('@/components/modals/ConfirmationModal'));
+const NotificationPopup = lazy(() => import('@/components/ui/NotificationPopup'));
+const GameEventEditModal = lazy(() => import('@/components/modals/GameEventEditModal'));
 
 interface AppModalsProps {
     tabTranslations: { [key in AppTab]: string };
@@ -28,12 +29,25 @@ interface AppModalsProps {
     handleTeamLoadedFromHome?: (team: SavedTeam) => void;
 }
 
-import { useSync } from '../../context/SyncContext';
+const EMPTY_PLAYERS: string[] = [];
+const EMPTY_STATUSES: Record<string, string[]> = {};
 
-const AppModals: React.FC<AppModalsProps> = (props) => {
-    const { activeTab, setActiveTab, modals, openModal, closeModal, actionToAssign, setActionToAssign, notificationPopup, setNotificationPopup, toast, handleShare, showToast } = useUI();
+const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
+    const {
+        activeTab,
+        setActiveTab,
+        modals,
+        openModal,
+        closeModal,
+        actionToAssign,
+        setActionToAssign,
+        notificationPopup,
+        setNotificationPopup,
+        handleShare,
+        showToast
+    } = useUI();
     const navigate = useNavigate();
-    const { user, handleLogout, handleLogin } = useAuth();
+    const { user, handleLogout } = useAuth();
     const { gameState, setGameState } = useGameContext();
     const { syncState, setSyncState, handleSyncToSupabase, handleLoadGame } = useSync();
 
@@ -46,54 +60,53 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         updatePlayerName
     } = useGameLogic();
 
-    // Reconstruct wrappers from App logic to avoid passing down
-    const handleAssignActionToPlayer = (playerNumber: string) => {
+    const handleAssignActionToPlayer = useCallback((playerNumber: string) => {
         if (actionToAssign) {
             handleUpdateTallyStat(playerNumber, actionToAssign, 1);
         }
         closeModal('playerSelection');
         setActionToAssign(null);
-    };
+    }, [actionToAssign, handleUpdateTallyStat, closeModal, setActionToAssign]);
 
-    const handleConfirmClearSheet = () => {
+    const handleConfirmClearSheet = useCallback(() => {
         handleClearSheet();
         closeModal('clearSheet');
-    };
+    }, [handleClearSheet, closeModal]);
 
-    const handleConfirmNewGameWrapper = () => {
+    const handleConfirmNewGameWrapper = useCallback(() => {
         handleConfirmNewGame();
         closeModal('newGame');
-    };
+    }, [handleConfirmNewGame, closeModal]);
 
-    const handleConfirmReselectPlayers = () => {
+    const handleConfirmReselectPlayers = useCallback(() => {
         setGameState(prev => ({ ...prev, isSetupComplete: false }));
         closeModal('reselect');
-    };
+    }, [setGameState, closeModal]);
 
-    const handleChangeMode = () => {
+    const handleChangeMode = useCallback(() => {
         setGameState(prev => ({ ...prev, isSetupComplete: false, gameMode: null }));
         closeModal('settings');
-    };
+    }, [setGameState, closeModal]);
 
-    const handleRequestReturnHome = () => {
+    const handleRequestReturnHome = useCallback(() => {
         setGameState({ ...initialGameState, hasSeenHomepage: false, tutorialStep: 1 });
         closeModal('returnHome');
         navigate('/');
-    };
+    }, [setGameState, closeModal, navigate]);
 
-    const handleRequestNewGame = () => {
+    const handleRequestNewGame = useCallback(() => {
         closeModal('settings');
-        useUI().openModal('newGame');
-    };
+        openModal('newGame');
+    }, [closeModal, openModal]);
 
-    const handleRequestReselectPlayers = () => {
+    const handleRequestReselectPlayers = useCallback(() => {
         closeModal('settings');
-        useUI().openModal('reselect');
-    };
+        openModal('reselect');
+    }, [closeModal, openModal]);
 
     const [isFinalizing, setIsFinalizing] = useState(false);
 
-    const handleConfirmFinalize = async () => {
+    const handleConfirmFinalize = useCallback(async () => {
         if (isFinalizing) return;
         setIsFinalizing(true);
         showToast('Finalizando y guardando partido...', 'info');
@@ -113,93 +126,116 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
         } finally {
             setIsFinalizing(false);
         }
-    };
+    }, [isFinalizing, showToast, handleSyncToSupabase, closeModal, setActiveTab]);
 
-    const handleGoToEditNames = () => {
+    const handleGoToEditNames = useCallback(() => {
         closeModal('finishMatch');
         openModal('completeNames');
-    };
+    }, [closeModal, openModal]);
 
-    const hasMissingNames = gameState.availablePlayers?.some(p => {
-        const name = gameState.playerNames?.[p] || '';
-        return !name || name === `Jugador #${p}` || name.includes('Jugador #');
-    }) || false;
+    const isFinishMatchOpen = Boolean(modals.finishMatch?.isOpen);
+    const hasMissingNames = useMemo(() => {
+        if (!isFinishMatchOpen) return false;
+        return gameState.availablePlayers?.some(p => {
+            const name = gameState.playerNames?.[p] || '';
+            return !name || name === `Jugador #${p}` || name.includes('Jugador #');
+        }) || false;
+    }, [isFinishMatchOpen, gameState.availablePlayers, gameState.playerNames]);
 
-
-    const handleRequestSaveGame = () => {
+    const handleRequestSaveGame = useCallback(() => {
         closeModal('settings');
-        useUI().openModal('saveGame');
+        openModal('saveGame');
         setSyncState({ status: 'idle', message: '' });
-    };
+    }, [closeModal, openModal, setSyncState]);
 
-    // --- Dynamic Player Ordering Logic (for PlayerSelectionModal) ---
-    const sortedPlayersByRecentUsage = useMemo(() => {
+    const isPlayerSelectionOpen = Boolean(modals.playerSelection?.isOpen && actionToAssign);
+
+    // --- Dynamic Player Ordering Logic (computed ONLY when PlayerSelectionModal is open) ---
+    const { sortedPlayersByRecentUsage, recentCount, playerStatuses } = useMemo(() => {
+        if (!isPlayerSelectionOpen) {
+            return {
+                sortedPlayersByRecentUsage: EMPTY_PLAYERS,
+                recentCount: 0,
+                playerStatuses: EMPTY_STATUSES
+            };
+        }
+
         const log = gameState.gameLog || [];
-        const usedPlayerNumbers = Array.from(new Set(log.map(entry => entry.playerNumber).filter(p => !!p))).sort((a, b) => Number(a) - Number(b));
-        
-        // Find players that are available but not used yet, sort them numerically
-        const unusedPlayers = gameState.availablePlayers.filter(p => !usedPlayerNumbers.includes(p)).sort((a, b) => Number(a) - Number(b));
-        
-        // Return used ones (most recent first) followed by numerical unused ones
-        return [...usedPlayerNumbers, ...unusedPlayers];
-    }, [gameState.gameLog, gameState.availablePlayers]);
+        const usedSet = new Set<string>();
+        const foulsByPlayer: Record<string, number> = {};
+        const recentShotsByPlayer: Record<string, string[]> = {};
 
-    const playerStatuses = useMemo(() => {
-        const statuses: Record<string, string[]> = {};
-        const log = gameState.gameLog || [];
-
-        gameState.availablePlayers.forEach(p => {
-            statuses[p] = [];
-            
-            // 1. Foul Check (5 fouls = warning, 6 fouls = compulsory substitution)
-            const playerFouls = log.filter(e => e.playerNumber === p && e.action === 'faltasPersonales').length;
-            if (playerFouls === 5) statuses[p].push('⚠️');
-            if (playerFouls >= 6) statuses[p].push('🛑');
-
-            // 2. Streak Check (Last 3 shots of this player from gameLog)
-            // This works for both Chart and Tally modes
-            const shotActions = ['goles', 'triples', 'fallos'];
-            const playerLogs = log.filter(e => e.playerNumber === p && shotActions.includes(e.action)).slice(0, 3);
-            
-            if (playerLogs.length === 3) {
-                const allHits = playerLogs.every(e => e.action === 'goles' || e.action === 'triples');
-                const allMisses = playerLogs.every(e => e.action === 'fallos');
-                
-                if (allHits) statuses[p].push('🔥');
-                if (allMisses) statuses[p].push('❄️');
+        for (let i = 0; i < log.length; i++) {
+            const entry = log[i];
+            const p = entry.playerNumber;
+            if (!p) continue;
+            usedSet.add(p);
+            if (entry.action === 'faltasPersonales') {
+                foulsByPlayer[p] = (foulsByPlayer[p] || 0) + 1;
+            } else if (entry.action === 'goles' || entry.action === 'triples' || entry.action === 'fallos') {
+                const arr = recentShotsByPlayer[p] || (recentShotsByPlayer[p] = []);
+                if (arr.length < 3) {
+                    arr.push(entry.action);
+                }
             }
-        });
-        return statuses;
-    }, [gameState.gameLog, gameState.availablePlayers]);
+        }
 
+        const usedPlayerNumbers = Array.from(usedSet).sort((a, b) => Number(a) - Number(b));
+        const unusedPlayers = gameState.availablePlayers
+            .filter(p => !usedSet.has(p))
+            .sort((a, b) => Number(a) - Number(b));
 
+        const statuses: Record<string, string[]> = {};
+        for (let i = 0; i < gameState.availablePlayers.length; i++) {
+            const p = gameState.availablePlayers[i];
+            const list: string[] = [];
+            const playerFouls = foulsByPlayer[p] || 0;
+            if (playerFouls === 5) list.push('⚠️');
+            if (playerFouls >= 6) list.push('🛑');
 
-    const handleSettingsChange = (newSettings: Settings) => {
+            const shots = recentShotsByPlayer[p];
+            if (shots && shots.length === 3) {
+                if (shots.every(a => a === 'goles' || a === 'triples')) list.push('🔥');
+                else if (shots.every(a => a === 'fallos')) list.push('❄️');
+            }
+            statuses[p] = list;
+        }
+
+        return {
+            sortedPlayersByRecentUsage: [...usedPlayerNumbers, ...unusedPlayers],
+            recentCount: usedPlayerNumbers.length,
+            playerStatuses: statuses
+        };
+    }, [isPlayerSelectionOpen, gameState.gameLog, gameState.availablePlayers]);
+
+    const handleSettingsChange = useCallback((newSettings: Settings) => {
         setGameState(prev => ({ ...prev, settings: newSettings }));
-    };
+    }, [setGameState]);
 
     return (
-        <>
-            <MobileMenu
-                isOpen={modals.mobileMenu?.isOpen}
-                onClose={() => closeModal('mobileMenu')}
-                activeTab={activeTab}
-                onSelectTab={(tab) => { setActiveTab(tab); closeModal('mobileMenu'); }}
-                onShare={handleShare}
-                tabTranslations={props.tabTranslations}
-                tabs={props.tabs}
-            />
+        <Suspense fallback={null}>
+            {modals.mobileMenu?.isOpen && (
+                <MobileMenu
+                    isOpen={modals.mobileMenu?.isOpen}
+                    onClose={() => closeModal('mobileMenu')}
+                    activeTab={activeTab}
+                    onSelectTab={(tab) => { setActiveTab(tab); closeModal('mobileMenu'); }}
+                    onShare={handleShare}
+                    tabTranslations={props.tabTranslations}
+                    tabs={props.tabs}
+                />
+            )}
 
-            {modals.playerSelection?.isOpen && actionToAssign && (
+            {isPlayerSelectionOpen && (
                 <PlayerSelectionModal
-                    isOpen={modals.playerSelection?.isOpen}
+                    isOpen={true}
                     onClose={() => { closeModal('playerSelection'); setActionToAssign(null); }}
                     onSelectPlayer={handleAssignActionToPlayer}
                     players={sortedPlayersByRecentUsage}
                     playerNames={gameState.playerNames}
                     actionLabel={props.actionLabel || ''}
                     playerStatuses={playerStatuses}
-                    recentCount={gameState.gameLog.length > 0 ? Array.from(new Set(gameState.gameLog.map(e => e.playerNumber).filter(p => !!p))).length : 0}
+                    recentCount={recentCount}
                 />
             )}
 
@@ -251,12 +287,14 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            <ShareModal
-                isOpen={modals.share?.isOpen}
-                onClose={() => closeModal('share')}
-                gameState={gameState}
-                playerStats={[]}
-            />
+            {modals.share?.isOpen && (
+                <ShareModal
+                    isOpen={modals.share?.isOpen}
+                    onClose={() => closeModal('share')}
+                    gameState={gameState}
+                    playerStats={[]}
+                />
+            )}
 
             {modals.clearSheet?.isOpen && (
                 <ConfirmationModal
@@ -303,7 +341,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 />
             )}
 
-            {modals.finishMatch?.isOpen && (
+            {isFinishMatchOpen && (
                 <ConfirmationModal
                     title="¿Finalizar Partido?"
                     message={
@@ -339,7 +377,7 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                         <p className="text-slate-400 mb-6 text-sm">Asigna nombres reales a los números para el reporte oficial.</p>
                         
                         <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar space-y-3 mb-6">
-                            {gameState.availablePlayers.sort((a,b) => Number(a)-Number(b)).map(num => (
+                            {[...gameState.availablePlayers].sort((a,b) => Number(a)-Number(b)).map(num => (
                                 <div key={num} className="flex items-center gap-3 bg-slate-700/30 p-2 rounded-xl border border-slate-600/30">
                                     <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md">
                                         #{num}
@@ -366,7 +404,6 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                 </div>
             )}
 
-
             {notificationPopup && (
                 <NotificationPopup
                     type={notificationPopup.type}
@@ -388,8 +425,8 @@ const AppModals: React.FC<AppModalsProps> = (props) => {
                     availablePlayers={props.playersForTally}
                 />
             )}
-        </>
+        </Suspense>
     );
-};
+});
 
 export default AppModals;

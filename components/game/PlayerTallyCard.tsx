@@ -12,19 +12,21 @@ const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 const CompactTallyStat: React.FC<{ 
+    statKey: StatAction;
+    playerNumber: string;
     label: string; 
     value: number; 
-    onIncrement: () => void; 
+    onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void; 
     readOnly?: boolean;
     disabled?: boolean;
-}> = React.memo(({ label, value, onIncrement, readOnly, disabled }) => (
+}> = React.memo(({ statKey, playerNumber, label, value, onUpdate, readOnly, disabled }) => (
     <div className="flex flex-col items-center p-2.5 bg-slate-700/50 rounded-xl gap-1.5 select-none touch-manipulation">
         <span className="text-xs text-slate-300 text-center font-bold tracking-tight">{label}</span>
         <div className="flex items-center justify-between w-full px-1">
             <span className="w-8 text-center text-xl font-bold font-mono text-white">{value}</span>
             {!readOnly && (
                 <button
-                    onClick={onIncrement}
+                    onClick={() => onUpdate(playerNumber, statKey, 1)}
                     disabled={disabled}
                     className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-green-600 hover:bg-green-500 active:bg-green-700 active:scale-90 disabled:opacity-30 disabled:hover:bg-green-600 disabled:active:scale-100 rounded-xl text-white font-bold transition-all shadow-md touch-manipulation"
                     aria-label={`Incrementar ${label}`}
@@ -137,9 +139,11 @@ const PlayerTallyCard: React.FC<{
                 {(isTeamCard ? teamStatsToShow : playerStatsToShow).map(statKey => (
                     <CompactTallyStat
                         key={statKey}
+                        statKey={statKey as StatAction}
+                        playerNumber={playerNumber}
                         label={statLabels[statKey as keyof TallyStatsPeriod]}
                         value={playerTally[statKey as keyof TallyStatsPeriod]}
-                        onIncrement={() => onUpdate(playerNumber, statKey as StatAction, 1)}
+                        onUpdate={onUpdate}
                         readOnly={isReadOnly}
                         disabled={statKey === 'faltasPersonales' && playerTally.faltasPersonales >= 6}
                     />

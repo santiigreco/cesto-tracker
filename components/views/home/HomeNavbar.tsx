@@ -13,7 +13,7 @@ interface HomeNavbarProps {
   onStartClick: () => void;
 }
 
-export const HomeNavbar: React.FC<HomeNavbarProps> = ({
+export const HomeNavbar: React.FC<HomeNavbarProps> = React.memo(({
   canAccessAdmin,
   user,
   profile,
@@ -69,7 +69,7 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
             title={profile?.full_name || user.email || 'Mi Perfil'}
           >
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              <img src={profile.avatar_url} alt="Profile" loading="lazy" decoding="async" width={36} height={36} className="w-full h-full object-cover" />
             ) : (
               profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'
             )}
@@ -96,4 +96,4 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = ({
       </div>
     </header>
   );
-};
+});

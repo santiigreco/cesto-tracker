@@ -1,7 +1,5 @@
-
 import React from 'react';
-import { HamburgerIcon } from '../icons';
-import { GearIcon } from '../icons';
+import { HamburgerIcon, GearIcon } from '../icons';
 import { useNavigate } from 'react-router-dom';
 import CloudIndicator from '@/components/ui/CloudIndicator';
 import { GameMode, GamePeriod } from '../../types';
@@ -35,13 +33,12 @@ interface AppHeaderProps {
     activeTab?: string;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({
+const AppHeader: React.FC<AppHeaderProps> = React.memo(({
     onOpenMobileMenu,
     onRequestReturnHome,
     isSetupComplete,
     gameName,
     myTeam,
-    gameMode,
     isAutoSaving,
     lastSaved,
     gameId,
@@ -122,7 +119,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                                     title="Ver perfil"
                                 >
                                     {userAvatarUrl
-                                        ? <img src={userAvatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                                        ? <img src={userAvatarUrl} alt="avatar" loading="lazy" decoding="async" width={36} height={36} className="w-full h-full object-cover" />
                                         : (userInitial || user.email?.charAt(0) || 'U')
                                     }
                                 </button>
@@ -200,6 +197,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             </header>
         </div>
     );
-};
+});
 
 export default AppHeader;

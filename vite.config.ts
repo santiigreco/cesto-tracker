@@ -23,9 +23,24 @@ export default defineConfig(({ mode }) => {
       build: {
         rollupOptions: {
           output: {
-            manualChunks: {
-              'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-              'vendor-supabase': ['@supabase/supabase-js'],
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                if (
+                  id.includes('/react/') ||
+                  id.includes('\\react\\') ||
+                  id.includes('/react-dom/') ||
+                  id.includes('\\react-dom\\') ||
+                  id.includes('/react-router') ||
+                  id.includes('\\react-router') ||
+                  id.includes('/scheduler/') ||
+                  id.includes('\\scheduler\\')
+                ) {
+                  return 'vendor-react';
+                }
+                if (id.includes('@supabase')) {
+                  return 'vendor-supabase';
+                }
+              }
             }
           }
         }

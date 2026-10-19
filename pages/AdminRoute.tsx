@@ -1,17 +1,21 @@
-
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import Loader from '@/components/ui/Loader';
-import { AdminOverview } from '../components/admin/views/AdminOverview';
-import { AdminUsersView } from '../components/admin/views/AdminUsersView';
-
-import { AdminGamesView } from '../components/admin/views/AdminGamesView';
-
 import { AdminSidebar } from '../components/admin/ui/AdminSidebar';
 import { AdminTab } from '../components/admin/types';
 import { RefreshIcon, XIcon } from '../components/icons';
+
+const AdminOverview = lazy(() =>
+    import('../components/admin/views/AdminOverview').then(m => ({ default: m.AdminOverview }))
+);
+const AdminUsersView = lazy(() =>
+    import('../components/admin/views/AdminUsersView').then(m => ({ default: m.AdminUsersView }))
+);
+const AdminGamesView = lazy(() =>
+    import('../components/admin/views/AdminGamesView').then(m => ({ default: m.AdminGamesView }))
+);
 
 const AdminRoute: React.FC = () => {
     const { user, authLoading } = useAuth();
@@ -32,6 +36,12 @@ const AdminRoute: React.FC = () => {
         }
     }, [user, canAccessAdmin, authLoading, profileLoading, navigate]);
 
+    const handleRefresh = useCallback(() => setRefreshKey(prev => prev + 1), []);
+    const handleClose = useCallback(() => navigate('/'), [navigate]);
+    const handleLoadAdminGame = useCallback((id: string, asOwner: boolean) => {
+        navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`);
+    }, [navigate]);
+
     if (authLoading || profileLoading) {
         return (
             <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
@@ -44,9 +54,6 @@ const AdminRoute: React.FC = () => {
     if (!user || !canAccessAdmin) {
         return null;
     }
-
-    const handleRefresh = () => setRefreshKey(prev => prev + 1);
-    const handleClose = () => navigate('/');
 
     return (
         <div className="min-h-screen bg-[#0a0f18] flex flex-col lg:flex-row overflow-hidden">
@@ -100,11 +107,11 @@ const AdminRoute: React.FC = () => {
 
                 {/* Scrollable Content */}
                 <div className="flex-grow overflow-y-auto custom-scrollbar p-4 lg:p-6" key={refreshKey}>
-                    {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} isAdmin={canAccessAdmin} />}
-                    {activeTab === 'users' && canAccessAdmin && <AdminUsersView isOwner={isOwner} isAdmin={canAccessAdmin} />}
-
-
-                    {activeTab === 'games' && <AdminGamesView onLoadGame={(id, asOwner) => navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`)} />}
+                    <Suspense fallback={<div className="flex justify-center items-center h-48"><Loader /></div>}>
+                        {activeTab === 'dashboard' && <AdminOverview isOwner={isOwner} isAdmin={canAccessAdmin} />}
+                        {activeTab === 'users' && canAccessAdmin && <AdminUsersView isOwner={isOwner} isAdmin={canAccessAdmin} />}
+                        {activeTab === 'games' && <AdminGamesView onLoadGame={handleLoadAdminGame} />}
+                    </Suspense>
                 </div>
             </div>
         </div>

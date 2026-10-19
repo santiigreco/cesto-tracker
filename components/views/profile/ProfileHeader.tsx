@@ -84,7 +84,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {isUploading ? (
                   <Loader className="h-8 w-8 text-cyan-400" />
                 ) : profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={profile.avatar_url} alt="Avatar" loading="lazy" decoding="async" width={112} height={112} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 to-emerald-400">
                     {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}

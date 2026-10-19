@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useGameContext } from '../../context/GameContext';
+import { useGameContext, initialPlayerTally } from '../../context/GameContext';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import PlayerTallyCard from '@/components/game/PlayerTallyCard';
-import { initialPlayerTally } from '../../context/GameContext';
 
-const StatsTallyView: React.FC = () => {
+const StatsTallyView: React.FC = React.memo(() => {
     const { gameState } = useGameContext();
     const { handleUpdateTallyStat, updatePlayerName } = useGameLogic();
     const { availablePlayers, playerNames, tallyStats, currentPeriod } = gameState;
@@ -54,6 +53,6 @@ const StatsTallyView: React.FC = () => {
             ))}
         </div>
     );
-};
+});
 
 export default StatsTallyView;

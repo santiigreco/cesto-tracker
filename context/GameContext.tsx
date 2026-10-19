@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback, ReactNode } from 'react';
 import { GameState, Shot, TallyStats, TallyStatsPeriod, GamePeriod } from '../types';
 import { GAME_STATE_STORAGE_KEY } from '../constants';
 
@@ -136,27 +136,43 @@ const hydrateInitialGameState = (): GameState => {
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [gameState, setGameState] = useState<GameState>(hydrateInitialGameState);
 
-    // Save to LocalStorage
+    // Save to LocalStorage (debounced to avoid blocking main thread on rapid stat clicks, with immediate flush on page hide)
     useEffect(() => {
-        try {
-            const gameStateJSON = JSON.stringify(gameState);
-            localStorage.setItem(GAME_STATE_STORAGE_KEY, gameStateJSON);
-        } catch (error) {
-            console.error("Failed to save game state to localStorage:", error);
-        }
+        const saveNow = () => {
+            try {
+                const gameStateJSON = JSON.stringify(gameState);
+                localStorage.setItem(GAME_STATE_STORAGE_KEY, gameStateJSON);
+            } catch (error) {
+                console.error("Failed to save game state to localStorage:", error);
+            }
+        };
+
+        const timerId = setTimeout(saveNow, 150);
+        window.addEventListener('pagehide', saveNow);
+
+        return () => {
+            clearTimeout(timerId);
+            window.removeEventListener('pagehide', saveNow);
+        };
     }, [gameState]);
 
-    const resetGame = () => {
-        setGameState(prev => ({
+    const resetGame = useCallback(() => {
+        setGameState({
             ...initialGameState,
             hasSeenHomepage: true,
             gameId: null,
             isReadOnly: false,
-        }));
-    };
+        });
+    }, []);
+
+    const contextValue = useMemo(() => ({
+        gameState,
+        setGameState,
+        resetGame
+    }), [gameState, resetGame]);
 
     return (
-        <GameContext.Provider value={{ gameState, setGameState, resetGame }}>
+        <GameContext.Provider value={contextValue}>
             {children}
         </GameContext.Provider>
     );

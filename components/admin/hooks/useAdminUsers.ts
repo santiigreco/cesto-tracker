@@ -1,40 +1,67 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
 import { AdminProfile } from '../types';
 import { IdentityRole, PermissionRole } from '../../../types';
 
+const ADMIN_USERS_CACHE_TTL_MS = 30_000;
+let cachedAdminUsers: { users: AdminProfile[]; timestamp: number } | null = null;
+let inFlightAdminUsersPromise: Promise<AdminProfile[]> | null = null;
+
+export const fetchAdminUsersShared = async (forceRefresh = false): Promise<AdminProfile[]> => {
+    const now = Date.now();
+    if (!forceRefresh && cachedAdminUsers && now - cachedAdminUsers.timestamp < ADMIN_USERS_CACHE_TTL_MS) {
+        return cachedAdminUsers.users;
+    }
+
+    if (!forceRefresh && inFlightAdminUsersPromise) {
+        return inFlightAdminUsersPromise;
+    }
+
+    const promise = (async () => {
+        const { data, error: rpcError } = await supabase.rpc('get_admin_users');
+
+        if (rpcError) {
+            console.warn('RPC get_admin_users falló, ejecutando fallback directo sobre tabla profiles...', rpcError);
+            const { data: profilesData, error: profilesError } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (profilesError) throw profilesError;
+            const fallbackUsers = (profilesData || []).map(p => ({
+                ...p,
+                created_at: p.updated_at || new Date().toISOString()
+            })) as AdminProfile[];
+
+            cachedAdminUsers = { users: fallbackUsers, timestamp: Date.now() };
+            return fallbackUsers;
+        }
+
+        const result = (data || []) as AdminProfile[];
+        cachedAdminUsers = { users: result, timestamp: Date.now() };
+        return result;
+    })();
+
+    inFlightAdminUsersPromise = promise;
+    try {
+        return await promise;
+    } finally {
+        inFlightAdminUsersPromise = null;
+    }
+};
+
 export const useAdminUsers = (canAccess: boolean = true) => {
-    const [users, setUsers] = useState<AdminProfile[]>([]);
+    const [users, setUsers] = useState<AdminProfile[]>(() => cachedAdminUsers?.users || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchUsers = useCallback(async () => {
+    const fetchUsers = useCallback(async (forceRefresh = false) => {
         if (!canAccess) return;
         setLoading(true);
         setError(null);
         try {
-            // Usamos la RPC get_admin_users() que hace JOIN entre auth.users y profiles.
-            // Esto garantiza ver TODOS los usuarios registrados con su email.
-            const { data, error: rpcError } = await supabase.rpc('get_admin_users');
-
-            if (rpcError) {
-                console.warn('RPC get_admin_users falló, ejecutando fallback directo sobre tabla profiles...', rpcError);
-                const { data: profilesData, error: profilesError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .order('updated_at', { ascending: false });
-
-                if (profilesError) throw profilesError;
-                if (profilesData) {
-                    setUsers(profilesData.map(p => ({
-                        ...p,
-                        created_at: p.updated_at || new Date().toISOString()
-                    })) as AdminProfile[]);
-                }
-            } else if (data) {
-                setUsers(data as AdminProfile[]);
-            }
+            const data = await fetchAdminUsersShared(forceRefresh);
+            setUsers(data);
         } catch (err: any) {
             console.error('Error al obtener usuarios en panel admin:', err);
             setError(err.message || 'Error al cargar usuarios');
@@ -54,7 +81,11 @@ export const useAdminUsers = (canAccess: boolean = true) => {
                 .single();
 
             if (apiError) throw apiError;
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, role: data.role } : u));
+            setUsers(prev => {
+                const updated = prev.map(u => u.id === id ? { ...u, role: data.role } : u);
+                if (cachedAdminUsers) cachedAdminUsers = { users: updated, timestamp: Date.now() };
+                return updated;
+            });
             return true;
         } catch (err: any) {
             console.error(err);
@@ -75,7 +106,11 @@ export const useAdminUsers = (canAccess: boolean = true) => {
 
             if (apiError) throw apiError;
             
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, permission_role: data.permission_role } : u));
+            setUsers(prev => {
+                const updated = prev.map(u => u.id === id ? { ...u, permission_role: data.permission_role } : u);
+                if (cachedAdminUsers) cachedAdminUsers = { users: updated, timestamp: Date.now() };
+                return updated;
+            });
             return true;
         } catch (err: any) {
             console.error(err);
@@ -94,7 +129,11 @@ export const useAdminUsers = (canAccess: boolean = true) => {
                 .single();
 
             if (apiError) throw apiError;
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, favorite_club: data.favorite_club } : u));
+            setUsers(prev => {
+                const updated = prev.map(u => u.id === id ? { ...u, favorite_club: data.favorite_club } : u);
+                if (cachedAdminUsers) cachedAdminUsers = { users: updated, timestamp: Date.now() };
+                return updated;
+            });
             return true;
         } catch (err: any) {
             console.error(err);
@@ -117,7 +156,11 @@ export const useAdminUsers = (canAccess: boolean = true) => {
             const { error: rpcError } = await supabase.rpc('delete_user', { user_id: id });
 
             if (!rpcError) {
-                setUsers(prev => prev.filter(u => u.id !== id));
+                setUsers(prev => {
+                    const updated = prev.filter(u => u.id !== id);
+                    if (cachedAdminUsers) cachedAdminUsers = { users: updated, timestamp: Date.now() };
+                    return updated;
+                });
                 return;
             }
 
@@ -136,12 +179,16 @@ export const useAdminUsers = (canAccess: boolean = true) => {
                 throw new Error("No se pudo eliminar el registro. Es probable que falten permisos RLS en la base de datos o la función 'delete_user'.");
             }
 
-            setUsers(prev => prev.filter(u => u.id !== id));
+            setUsers(prev => {
+                const updated = prev.filter(u => u.id !== id);
+                if (cachedAdminUsers) cachedAdminUsers = { users: updated, timestamp: Date.now() };
+                return updated;
+            });
 
         } catch (err: any) {
             console.error(err);
             alert("Error al eliminar usuario: " + err.message);
-            fetchUsers();
+            fetchUsers(true);
         }
     };
 

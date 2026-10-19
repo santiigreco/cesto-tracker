@@ -1,16 +1,14 @@
-
-import React, { useState, useEffect } from 'react';
-import { JerseyIcon } from '../icons';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
+import { JerseyIcon, ChevronDownIcon } from '../icons';
 import { Settings, GameMode, RosterPlayer } from '../../types';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
-import { ChevronDownIcon } from '../icons';
-import TeamSelectorModal from '@/components/modals/TeamSelectorModal';
-import TournamentSelectorModal from '@/components/modals/TournamentSelectorModal';
 import TeamLogo from '@/components/ui/TeamLogo';
-import { supabase } from '../../utils/supabaseClient';
 
 import { TEAMS_CONFIG, CATEGORIES_CONFIG } from '../../constants';
 import { findBestTeamMatch } from '../../utils/teamUtils';
+
+const TeamSelectorModal = lazy(() => import('@/components/modals/TeamSelectorModal'));
+const TournamentSelectorModal = lazy(() => import('@/components/modals/TournamentSelectorModal'));
 
 const LAST_TEAM_STORAGE_KEY = 'cesto_last_team_setup';
 const allPlayers = Array.from({ length: 15 }, (_, i) => String(i + 1));
@@ -28,8 +26,6 @@ const defaultSettings: Settings = {
     manoFriaThreshold: 5,
 };
 
-
-
 interface PlayerSetupProps {
     onSetupComplete: (selectedPlayers: string[], settings: Settings, gameMode: GameMode, initialPlayerNames?: Record<string, string>) => void;
     onBack: () => void;
@@ -44,7 +40,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     onBack,
     initialSelectedPlayers = [],
     initialSettings = defaultSettings,
-    initialGameMode = null,
     initialPlayerNames = {}
 }) => {
     // ── State ──
@@ -91,8 +86,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         } catch (e) { /* ignore */ }
         return initialSettings;
     });
-
-
 
     // Unified handler for loading a team (either from "My Teams" modal or "Team Selector")
     const applyTeamRoster = (name: string, players: RosterPlayer[]) => {
@@ -223,8 +216,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         <JerseyIcon className="w-32 h-32 rotate-12" />
                     </div>
 
-
-
                     {/* ── Advanced Settings Trigger ── */}
                     <button
                         onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
@@ -289,7 +280,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         </div>
                     )}
 
-
                     {/* ── Teams Selection ── */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -328,7 +318,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                 </div>
                                 <ChevronDownIcon className="h-4 w-4 text-slate-500" />
                             </button>
-
                         </div>
                     </div>
 
@@ -377,8 +366,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         </div>
                     </div>
 
-
-
                     {/* ── Start Button ── */}
                     <div className="pt-6">
                         <button
@@ -398,40 +385,48 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 </div>
             </div>
 
-            {/* ── Modals ── */}
-            <TeamSelectorModal
-                isOpen={isTeamSelectorOpen}
-                onClose={() => setIsTeamSelectorOpen(false)}
-                onSelectTeam={handleTeamSelectedFromDropdown}
-                currentTeam={settings.myTeam || ''}
-                title="Selecciona tu Equipo"
-                isRival={false}
-            />
+            {/* ── Modals (Mounted on demand) ── */}
+            <Suspense fallback={null}>
+                {isTeamSelectorOpen && (
+                    <TeamSelectorModal
+                        isOpen={isTeamSelectorOpen}
+                        onClose={() => setIsTeamSelectorOpen(false)}
+                        onSelectTeam={handleTeamSelectedFromDropdown}
+                        currentTeam={settings.myTeam || ''}
+                        title="Selecciona tu Equipo"
+                        isRival={false}
+                    />
+                )}
 
-            <TeamSelectorModal
-                isOpen={isRivalSelectorOpen}
-                onClose={() => setIsRivalSelectorOpen(false)}
-                onSelectTeam={(name) => {
-                    setSettings({ ...settings, gameName: name });
-                    setIsRivalSelectorOpen(false);
-                }}
-                currentTeam={settings.gameName || ''}
-                title="Selecciona el Rival"
-                isRival={true}
-            />
+                {isRivalSelectorOpen && (
+                    <TeamSelectorModal
+                        isOpen={isRivalSelectorOpen}
+                        onClose={() => setIsRivalSelectorOpen(false)}
+                        onSelectTeam={(name) => {
+                            setSettings({ ...settings, gameName: name });
+                            setIsRivalSelectorOpen(false);
+                        }}
+                        currentTeam={settings.gameName || ''}
+                        title="Selecciona el Rival"
+                        isRival={true}
+                    />
+                )}
 
-            <TournamentSelectorModal
-                isOpen={isTournamentSelectorOpen}
-                onClose={() => setIsTournamentSelectorOpen(false)}
-                onSelectTournament={(id, name) => {
-                    setSettings({ ...settings, tournamentId: id, tournamentName: name });
-                    setIsTournamentSelectorOpen(false);
-                }}
-                currentTournamentId={settings.tournamentId}
-            />
+                {isTournamentSelectorOpen && (
+                    <TournamentSelectorModal
+                        isOpen={isTournamentSelectorOpen}
+                        onClose={() => setIsTournamentSelectorOpen(false)}
+                        onSelectTournament={(id, name) => {
+                            setSettings({ ...settings, tournamentId: id, tournamentName: name });
+                            setIsTournamentSelectorOpen(false);
+                        }}
+                        currentTournamentId={settings.tournamentId}
+                    />
+                )}
+            </Suspense>
 
         </div>
     );
 };
 
-export default PlayerSetup; 
+export default PlayerSetup;

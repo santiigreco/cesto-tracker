@@ -1,53 +1,88 @@
-
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { SavedTeam, RosterPlayer } from '../types';
 
+const TEAMS_CACHE_TTL_MS = 60_000;
+let cachedTeamsByUser: { userId: string; teams: SavedTeam[]; timestamp: number } | null = null;
+let inFlightTeamsPromise: Promise<SavedTeam[]> | null = null;
+
 export const useTeamManager = () => {
-    const [teams, setTeams] = useState<SavedTeam[]>([]);
+    const [teams, setTeams] = useState<SavedTeam[]>(() => cachedTeamsByUser?.teams || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchTeams = async () => {
-        setLoading(true);
+    const fetchTeams = useCallback(async (forceRefresh = false) => {
         setError(null);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) {
+                cachedTeamsByUser = null;
                 setTeams([]);
                 return;
             }
 
-            const { data, error } = await supabase
-                .from('saved_teams')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
+            const now = Date.now();
+            if (
+                !forceRefresh &&
+                cachedTeamsByUser &&
+                cachedTeamsByUser.userId === user.id &&
+                now - cachedTeamsByUser.timestamp < TEAMS_CACHE_TTL_MS
+            ) {
+                setTeams(cachedTeamsByUser.teams);
+                return;
+            }
 
-            if (error) throw error;
-            
-            // Supabase returns JSON columns as any, we cast it
-            const parsedTeams: SavedTeam[] = (data || []).map((t: any) => ({
-                id: t.id,
-                name: t.name,
-                players: t.players as RosterPlayer[],
-                category: t.category,
-                created_at: t.created_at
-            }));
+            setLoading(true);
 
-            setTeams(parsedTeams);
+            if (!forceRefresh && inFlightTeamsPromise) {
+                const shared = await inFlightTeamsPromise;
+                setTeams(shared);
+                return;
+            }
+
+            const requestPromise = (async () => {
+                const { data, error: dbError } = await supabase
+                    .from('saved_teams')
+                    .select('id, name, players, category, created_at')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+
+                if (dbError) throw dbError;
+
+                const parsedTeams: SavedTeam[] = (data || []).map((t: any) => ({
+                    id: t.id,
+                    name: t.name,
+                    players: t.players as RosterPlayer[],
+                    category: t.category,
+                    created_at: t.created_at
+                }));
+
+                cachedTeamsByUser = {
+                    userId: user.id,
+                    teams: parsedTeams,
+                    timestamp: Date.now()
+                };
+                return parsedTeams;
+            })();
+
+            inFlightTeamsPromise = requestPromise;
+            const result = await requestPromise;
+            setTeams(result);
         } catch (err: any) {
             console.error(err);
             setError('Error al cargar equipos.');
         } finally {
+            inFlightTeamsPromise = null;
             setLoading(false);
         }
-    };
+    }, []);
 
-    const saveTeam = async (name: string, players: RosterPlayer[], category?: string) => {
+    const saveTeam = useCallback(async (name: string, players: RosterPlayer[], category?: string) => {
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
             if (!user) throw new Error('Debes iniciar sesión');
 
             const payload = {
@@ -57,13 +92,13 @@ export const useTeamManager = () => {
                 category
             };
 
-            const { data, error } = await supabase
+            const { data, error: dbError } = await supabase
                 .from('saved_teams')
                 .insert(payload)
-                .select()
+                .select('id, name, players, category, created_at')
                 .single();
 
-            if (error) throw error;
+            if (dbError) throw dbError;
 
             const newTeam: SavedTeam = {
                 id: data.id,
@@ -73,7 +108,11 @@ export const useTeamManager = () => {
                 created_at: data.created_at
             };
 
-            setTeams(prev => [newTeam, ...prev]);
+            setTeams(prev => {
+                const updated = [newTeam, ...prev];
+                cachedTeamsByUser = { userId: user.id, teams: updated, timestamp: Date.now() };
+                return updated;
+            });
             return newTeam;
 
         } catch (err: any) {
@@ -83,18 +122,24 @@ export const useTeamManager = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const updateTeam = async (id: string, name: string, players: RosterPlayer[], category?: string) => {
+    const updateTeam = useCallback(async (id: string, name: string, players: RosterPlayer[], category?: string) => {
         setLoading(true);
         try {
-            const { error } = await supabase
+            const { error: dbError } = await supabase
                 .from('saved_teams')
                 .update({ name, players, category })
                 .eq('id', id);
 
-            if (error) throw error;
-            setTeams(prev => prev.map(t => (t.id === id ? { ...t, name, players, category } : t)));
+            if (dbError) throw dbError;
+            setTeams(prev => {
+                const updated = prev.map(t => (t.id === id ? { ...t, name, players, category } : t));
+                if (cachedTeamsByUser) {
+                    cachedTeamsByUser = { ...cachedTeamsByUser, teams: updated, timestamp: Date.now() };
+                }
+                return updated;
+            });
             return true;
         } catch (err: any) {
             console.error(err);
@@ -103,22 +148,28 @@ export const useTeamManager = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const deleteTeam = async (id: string) => {
+    const deleteTeam = useCallback(async (id: string) => {
         try {
-            const { error } = await supabase
+            const { error: dbError } = await supabase
                 .from('saved_teams')
                 .delete()
                 .eq('id', id);
 
-            if (error) throw error;
-            setTeams(prev => prev.filter(t => t.id !== id));
+            if (dbError) throw dbError;
+            setTeams(prev => {
+                const updated = prev.filter(t => t.id !== id);
+                if (cachedTeamsByUser) {
+                    cachedTeamsByUser = { ...cachedTeamsByUser, teams: updated, timestamp: Date.now() };
+                }
+                return updated;
+            });
         } catch (err: any) {
             console.error(err);
             setError('Error al borrar el equipo.');
         }
-    };
+    }, []);
 
     return {
         teams,
