@@ -47,6 +47,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
             tallyStats={tallyStats}
             playerNames={playerNames}
             isSharing={isSharing}
+            currentPeriod={gameState.currentPeriod}
           />
         </div>
       )}

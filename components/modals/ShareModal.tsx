@@ -121,12 +121,16 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, gameState, pla
         if (gameMode === 'stats-tally') {
             Object.entries(tallyStats).forEach(([playerNum, stats]) => {
                 if (playerNum === 'Equipo') return;
-                const fh = stats['First Half'];
-                const sh = stats['Second Half'];
 
-                const pGoles = fh.goles + sh.goles;
-                const pTriples = fh.triples + sh.triples;
-                const pFallos = fh.fallos + sh.fallos;
+                let pGoles = 0;
+                let pTriples = 0;
+                let pFallos = 0;
+                Object.values(stats || {}).forEach(periodStats => {
+                    pGoles += periodStats?.goles || 0;
+                    pTriples += periodStats?.triples || 0;
+                    pFallos += periodStats?.fallos || 0;
+                });
+
                 const pPoints = (pGoles * 2) + (pTriples * 3);
                 const pTotalShots = pGoles + pTriples + pFallos;
                 const pMade = pGoles + pTriples;
@@ -180,7 +184,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, gameState, pla
         const teamTotalShots = totalGoles2p + totalTriples + totalFallos;
         const teamMade = totalGoles2p + totalTriples;
         const teamEfficiency = teamTotalShots > 0 ? ((teamMade / teamTotalShots) * 100).toFixed(0) : '0';
-        const rivalScoreNum = parseInt(rivalScore) || null;
+        const parsedRival = rivalScore.trim() !== '' ? parseInt(rivalScore, 10) : NaN;
+        const rivalScoreNum = !isNaN(parsedRival) ? parsedRival : null;
 
         let detailsString = '';
         playerDetails.forEach(p => {
@@ -219,7 +224,8 @@ ${detailsString}
 
     if (!isOpen) return null;
 
-    const rivalScoreNum = rivalScore !== '' ? parseInt(rivalScore) : null;
+    const parsedModalRival = rivalScore.trim() !== '' ? parseInt(rivalScore, 10) : NaN;
+    const rivalScoreNum = !isNaN(parsedModalRival) ? parsedModalRival : null;
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4 backdrop-blur-sm">

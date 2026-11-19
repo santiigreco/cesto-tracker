@@ -26,16 +26,27 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, viewMode, rivalSco
 
         Object.entries(tallyStats || {}).forEach(([playerNum, stats]) => {
             if (playerNum === 'Equipo') return; // Skip aggregate team entry
-            const fh = stats['First Half'];
-            const sh = stats['Second Half'];
 
-            const pPoints = (((fh?.goles || 0) + (sh?.goles || 0)) * 2) + (((fh?.triples || 0) + (sh?.triples || 0)) * 3);
+            let pGoles = 0;
+            let pTriples = 0;
+            let pFallos = 0;
+            let pRecuperos = 0;
+            let pPerdidas = 0;
+            Object.values(stats || {}).forEach(periodStats => {
+                pGoles += periodStats?.goles || 0;
+                pTriples += periodStats?.triples || 0;
+                pFallos += periodStats?.fallos || 0;
+                pRecuperos += periodStats?.recuperos || 0;
+                pPerdidas += periodStats?.perdidas || 0;
+            });
+
+            const pPoints = (pGoles * 2) + (pTriples * 3);
             totalPoints += pPoints;
-            totalGoles += (fh?.goles || 0) + (sh?.goles || 0);
-            totalTriples += (fh?.triples || 0) + (sh?.triples || 0);
-            totalFallos += (fh?.fallos || 0) + (sh?.fallos || 0);
-            totalRecuperos += (fh?.recuperos || 0) + (sh?.recuperos || 0);
-            totalPerdidas += (fh?.perdidas || 0) + (sh?.perdidas || 0);
+            totalGoles += pGoles;
+            totalTriples += pTriples;
+            totalFallos += pFallos;
+            totalRecuperos += pRecuperos;
+            totalPerdidas += pPerdidas;
 
             playersMap[playerNum] = {
                 points: pPoints,

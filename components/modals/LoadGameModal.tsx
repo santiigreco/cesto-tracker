@@ -243,10 +243,10 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                 <div className="flex border-b border-slate-700 bg-slate-800/80 shrink-0">
                     <button
                         onClick={() => setActiveTab('myGames')}
-                        className={`flex-1 py-3 px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all border-b-2 ${
+                        className={`flex-1 py-3 px-2.5 sm:px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all border-b-2 ${
                             activeTab === 'myGames'
                                 ? 'text-cyan-400 border-cyan-400 bg-slate-800'
-                                : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-750'
+                                : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-700/80'
                         }`}
                     >
                         <span>⭐ Mis Partidos</span>
@@ -260,13 +260,14 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                     </button>
                     <button
                         onClick={() => setActiveTab('community')}
-                        className={`flex-1 py-3 px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all border-b-2 ${
+                        className={`flex-1 py-3 px-2.5 sm:px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all border-b-2 ${
                             activeTab === 'community'
                                 ? 'text-cyan-400 border-cyan-400 bg-slate-800'
-                                : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-750'
+                                : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-700/80'
                         }`}
                     >
-                        <span>🌐 Partidos de la Comunidad</span>
+                        <span className="sm:hidden">🌐 Comunidad</span>
+                        <span className="hidden sm:inline">🌐 Partidos de la Comunidad</span>
                         <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                             activeTab === 'community' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-700 text-slate-400'
                         }`}>
@@ -437,13 +438,13 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-between sm:justify-center shrink-0">
+                                        <div className="flex flex-row flex-wrap sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-between sm:justify-center shrink-0">
                                             <div className="flex items-center gap-1 text-slate-500 text-[11px] font-medium" title="Visualizaciones">
                                                 <EyeIcon className="h-3 w-3" />
                                                 <span>{game.views || 0}</span>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 {isMyGame ? (
                                                     <>
                                                         {/* Continuar Anotando (Modo Edición) */}

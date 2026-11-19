@@ -52,22 +52,28 @@ const GameMainContent: React.FC<GameMainContentProps> = React.memo((props) => {
                     {!isReadOnly && <QuickActionsPanel onActionSelect={props.onActionSelect} />}
 
                     {!isReadOnly && (
-                        <div className="flex justify-center gap-4">
+                        <div className="flex justify-center gap-3 sm:gap-4">
                             <button
+                                type="button"
                                 onClick={props.handleUndoTally}
                                 disabled={props.gameLog.length === 0}
-                                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none"
+                                aria-label="Deshacer última acción"
+                                title="Deshacer última acción"
+                                className="min-h-[44px] flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none touch-manipulation"
                             >
                                 <UndoIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Deshacer</span>
+                                <span>Deshacer</span>
                             </button>
                             <button
+                                type="button"
                                 onClick={props.handleRedoTally}
                                 disabled={props.tallyRedoLog.length === 0}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none"
+                                aria-label="Rehacer acción"
+                                title="Rehacer acción"
+                                className="min-h-[44px] flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none touch-manipulation"
                             >
                                 <RedoIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Rehacer</span>
+                                <span>Rehacer</span>
                             </button>
                         </div>
                     )}
@@ -80,6 +86,7 @@ const GameMainContent: React.FC<GameMainContentProps> = React.memo((props) => {
 
                     <div className="bg-slate-800 rounded-lg shadow-lg mb-4">
                         <button
+                            type="button"
                             onClick={handleToggleCorrections}
                             className="w-full flex justify-between items-center text-left p-4 font-bold text-xl text-cyan-400 hover:bg-slate-700/50 transition-colors rounded-lg"
                         >
@@ -88,7 +95,7 @@ const GameMainContent: React.FC<GameMainContentProps> = React.memo((props) => {
                         </button>
                         {props.isCorrectionsVisible && (
                             <div className="transition-all duration-500 ease-in-out overflow-hidden max-h-[8000px] opacity-100">
-                                <div className="p-4 border-t border-slate-700">
+                                <div className="p-2.5 sm:p-4 border-t border-slate-700">
                                     <StatsTallyView />
                                 </div>
                             </div>

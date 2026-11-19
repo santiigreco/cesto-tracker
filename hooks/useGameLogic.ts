@@ -251,18 +251,20 @@ export const useGameLogic = () => {
         });
     }, [setGameState]);
 
-    const handleEditGameEvent = useCallback((oldEvent: GameEvent, newPlayer: string, newAction: StatAction) => {
+    const handleEditGameEvent = useCallback((oldEventOrId: GameEvent | string, newPlayer: string, newAction: StatAction) => {
         setGameState(prev => {
             if (prev.isReadOnly) return prev;
-            const eventIndex = prev.gameLog.findIndex(e => e.id === oldEvent.id);
+            const targetId = typeof oldEventOrId === 'string' ? oldEventOrId : oldEventOrId.id;
+            const eventIndex = prev.gameLog.findIndex(e => e.id === targetId);
             if (eventIndex === -1) return prev;
 
+            const existingEvent = prev.gameLog[eventIndex];
             const newTallyStats = { ...prev.tallyStats };
-            modifyStatValue(newTallyStats, oldEvent.playerNumber, oldEvent.period, oldEvent.action, -1);
-            modifyStatValue(newTallyStats, newPlayer, oldEvent.period, newAction, 1);
+            modifyStatValue(newTallyStats, existingEvent.playerNumber, existingEvent.period, existingEvent.action, -1);
+            modifyStatValue(newTallyStats, newPlayer, existingEvent.period, newAction, 1);
 
             const updatedEvent: GameEvent = {
-                ...oldEvent,
+                ...existingEvent,
                 playerNumber: newPlayer,
                 action: newAction
             };
@@ -276,13 +278,13 @@ export const useGameLogic = () => {
                 tallyStats: newTallyStats
             };
 
-            const wasPlayerFoul = oldEvent.action === 'faltasPersonales' && oldEvent.playerNumber !== 'Equipo';
+            const wasPlayerFoul = existingEvent.action === 'faltasPersonales' && existingEvent.playerNumber !== 'Equipo';
             const isPlayerFoul = newAction === 'faltasPersonales' && newPlayer !== 'Equipo';
 
             if (wasPlayerFoul !== isPlayerFoul) {
                 const newTeamFouls = { ...prev.teamFouls };
-                if (wasPlayerFoul) newTeamFouls[oldEvent.period] = Math.max(0, newTeamFouls[oldEvent.period] - 1);
-                if (isPlayerFoul) newTeamFouls[oldEvent.period]++;
+                if (wasPlayerFoul) newTeamFouls[existingEvent.period] = Math.max(0, newTeamFouls[existingEvent.period] - 1);
+                if (isPlayerFoul) newTeamFouls[existingEvent.period] = (newTeamFouls[existingEvent.period] || 0) + 1;
                 newState.teamFouls = newTeamFouls;
             }
 

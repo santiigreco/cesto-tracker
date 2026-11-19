@@ -159,13 +159,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return (
         <div
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+            role="dialog"
+            aria-modal="true"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isSubmitting && !isGoogleSubmitting) {
                     onClose();
                 }
             }}
         >
-            <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 transition-all">
+            <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 transition-all">
                 {/* Glow decorativo de fondo */}
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />

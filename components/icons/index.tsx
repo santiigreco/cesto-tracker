@@ -261,6 +261,17 @@ export const HandTapIcon: React.FC<{ className?: string }> = ({ className }) => 
 };
 
 
+// --- JerseySvgIcon ---
+/**
+ * Pure decorative SVG jersey icon without interactive button wrapper.
+ */
+export const JerseySvgIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className || "h-6 w-6"} aria-hidden="true">
+        <path d="M6,3 C7,2 17,2 18,3 L21,5 V8 H18 V21 H6 V8 H3 V5 Z" />
+    </svg>
+);
+
+
 // --- JerseyIcon ---
 /**
  * A reusable SVG icon component for a player jersey, styled as a T-shirt.

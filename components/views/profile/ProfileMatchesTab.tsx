@@ -213,7 +213,7 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
             return (
               <div
                 key={game.id}
-                className="bg-slate-900/90 hover:bg-slate-850 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 group"
+                className="bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-4 sm:p-5 transition-all shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 sm:gap-5 group"
               >
                 {/* Left: Scoreboard preview */}
                 <div className="flex items-center gap-4 min-w-0 flex-grow">
@@ -241,15 +241,15 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-white font-bold text-base sm:text-lg truncate">
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <TeamLogo teamName={myTeam} className="h-5 w-5" />
-                        <span className="text-cyan-300 truncate max-w-[140px] sm:max-w-[200px]">{myTeam}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-white font-bold text-base sm:text-lg min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <TeamLogo teamName={myTeam} className="h-5 w-5 shrink-0" />
+                        <span className="text-cyan-300 truncate max-w-[180px] sm:max-w-[200px]">{myTeam}</span>
                       </div>
-                      <span className="text-slate-500 font-normal">vs</span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <TeamLogo teamName={opponentName} className="h-5 w-5" />
-                        <span className="text-slate-200 truncate max-w-[140px] sm:max-w-[200px]">{opponentName}</span>
+                      <span className="text-slate-500 font-normal shrink-0">vs</span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <TeamLogo teamName={opponentName} className="h-5 w-5 shrink-0" />
+                        <span className="text-slate-200 truncate max-w-[180px] sm:max-w-[200px]">{opponentName}</span>
                       </div>
                     </div>
                   </div>
@@ -284,7 +284,7 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
                   {/* Read-Only Stats View */}
                   <button
                     onClick={() => navigate(`/match/${game.id}`)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold rounded-xl transition-colors active:scale-95"
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold rounded-xl transition-colors active:scale-95"
                     title="Ver planilla en modo lectura"
                   >
                     Ver

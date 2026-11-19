@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { XIcon } from '../icons';
 
 interface PlayerSelectionModalProps {
@@ -23,6 +24,21 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
     playerStatuses = {},
     recentCount = 0
 }) => {
+    useEffect(() => {
+        if (!isOpen || typeof document === 'undefined') return;
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const handlePlayerClick = (playerNumber: string) => {
@@ -32,17 +48,31 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
     const recentPlayers = players.slice(0, recentCount);
     const otherPlayers = players.slice(recentCount);
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center p-4 border-b border-slate-700 flex-shrink-0">
-                    <h2 className="text-xl font-bold text-cyan-400">Asignar <span className="text-white">{actionLabel}</span> a:</h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-700 transition-colors" aria-label="Cerrar">
+    const modalContent = (
+        <div
+            className="fixed inset-0 bg-slate-950/95 flex items-center justify-center z-[90] p-4 animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="player-selection-modal-title"
+            onClick={onClose}
+        >
+            <div
+                className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900 flex-shrink-0">
+                    <h2 id="player-selection-modal-title" className="text-xl font-bold text-cyan-400">Asignar <span className="text-white">{actionLabel}</span> a:</h2>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-slate-800 transition-colors text-slate-400 hover:text-white"
+                        aria-label="Cerrar"
+                    >
                         <XIcon />
                     </button>
                 </div>
                 
-                <div className="flex-grow overflow-y-auto custom-scrollbar p-4">
+                <div className="flex-grow overflow-y-auto custom-scrollbar p-4 bg-slate-900">
                     <div className="space-y-6">
                         
                         {/* SECTION 1: "Jugadores" (Recientes del partido) */}
@@ -92,6 +122,8 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             </div>
         </div>
     );
+
+    return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 const PlayerButton: React.FC<{
@@ -100,14 +132,18 @@ const PlayerButton: React.FC<{
     statuses: string[];
     onClick: () => void;
     isRecent: boolean;
-}> = ({ player, name, statuses, onClick, isRecent }) => {
+}> = ({ player, name, statuses, onClick }) => {
+    const foulHighlightClass = statuses.includes('🛑')
+        ? 'border-2 border-red-500 bg-red-950/70'
+        : statuses.includes('⚠️')
+            ? 'border-2 border-amber-500 bg-amber-950/40'
+            : 'bg-slate-800 hover:bg-slate-700 border border-slate-700';
+
     return (
         <button
+            type="button"
             onClick={onClick}
-            className={`
-                p-4 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-bold text-lg transition-colors text-center truncate relative
-                ${statuses.includes('⚠️') ? 'border-2 border-red-500 bg-red-900/20' : ''}
-            `}
+            className={`p-4 min-h-[60px] rounded-xl text-white font-bold text-lg transition-colors text-center truncate relative ${foulHighlightClass}`}
         >
             <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center gap-2">

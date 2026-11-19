@@ -71,7 +71,7 @@ const PlayerTallyCard: React.FC<{
 
     return (
         <div
-            className={`bg-slate-800 p-4 rounded-lg shadow-lg transition-all duration-200`}
+            className="bg-slate-800 p-3 sm:p-4 rounded-lg shadow-lg transition-all duration-200"
         >
             <div className="mb-4" style={{ minHeight: '40px' }}>
                 {isEditing ? (
@@ -110,7 +110,7 @@ const PlayerTallyCard: React.FC<{
                 )}
             </div>
             {!isTeamCard && (
-                <div className="flex items-center justify-between mb-3 px-1" title={`${playerTally.faltasPersonales} de 6 faltas personales`}>
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-3 px-1" title={`${playerTally.faltasPersonales} de 6 faltas personales`}>
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-slate-400 mr-1">Faltas:</span>
                         {Array.from({ length: 6 }).map((_, i) => (

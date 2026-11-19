@@ -44,7 +44,7 @@ export const FederationExportBanner: React.FC<FederationExportBannerProps> = ({
             title="Compartir resumen para WhatsApp"
           >
             <ShareIcon className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
-            <span className="hidden sm:inline whitespace-nowrap">Compartir</span>
+            <span className="whitespace-nowrap">Compartir</span>
           </button>
         )}
       </div>

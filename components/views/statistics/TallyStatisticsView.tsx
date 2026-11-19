@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { GamePeriod, TallyStats, TallyStatsPeriod } from '@/types';
 import { TopPerformerCategory, TopPerformerItem } from './StatWidgets';
 
@@ -24,7 +24,7 @@ const initialTallyStatsPeriod: TallyStatsPeriod = {
 };
 
 const periodTranslations: Record<string, string> = {
-  all: 'Ambos',
+  all: 'Todos',
   'First Half': '1er T',
   'Second Half': '2do T',
   'First Overtime': '1er S',
@@ -35,12 +35,14 @@ interface TallyStatisticsViewProps {
   tallyStats: Record<string, TallyStats>;
   playerNames: Record<string, string>;
   isSharing: boolean;
+  currentPeriod?: GamePeriod;
 }
 
 export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
   tallyStats,
   playerNames,
   isSharing,
+  currentPeriod,
 }) => {
   const [tallyPeriodFilter, setTallyPeriodFilter] = useState<'all' | GamePeriod>('all');
   const [sortConfig, setSortConfig] = useState<{
@@ -48,10 +50,35 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
     direction: 'ascending' | 'descending';
   } | null>({ key: 'playerNumber', direction: 'ascending' });
 
-  const getFilterButtonClass = (isActive: boolean) =>
-    `whitespace-nowrap flex-shrink-0 font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base ${
-      isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
-    }`;
+  const visibleFilters = useMemo<Array<'all' | GamePeriod>>(() => {
+    const hasPeriodStats = (period: GamePeriod) =>
+      Object.values(tallyStats).some(playerTally => {
+        const ps = playerTally?.[period];
+        if (!ps) return false;
+        return (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).some(
+          key => (ps[key] || 0) > 0
+        );
+      });
+
+    const showFirstOt =
+      currentPeriod === 'First Overtime' ||
+      currentPeriod === 'Second Overtime' ||
+      hasPeriodStats('First Overtime');
+    const showSecondOt =
+      currentPeriod === 'Second Overtime' ||
+      hasPeriodStats('Second Overtime');
+
+    const filters: Array<'all' | GamePeriod> = ['all', 'First Half', 'Second Half'];
+    if (showFirstOt) filters.push('First Overtime');
+    if (showSecondOt) filters.push('Second Overtime');
+    return filters;
+  }, [tallyStats, currentPeriod]);
+
+  useEffect(() => {
+    if (!visibleFilters.includes(tallyPeriodFilter)) {
+      setTallyPeriodFilter('all');
+    }
+  }, [visibleFilters, tallyPeriodFilter]);
 
   const aggregatedStats = useMemo(() => {
     return Object.entries(tallyStats).map(([playerNumber, playerTally]) => {
@@ -141,34 +168,39 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
     };
   }, [aggregatedStats]);
 
-  const hasData = aggregatedStats.some(
-    p =>
-      p.playerNumber !== 'Equipo' &&
-      (p.goles > 0 || p.triples > 0 || p.fallos > 0 || p.recuperos > 0 || p.perdidas > 0)
+  const hasData = aggregatedStats.some(p =>
+    (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).some(
+      key => (p[key] || 0) > 0
+    )
   );
+
+  const periodFilterBar = !isSharing ? (
+    <div className="w-full bg-slate-800 p-1.5 rounded-xl shadow-lg">
+      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+        {visibleFilters.map(filterKey => {
+          const isActive = tallyPeriodFilter === filterKey;
+          return (
+            <button
+              key={filterKey}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => setTallyPeriodFilter(filterKey)}
+              className={`min-h-[44px] flex-1 min-w-[78px] sm:flex-none px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
+              }`}
+            >
+              {periodTranslations[filterKey]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
 
   if (!hasData && !isSharing) {
     return (
       <div className="flex flex-col gap-8">
-        <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg overflow-x-auto">
-          <div className="flex justify-start sm:justify-center gap-2 min-w-max">
-            <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>
-              Ambos
-            </button>
-            <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>
-              1er T
-            </button>
-            <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>
-              2do T
-            </button>
-            <button onClick={() => setTallyPeriodFilter('First Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'First Overtime')}>
-              1er S
-            </button>
-            <button onClick={() => setTallyPeriodFilter('Second Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Overtime')}>
-              2do S
-            </button>
-          </div>
-        </div>
+        {periodFilterBar}
         <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
           <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
           <p className="text-slate-400">Registra algunos datos para ver las estadísticas de los jugadores aquí.</p>
@@ -195,27 +227,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
   return (
     <div className="flex flex-col gap-8">
-      {!isSharing && (
-        <div className="w-full bg-slate-800 p-1.5 rounded-lg shadow-lg overflow-x-auto">
-          <div className="flex justify-start sm:justify-center gap-2 min-w-max">
-            <button onClick={() => setTallyPeriodFilter('all')} className={getFilterButtonClass(tallyPeriodFilter === 'all')}>
-              Ambos
-            </button>
-            <button onClick={() => setTallyPeriodFilter('First Half')} className={getFilterButtonClass(tallyPeriodFilter === 'First Half')}>
-              {periodTranslations['First Half']}
-            </button>
-            <button onClick={() => setTallyPeriodFilter('Second Half')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Half')}>
-              {periodTranslations['Second Half']}
-            </button>
-            <button onClick={() => setTallyPeriodFilter('First Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'First Overtime')}>
-              {periodTranslations['First Overtime']}
-            </button>
-            <button onClick={() => setTallyPeriodFilter('Second Overtime')} className={getFilterButtonClass(tallyPeriodFilter === 'Second Overtime')}>
-              {periodTranslations['Second Overtime']}
-            </button>
-          </div>
-        </div>
-      )}
+      {periodFilterBar}
 
       {/* Team Statistics Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">

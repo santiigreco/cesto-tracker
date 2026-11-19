@@ -72,7 +72,8 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
                     {/* Left: Hamburger (mobile) */}
                     <div className="flex-none flex items-center md:hidden">
                         <button
-                            className="p-1.5 -ml-1 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            type="button"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors touch-manipulation"
                             onClick={onOpenMobileMenu}
                             aria-label="Abrir menú"
                         >
@@ -84,6 +85,7 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
                     <div className="flex-1 min-w-0 flex justify-center">
                         <h1 className="text-base xs:text-lg sm:text-3xl font-extrabold tracking-tighter truncate max-w-[150px] xs:max-w-[200px] sm:max-w-none">
                             <button
+                                type="button"
                                 onClick={onRequestReturnHome}
                                 className="group flex items-center justify-center gap-1.5 transition-all hover:scale-105 active:scale-95 disabled:opacity-100 disabled:cursor-default truncate"
                                 disabled={!isSetupComplete}
@@ -98,14 +100,16 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex-none flex items-center gap-1 sm:gap-2 shrink-0">
+                    <div className="flex-none flex items-center gap-0.5 sm:gap-2 shrink-0">
                         {user ? (
                             <>
                                 {/* Cloud Save */}
                                 <button
+                                    type="button"
                                     onClick={onSave}
-                                    className={`p-1.5 sm:p-2 rounded-full transition-all duration-300 ${isAutoSaving ? 'text-cyan-400 animate-pulse' : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'}`}
+                                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-300 touch-manipulation ${isAutoSaving ? 'text-cyan-400 animate-pulse' : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'}`}
                                     title="Sincronizar ahora"
+                                    aria-label="Sincronizar ahora"
                                     disabled={isAutoSaving}
                                 >
                                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,20 +118,24 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
                                 </button>
                                 {/* User Avatar — Profile access */}
                                 <button
+                                    type="button"
                                     onClick={onOpenProfile}
-                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-cyan-600 to-emerald-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm uppercase shadow-md hover:scale-105 active:scale-95 transition-transform overflow-hidden border border-slate-700 hover:border-cyan-400 shrink-0"
+                                    className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-600 to-emerald-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm uppercase shadow-md hover:scale-105 active:scale-95 transition-transform overflow-hidden border border-slate-700 hover:border-cyan-400 shrink-0 touch-manipulation"
                                     title="Ver perfil"
+                                    aria-label="Ver perfil"
                                 >
                                     {userAvatarUrl
-                                        ? <img src={userAvatarUrl} alt="avatar" loading="lazy" decoding="async" width={36} height={36} className="w-full h-full object-cover" />
+                                        ? <img src={userAvatarUrl} alt="avatar" loading="lazy" decoding="async" width={40} height={40} className="w-full h-full object-cover" />
                                         : (userInitial || user.email?.charAt(0) || 'U')
                                     }
                                 </button>
                             </>
                         ) : (
                             <button
+                                type="button"
                                 onClick={onLogin}
-                                className="px-2.5 py-1 bg-white text-slate-900 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-slate-100 transition-all flex items-center gap-1 shadow"
+                                className="min-h-[40px] px-2.5 sm:px-3 bg-white text-slate-900 rounded-full text-[10px] font-black uppercase tracking-tighter hover:bg-slate-100 transition-all flex items-center gap-1 shadow touch-manipulation"
+                                aria-label="Iniciar sesión"
                             >
                                 <span className="hidden xs:inline">Ingresar</span> 👤
                             </button>
@@ -135,17 +143,20 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
 
                         {isAdmin && (
                             <button
+                                type="button"
                                 onClick={() => navigate('/admin')}
-                                className="p-1.5 sm:p-2 rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
+                                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors touch-manipulation"
                                 title="Panel de Administración"
+                                aria-label="Panel de Administración"
                             >
                                 <span className="text-base sm:text-xl">🛡️</span>
                             </button>
                         )}
 
                         <button
+                            type="button"
                             onClick={onOpenSettings}
-                            className="p-1.5 sm:p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors touch-manipulation"
                             aria-label="Abrir configuración"
                         >
                             <GearIcon className="h-6 w-6 sm:h-7 sm:w-7" />
