@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cesto-tracker-static-v2';
+const CACHE_NAME = 'cesto-tracker-static-v3';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put('/', copy)).catch(() => {});
           return response;
         })
-        .catch(() => caches.match('/') || caches.match('/index.html'))
+        .catch(() => caches.match('/').then((res) => res || caches.match('/index.html')))
     );
     return;
   }

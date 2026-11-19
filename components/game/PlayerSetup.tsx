@@ -33,6 +33,7 @@ interface PlayerSetupProps {
     initialSettings?: Settings;
     initialGameMode?: GameMode | null;
     initialPlayerNames?: Record<string, string>;
+    isEditMode?: boolean;
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -40,33 +41,44 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     onBack,
     initialSelectedPlayers = [],
     initialSettings = defaultSettings,
-    initialPlayerNames = {}
+    initialPlayerNames = {},
+    isEditMode = false,
 }) => {
     // ── State ──
     const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(() => {
         if (initialSelectedPlayers.length > 0) return new Set(initialSelectedPlayers);
-        // Restore players from last saved team
-        try {
-            const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.players) return new Set(parsed.players);
-            }
-        } catch (e) { /* ignore */ }
+        if (!isEditMode) {
+            // Restore players from last saved team only if team matches (or none chosen yet)
+            try {
+                const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    const matchesTeam = !initialSettings.myTeam || parsed.myTeam === initialSettings.myTeam;
+                    if (matchesTeam && Array.isArray(parsed.players) && parsed.players.length > 0) {
+                        return new Set(parsed.players);
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
         return new Set(allPlayers);
     });
 
     // Local state to hold player names when a team is loaded
     const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>(() => {
         if (Object.keys(initialPlayerNames).length > 0) return initialPlayerNames;
-        // Restore from last saved team
-        try {
-            const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return parsed.playerNames || {};
-            }
-        } catch (e) { /* ignore */ }
+        if (!isEditMode) {
+            // Restore from last saved team only if team matches (or none chosen yet)
+            try {
+                const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    const matchesTeam = !initialSettings.myTeam || parsed.myTeam === initialSettings.myTeam;
+                    if (matchesTeam && parsed.playerNames) {
+                        return parsed.playerNames;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
         return {};
     });
 
@@ -76,7 +88,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
     const [settings, setSettings] = useState<Settings>(() => {
         // Only auto-restore myTeam for fresh games (no initialSettings provided)
-        if (initialSettings.myTeam) return initialSettings;
+        if (isEditMode || initialSettings.myTeam) return initialSettings;
         try {
             const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
             if (saved) {
@@ -181,7 +193,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         setIsTeamSelectorOpen(false);
     };
 
-    const isCorrection = initialSelectedPlayers.length > 0;
+    const isCorrection = Boolean(isEditMode);
 
     return (
         <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center justify-center p-4 sm:p-6 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 relative">

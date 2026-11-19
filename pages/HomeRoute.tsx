@@ -5,21 +5,23 @@ import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useGameContext } from '../context/GameContext';
 import { useProfile } from '../hooks/useProfile';
+import { RosterPlayer } from '../types';
 
 const LoadGameModal = lazy(() => import('@/components/modals/LoadGameModal'));
 
 export default function HomeRoute() {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { modals, openModal, closeModal, openAuthModal } = useUI();
+    const { modals, openModal, closeModal, openAuthModal, setActiveTab } = useUI();
     const { resetGame } = useGameContext();
 
-    const handleStartApp = useCallback((teamName?: string, roster?: any[]) => {
+    const handleStartApp = useCallback((teamName?: string, roster?: RosterPlayer[]) => {
         // Clear previous state before starting new game
         resetGame();
+        setActiveTab('tally');
         // Set initial data and navigate to setup
-        navigate('/setup', { state: { teamName, roster } });
-    }, [resetGame, navigate]);
+        navigate('/setup', { state: { mode: 'new', teamName, roster } });
+    }, [resetGame, setActiveTab, navigate]);
 
     const handleLoadGame = useCallback((id: string, asOwner: boolean = false) => {
         navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`);

@@ -24,34 +24,68 @@ export const useGameLogic = () => {
     const { notificationPopup, setNotificationPopup } = useUI();
 
     // --- SETUP ---
-    const handleSetupComplete = useCallback((participatingPlayers: string[], newSettings: Settings, _gameMode?: GameMode, initialPlayerNames?: Record<string, string>) => {
+    const handleSetupComplete = useCallback((
+        participatingPlayers: string[],
+        newSettings: Settings,
+        _gameMode?: GameMode,
+        initialPlayerNames?: Record<string, string>,
+        isEditMode: boolean = false
+    ) => {
         const sortedRoster = [...participatingPlayers].sort((a, b) => Number(a) - Number(b));
 
         setGameState(prev => {
-            const isCorrection = prev.availablePlayers.length > 0;
+            const isCorrection = isEditMode;
             const playerNames = initialPlayerNames || (isCorrection ? prev.playerNames : {});
-            const playerStreaks = isCorrection ? prev.playerStreaks : {};
-            const tallyStats = isCorrection ? { ...prev.tallyStats } : {};
 
-            if (!tallyStats['Equipo']) {
-                tallyStats['Equipo'] = JSON.parse(JSON.stringify(initialPlayerTally));
+            if (isCorrection) {
+                const tallyStats = { ...prev.tallyStats };
+                if (!tallyStats['Equipo']) {
+                    tallyStats['Equipo'] = JSON.parse(JSON.stringify(initialPlayerTally));
+                }
+                sortedRoster.forEach(p => {
+                    if (!tallyStats[p]) {
+                        tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
+                    }
+                });
+
+                return {
+                    ...prev,
+                    hasSeenHomepage: true,
+                    availablePlayers: sortedRoster,
+                    activePlayers: sortedRoster.slice(0, 6),
+                    playerNames,
+                    playerStreaks: prev.playerStreaks,
+                    settings: newSettings,
+                    isSetupComplete: true,
+                    currentPlayer: '',
+                    gameMode: 'stats-tally',
+                    isReadOnly: false,
+                    tallyStats,
+                };
             }
 
+            const tallyStats: Record<string, typeof initialPlayerTally> = {
+                Equipo: JSON.parse(JSON.stringify(initialPlayerTally)),
+            };
             sortedRoster.forEach(p => {
-                if (!tallyStats[p]) {
-                    tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
-                }
+                tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
             });
 
-            const baseState = isCorrection ? prev : initialGameState;
-
             return {
-                ...baseState,
+                ...initialGameState,
+                gameId: null,
+                userId: null,
+                shots: [],
+                opponentScore: 0,
+                currentPeriod: 'First Half',
+                teamFouls: { ...initialGameState.teamFouls },
+                gameLog: [],
+                tallyRedoLog: [],
                 hasSeenHomepage: true,
                 availablePlayers: sortedRoster,
                 activePlayers: sortedRoster.slice(0, 6),
                 playerNames,
-                playerStreaks,
+                playerStreaks: {},
                 settings: newSettings,
                 isSetupComplete: true,
                 currentPlayer: '',

@@ -21,14 +21,13 @@ interface SettingsModalProps {
   onClose: () => void;
   onRequestNewGame: () => void;
   onRequestReselectPlayers: () => void;
-  onRequestChangeMode: () => void;
   onRequestSaveGame: () => void;
   user: any;
   onLogout: () => void;
   onLogin: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestChangeMode, onRequestSaveGame, user, onLogout, onLogin }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestSaveGame, user, onLogout, onLogin }) => {
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
     const { profile } = useProfile();
 
@@ -208,21 +207,15 @@ const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setS
                         Estas acciones afectarán el partido actual.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button
-                            onClick={onRequestChangeMode}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
-                        >
-                           Cambiar Modo de Juego
-                        </button>
                          <button
                             onClick={onRequestReselectPlayers}
-                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                            className="w-full sm:col-span-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
                         >
-                            Corregir Jugadores
+                            Editar Datos del Partido
                         </button>
                          <button
                             onClick={onRequestNewGame}
-                            className="w-full sm:col-span-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                            className="w-full sm:col-span-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
                         >
                             Comenzar Nuevo Partido
                         </button>

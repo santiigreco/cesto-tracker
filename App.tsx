@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Loader from '@/components/ui/Loader';
 import Toast from '@/components/ui/Toast';
 import { useUI } from '@/context/UIContext';
@@ -12,6 +12,14 @@ const FaqRoute = lazy(() => import('./pages/FaqRoute'));
 const ProfileRoute = lazy(() => import('./pages/ProfileRoute'));
 const AuthModal = lazy(() => import('@/components/modals/AuthModal'));
 
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+  return null;
+};
+
 const RouteLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
     <Loader />
@@ -23,6 +31,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/" element={<HomeRoute />} />

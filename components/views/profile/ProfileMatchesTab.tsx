@@ -5,6 +5,7 @@ import TeamLogo from '@/components/ui/TeamLogo';
 import { SearchIcon, TrashIcon } from '@/components/icons';
 import { useSync } from '@/context/SyncContext';
 import { useUI } from '@/context/UIContext';
+import { useGameContext } from '@/context/GameContext';
 import { exportGameByIdToExcel } from '@/utils/exportToExcel';
 
 export interface UserSavedGame {
@@ -30,7 +31,14 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
 }) => {
   const navigate = useNavigate();
   const { handleDeleteGame } = useSync();
-  const { showToast } = useUI();
+  const { showToast, setActiveTab } = useUI();
+  const { resetGame } = useGameContext();
+
+  const handleStartNewMatch = () => {
+    resetGame();
+    setActiveTab('tally');
+    navigate('/setup', { state: { mode: 'new' } });
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPeriod, setFilterPeriod] = useState<'all' | 'recent'>('all');
@@ -158,7 +166,7 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
           </div>
 
           <button
-            onClick={() => navigate('/setup')}
+            onClick={handleStartNewMatch}
             className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-95 shrink-0"
           >
             + Nueva Planilla
@@ -185,7 +193,7 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
           </p>
           {!searchTerm && (
             <button
-              onClick={() => navigate('/setup')}
+              onClick={handleStartNewMatch}
               className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black px-6 py-3 rounded-xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-95 inline-flex items-center gap-2"
             >
               <span>⚡</span>

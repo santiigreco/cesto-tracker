@@ -71,9 +71,22 @@ export default function MatchRoute() {
                         navigate('/', { replace: true });
                     }
                 });
+            } else if (isEditRequested && isGameOwner && gameState.isReadOnly) {
+                setGameState(prev => ({ ...prev, isReadOnly: false }));
+                setActiveTab('tally');
             }
         }
-    }, [id, gameState.gameId, isEditRequested, handleLoadGame, setActiveTab, navigate]);
+    }, [id, gameState.gameId, gameState.isReadOnly, isEditRequested, isGameOwner, handleLoadGame, setGameState, setActiveTab, navigate]);
+
+    useEffect(() => {
+        if (id === 'new' && gameState.gameId) {
+            navigate(`/match/${gameState.gameId}?edit=true`, { replace: true });
+        }
+    }, [id, gameState.gameId, navigate]);
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, [activeTab]);
 
     const tabsForCurrentMode = useMemo(() => ['tally', 'statistics'] as AppTab[], []);
 
@@ -147,6 +160,8 @@ export default function MatchRoute() {
 
             <AppHeader
                 user={user}
+                userAvatarUrl={profile?.avatar_url}
+                userInitial={profile?.full_name?.charAt(0)}
                 onLogin={handleLogin}
                 onOpenProfile={handleOpenProfile}
                 onOpenSettings={handleOpenSettings}
@@ -272,36 +287,42 @@ export default function MatchRoute() {
             <div className="w-full max-w-4xl flex flex-col flex-grow">
                 <Scoreboard />
 
-                {/* Read-Only Banner / Mode Switcher */}
-                {isGameOwner && (
+                {/* Read-Only Resume Action */}
+                {isGameOwner && gameState.isReadOnly && (
                     <div className="flex justify-end mb-3">
                         <button
+                            type="button"
                             onClick={() => {
-                                const nextReadOnly = !gameState.isReadOnly;
-                                setGameState(prev => ({ ...prev, isReadOnly: nextReadOnly }));
-                                if (nextReadOnly) {
-                                    setActiveTab('statistics');
-                                } else {
-                                    setActiveTab('tally');
+                                setGameState(prev => ({ ...prev, isReadOnly: false }));
+                                setActiveTab('tally');
+                                if (id && id !== 'new') {
+                                    navigate(`/match/${id}?edit=true`, { replace: true });
                                 }
                             }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                                gameState.isReadOnly
-                                    ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md hover:shadow-cyan-500/20'
-                                    : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600'
-                            }`}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-cyan-600 hover:bg-cyan-500 text-white shadow-md hover:shadow-cyan-500/20"
                         >
-                            {gameState.isReadOnly ? '✏️ Continuar Anotando' : '📊 Ver Estadísticas'}
+                            ✏️ Continuar Anotando
                         </button>
                     </div>
                 )}
 
-                <div className="hidden md:flex justify-center mb-8 border-b border-slate-700 bg-slate-900 shadow-md">
+                <div
+                    role="tablist"
+                    aria-label="Vistas del partido"
+                    className="hidden md:flex justify-center mb-6 border-b border-slate-700 bg-slate-900/90 rounded-t-xl shadow-md"
+                >
                     {tabsForCurrentMode.map(tab => (
                         <button
                             key={tab}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`relative z-20 flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize transition-colors duration-300 focus:outline-none ${activeTab === tab ? 'border-b-4 border-cyan-500 text-cyan-400' : 'text-slate-500 hover:text-cyan-400'}`}
+                            className={`relative z-20 flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize border-b-4 transition-colors duration-300 focus:outline-none ${
+                                activeTab === tab
+                                    ? 'border-cyan-500 text-cyan-400'
+                                    : 'border-transparent text-slate-400 hover:text-cyan-300'
+                            }`}
                         >
                             {TAB_TRANSLATIONS[tab]}
                         </button>
@@ -331,9 +352,11 @@ export default function MatchRoute() {
             {/* FAB flotante Compartir Reporte — visible en todas las tabs menos estadísticas */}
             {activeTab !== 'statistics' && (
                 <button
-                    onClick={() => { setActiveTab('statistics'); openModal('share'); }}
-                    className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest px-4 py-3 rounded-2xl shadow-xl shadow-cyan-900/40 transition-all hover:scale-105 active:scale-95 border border-cyan-400/30 backdrop-blur-sm"
+                    type="button"
+                    onClick={() => openModal('share')}
+                    className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest px-4 py-3 rounded-2xl shadow-xl shadow-cyan-900/40 transition-all hover:scale-105 active:scale-95 border border-cyan-400/30 backdrop-blur-sm"
                     title="Compartir reporte del partido"
+                    aria-label="Compartir reporte del partido"
                 >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />

@@ -52,6 +52,15 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         latestGameStateRef.current = gameState;
     }, [gameState]);
 
+    // Reset sync tracking state when a match is cleared for a fresh setup
+    useEffect(() => {
+        if (!gameState.isSetupComplete && !gameState.gameId) {
+            lastSavedSignatureRef.current = '';
+            setLastSaved(null);
+            setSyncState({ status: 'idle', message: '' });
+        }
+    }, [gameState.isSetupComplete, gameState.gameId]);
+
     // Check if current state has unsaved changes compared to last successful cloud sync
     const currentSignature = useMemo(() => computeGameStateSignature(gameState), [gameState]);
     const hasUnsavedChanges = Boolean(
@@ -184,11 +193,6 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         throw tallyStatsError;
                     }
                 }
-            }
-
-            // Sync URL if this was a new match (/match/new)
-            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/match/new')) {
-                window.history.replaceState(null, '', `/match/${newGameId}?edit=true`);
             }
 
             // Update gameId and userId in local state if newly assigned

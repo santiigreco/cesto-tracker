@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useMemo, useState, useCallback } from 'react';
 import { AppTab, Settings, GameEvent, SavedTeam } from '../../types';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
-import { useGameContext, initialGameState } from '../../context/GameContext';
+import { useGameContext } from '../../context/GameContext';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useNavigate } from 'react-router-dom';
 import { useSync } from '../../context/SyncContext';
@@ -75,24 +75,20 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
 
     const handleConfirmNewGameWrapper = useCallback(() => {
         handleConfirmNewGame();
+        setActiveTab('tally');
         closeModal('newGame');
-    }, [handleConfirmNewGame, closeModal]);
+        navigate('/setup', { state: { mode: 'new' }, replace: true });
+    }, [handleConfirmNewGame, setActiveTab, closeModal, navigate]);
 
     const handleConfirmReselectPlayers = useCallback(() => {
-        setGameState(prev => ({ ...prev, isSetupComplete: false }));
         closeModal('reselect');
-    }, [setGameState, closeModal]);
-
-    const handleChangeMode = useCallback(() => {
-        setGameState(prev => ({ ...prev, isSetupComplete: false, gameMode: null }));
-        closeModal('settings');
-    }, [setGameState, closeModal]);
+        navigate('/setup', { state: { mode: 'edit' } });
+    }, [closeModal, navigate]);
 
     const handleRequestReturnHome = useCallback(() => {
-        setGameState({ ...initialGameState, hasSeenHomepage: false, tutorialStep: 1 });
         closeModal('returnHome');
         navigate('/');
-    }, [setGameState, closeModal, navigate]);
+    }, [closeModal, navigate]);
 
     const handleRequestNewGame = useCallback(() => {
         closeModal('settings');
@@ -248,7 +244,7 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                         try {
                             const res = await handleLoadGame(id, !!editable);
                             if (editable && res) {
-                                setActiveTab(res.gameMode === 'shot-chart' ? 'logger' : 'tally');
+                                setActiveTab('tally');
                             } else {
                                 setActiveTab('statistics');
                             }
@@ -279,7 +275,6 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                     onClose={() => closeModal('settings')}
                     onRequestNewGame={handleRequestNewGame}
                     onRequestReselectPlayers={handleRequestReselectPlayers}
-                    onRequestChangeMode={handleChangeMode}
                     onRequestSaveGame={handleRequestSaveGame}
                     user={user}
                     onLogout={handleLogout}
@@ -321,19 +316,20 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
             {modals.returnHome?.isOpen && (
                 <ConfirmationModal
                     title="Volver al Inicio"
-                    message="Se perderán los datos no guardados."
-                    confirmText="Volver"
+                    message="Tu partido actual seguirá guardado localmente en este dispositivo hasta que inicies uno nuevo."
+                    confirmText="Volver al Inicio"
                     cancelText="Cancelar"
                     onConfirm={handleRequestReturnHome}
                     onClose={() => closeModal('returnHome')}
+                    confirmButtonColor="bg-cyan-600 hover:bg-cyan-500"
                 />
             )}
 
             {modals.reselect?.isOpen && (
                 <ConfirmationModal
-                    title="Corregir Jugadores"
-                    message="Volver a selección de equipo."
-                    confirmText="Volver"
+                    title="Editar Datos del Partido"
+                    message="Podrás modificar equipos, torneo o configuración sin perder las estadísticas registradas."
+                    confirmText="Editar"
                     cancelText="Cancelar"
                     onConfirm={handleConfirmReselectPlayers}
                     onClose={() => closeModal('reselect')}
