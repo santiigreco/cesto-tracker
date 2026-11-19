@@ -1,9 +1,26 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, ReactNode } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { useGameContext, initialPlayerTally, initialGameState } from './GameContext';
 import { useUI } from './UIContext';
+import { useAuth } from './AuthContext';
 import { GamePeriod, GameMode, GameState } from '../types';
 import { mapTallyPeriodToDb, mapTallyPeriodFromDb, computeGameStateSignature } from '../utils/dbAdapters';
+import { getFriendlySupabaseErrorMessage, isNetworkOrConfigError } from '../utils/supabaseErrors';
+import {
+    LOCAL_GAME_ID_PREFIX,
+    isLocalGameId,
+    getLocalGameById,
+    deleteLocalGame,
+    linkLocalGameToCloud,
+    LocalSavedGame,
+} from '../utils/localGamesStorage';
+
+const hasPersistableEditableMatch = (state: GameState): boolean =>
+    Boolean(
+        state.isSetupComplete &&
+        !state.isReadOnly &&
+        ((state.gameLog && state.gameLog.length > 0) || (state.shots && state.shots.length > 0) || !!state.gameId)
+    );
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 export interface SyncState {
@@ -34,6 +51,7 @@ const SyncContext = createContext<SyncContextType | undefined>(undefined);
 export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { gameState, setGameState } = useGameContext();
     const { showToast } = useUI();
+    const { user } = useAuth();
     const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' });
     const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -42,9 +60,15 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Track last saved signature to prevent duplicate background syncs
     const lastSavedSignatureRef = useRef<string>('');
-    const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSyncingRef = useRef<boolean>(false);
     const hasPendingChangesRef = useRef<boolean>(false);
+    const wasInSyncErrorRef = useRef<boolean>(false);
+    const isAuthenticatedRef = useRef<boolean>(Boolean(user));
+
+    useEffect(() => {
+        isAuthenticatedRef.current = Boolean(user);
+    }, [user]);
 
     // Keep an up-to-date ref of gameState for async operations, unload listeners and offline recovery
     const latestGameStateRef = useRef<GameState>(gameState);
@@ -56,6 +80,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         if (!gameState.isSetupComplete && !gameState.gameId) {
             lastSavedSignatureRef.current = '';
+            wasInSyncErrorRef.current = false;
             setLastSaved(null);
             setSyncState({ status: 'idle', message: '' });
         }
@@ -64,14 +89,46 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check if current state has unsaved changes compared to last successful cloud sync
     const currentSignature = useMemo(() => computeGameStateSignature(gameState), [gameState]);
     const hasUnsavedChanges = Boolean(
-        gameState.isSetupComplete &&
-        !gameState.isReadOnly &&
-        ((gameState.gameLog && gameState.gameLog.length > 0) || !!gameState.gameId) &&
+        hasPersistableEditableMatch(gameState) &&
         currentSignature !== lastSavedSignatureRef.current
     );
 
+    const buildGameStateFromLocalEntry = useCallback((entry: LocalSavedGame, enableEditing: boolean): GameState => {
+        const snapshot = entry.snapshot;
+        const availablePlayers = snapshot.availablePlayers || [];
+        const normalizedTally: Record<string, typeof initialPlayerTally> = {
+            ...(snapshot.tallyStats || {}),
+        };
+        ['Equipo', ...availablePlayers].forEach((p) => {
+            if (!normalizedTally[p]) {
+                normalizedTally[p] = JSON.parse(JSON.stringify(initialPlayerTally));
+            }
+        });
+
+        return {
+            ...initialGameState,
+            ...snapshot,
+            gameId: entry.cloudGameId ?? snapshot.gameId ?? null,
+            localId: entry.localId,
+            isSetupComplete: true,
+            hasSeenHomepage: true,
+            availablePlayers,
+            activePlayers: snapshot.activePlayers?.length ? snapshot.activePlayers : availablePlayers.slice(0, 6),
+            playerNames: snapshot.playerNames || {},
+            tallyStats: normalizedTally,
+            teamFouls: snapshot.teamFouls || initialGameState.teamFouls,
+            gameLog: snapshot.gameLog || [],
+            tallyRedoLog: [],
+            isReadOnly: !enableEditing,
+        };
+    }, []);
+
     const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean): Promise<string | null> => {
         const isAutoSave = (typeof gameNameInput === 'boolean') ? gameNameInput : (isAutoSaveInput === true);
+        if (isAutoSave && !isAuthenticatedRef.current) {
+            return null;
+        }
+
         const currentState = latestGameStateRef.current;
 
         // Mutex lock: if already syncing, queue a follow-up sync instead of silently dropping data
@@ -81,9 +138,6 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return null;
         }
         isSyncingRef.current = true;
-
-        // Snapshot current signature to lock on success
-        const targetSignature = computeGameStateSignature(currentState);
 
         // 1. Calculate current myScore for quick preview in lists
         let myScore = 0;
@@ -97,7 +151,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // 2. Build clean game name without duplicating "vs" or date
         const myTeam = currentState.settings.myTeam?.trim() || '';
         const existingName = currentState.settings.gameName?.trim() || '';
-        let rival = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
+        const rival = (typeof gameNameInput === 'string' && gameNameInput.trim().length > 0)
             ? gameNameInput.trim()
             : existingName;
 
@@ -118,20 +172,24 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         try {
+            if (!isSupabaseConfigured) {
+                throw new Error('SUPABASE_NOT_CONFIGURED');
+            }
+
             // Check online state
             if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                throw new Error("Sin conexión a internet. Los datos están a salvo en este dispositivo.");
+                throw new Error('OFFLINE');
             }
 
             const { data: { session } } = await supabase.auth.getSession();
-            let user = session?.user ?? null;
-            if (!user) {
+            let authUser = session?.user ?? null;
+            if (!authUser) {
                 const { data: userData, error: authError } = await supabase.auth.getUser();
                 if (authError && !isAutoSave) throw authError;
-                user = userData?.user ?? null;
+                authUser = userData?.user ?? null;
             }
 
-            if (!user) {
+            if (!authUser) {
                 if (!isAutoSave) {
                     showToast('Iniciá sesión para guardar tu partido en la nube', 'warning');
                     setSyncState({ status: 'idle', message: 'No autenticado' });
@@ -155,7 +213,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 available_players: currentState.availablePlayers,
                 my_team_name: currentState.settings.myTeam || null,
                 opponent_name: gameName.trim(),
-                user_id: user.id,
+                user_id: authUser.id,
             };
 
             const { data: gameData, error: gameError } = await supabase
@@ -165,13 +223,13 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .single();
 
             if (gameError) throw gameError;
-            if (!gameData) throw new Error("No se pudo obtener el ID del partido guardado.");
+            if (!gameData) throw new Error('No se pudo obtener el ID del partido guardado.');
 
             const newGameId = gameData.id;
 
             // Sync Tally Stats via unified dbAdapter
             if (currentState.tallyStats && Object.keys(currentState.tallyStats).length > 0) {
-                const statsPayload: any[] = [];
+                const statsPayload: Array<Record<string, unknown>> = [];
                 for (const playerNumber in currentState.tallyStats) {
                     const playerTally = currentState.tallyStats[playerNumber];
                     Object.keys(playerTally).forEach(periodKey => {
@@ -195,23 +253,35 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
 
+            // Link local backup to newly assigned cloud ID
+            if (currentState.localId) {
+                linkLocalGameToCloud(currentState.localId, newGameId);
+            }
+
             // Update gameId and userId in local state if newly assigned
             setGameState(prev => ({
                 ...prev,
                 gameId: newGameId,
-                userId: user.id,
+                localId: prev.localId || currentState.localId || null,
+                userId: authUser.id,
                 settings: { ...prev.settings, gameName: gameName.trim() }
             }));
 
-            // Mark successful save signature ONLY upon verified DB success
-            lastSavedSignatureRef.current = targetSignature;
+            // Mark successful save signature ONLY upon verified DB success (aligned with assigned gameId & gameName)
+            const savedSignature = computeGameStateSignature({
+                ...currentState,
+                gameId: newGameId,
+                settings: { ...currentState.settings, gameName: gameName.trim() },
+            });
+            lastSavedSignatureRef.current = savedSignature;
+            wasInSyncErrorRef.current = false;
             setLastSaved(new Date());
 
             // Telemetría de éxito
             console.log(`[PERSISTENCE_SUCCESS] ${isAutoSave ? '[AUTOSAVE]' : '[MANUAL]'}`, {
                 timestamp: new Date().toISOString(),
                 gameId: newGameId,
-                userId: user.id,
+                userId: authUser.id,
                 match: `${currentState.settings.myTeam || 'Equipo'} vs ${gameName}`,
                 period: currentState.currentPeriod,
                 score: `${myScore} - ${currentState.opponentScore}`,
@@ -223,7 +293,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .from('match_activity_logs')
                 .insert({
                     game_id: newGameId,
-                    user_id: user.id,
+                    user_id: authUser.id,
                     action: isAutoSave ? 'AUTO_SAVE' : 'MANUAL_SAVE',
                     payload: {
                         match: `${currentState.settings.myTeam || 'Equipo'} vs ${gameName}`,
@@ -247,43 +317,52 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             return newGameId;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('[PERSISTENCE_ERROR]', {
                 timestamp: new Date().toISOString(),
                 gameId: currentState.gameId,
                 isAutoSave,
-                error: error.message || error
+                error: error instanceof Error ? error.message : error
             });
             // DO NOT update lastSavedSignatureRef on failure; ensure system knows changes remain unsaved
-            setSyncState({ status: 'error', message: error.message || 'Error al sincronizar con la nube' });
+            const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
+            const friendlyMsg = getFriendlySupabaseErrorMessage(error, onlineNow);
+            setSyncState({ status: 'error', message: friendlyMsg });
 
             if (!isAutoSave) {
-                showToast(`Error al guardar: ${error.message}`, 'error');
-            } else {
-                // Throttle toasts: only show warning toast if previously not in error state
-                showToast(`Aviso de sincronización: ${error.message}. Tus datos siguen respaldados localmente en este dispositivo.`, 'warning');
+                showToast(`Error al guardar: ${friendlyMsg}`, 'error');
+            } else if (!wasInSyncErrorRef.current) {
+                wasInSyncErrorRef.current = true;
+                const backupSuffix = friendlyMsg.includes('dispositivo')
+                    ? ''
+                    : ' Tus datos siguen respaldados localmente en este dispositivo.';
+                showToast(`Aviso de sincronización: ${friendlyMsg}${backupSuffix}`, 'warning');
             }
             return null;
         } finally {
             isSyncingRef.current = false;
             setIsAutoSaving(false);
 
-            // If changes arrived while this sync was in progress, trigger the pending sync
+            // If changes arrived while this sync was in progress, trigger the pending sync only when syncable
             if (hasPendingChangesRef.current) {
                 hasPendingChangesRef.current = false;
-                setTimeout(() => {
-                    handleSyncToSupabase(undefined, true);
-                }, 400);
+                const canRetryAutoSave =
+                    isAuthenticatedRef.current &&
+                    isSupabaseConfigured &&
+                    hasPersistableEditableMatch(latestGameStateRef.current) &&
+                    (typeof navigator === 'undefined' || navigator.onLine);
+                if (canRetryAutoSave) {
+                    setTimeout(() => {
+                        handleSyncToSupabase(undefined, true);
+                    }, 400);
+                }
             }
         }
     }, [setGameState, showToast]);
 
     // Background Debounced Auto-Save
     useEffect(() => {
-        if (!gameState.isSetupComplete || gameState.isReadOnly) return;
-        const hasActions = (gameState.gameLog && gameState.gameLog.length > 0) || (gameState.shots && gameState.shots.length > 0) || !!gameState.gameId;
-        if (!hasActions) return;
-
+        if (!user || !isOnline || !isSupabaseConfigured || !hasPersistableEditableMatch(gameState)) return;
         if (currentSignature === lastSavedSignatureRef.current) return;
 
         if (autoSaveTimerRef.current) {
@@ -303,11 +382,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         };
     }, [
-        gameState.isSetupComplete,
-        gameState.isReadOnly,
-        gameState.gameLog,
-        gameState.shots,
-        gameState.gameId,
+        user,
+        isOnline,
+        gameState,
         currentSignature,
         handleSyncToSupabase
     ]);
@@ -316,10 +393,18 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         const handleOnline = () => {
             setIsOnline(true);
+            wasInSyncErrorRef.current = false;
             console.log('[PERSISTENCE] Conexión recuperada. Verificando cambios pendientes...');
-            const curSig = computeGameStateSignature(latestGameStateRef.current);
-            if (curSig !== lastSavedSignatureRef.current) {
-                handleSyncToSupabase(undefined, true);
+            const state = latestGameStateRef.current;
+            if (
+                isAuthenticatedRef.current &&
+                isSupabaseConfigured &&
+                hasPersistableEditableMatch(state)
+            ) {
+                const curSig = computeGameStateSignature(state);
+                if (curSig !== lastSavedSignatureRef.current) {
+                    handleSyncToSupabase(undefined, true);
+                }
             }
         };
 
@@ -340,7 +425,16 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Resiliencia ante F5 / Cierre de Pestaña y Cambio de Visibilidad (Mobile Sleep)
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            const curSig = computeGameStateSignature(latestGameStateRef.current);
+            const state = latestGameStateRef.current;
+            if (
+                !isAuthenticatedRef.current ||
+                !isSupabaseConfigured ||
+                !hasPersistableEditableMatch(state) ||
+                (typeof navigator !== 'undefined' && !navigator.onLine)
+            ) {
+                return;
+            }
+            const curSig = computeGameStateSignature(state);
             const hasUnsaved = curSig !== lastSavedSignatureRef.current;
             if (hasUnsaved || isSyncingRef.current || hasPendingChangesRef.current) {
                 // Prevent silent data loss: prompt user that pending cloud changes exist
@@ -352,7 +446,16 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const handleVisibilityChange = () => {
             // When user switches apps or locks phone, trigger cloud sync if changes are pending
             if (document.visibilityState === 'hidden') {
-                const curSig = computeGameStateSignature(latestGameStateRef.current);
+                const state = latestGameStateRef.current;
+                if (
+                    !isAuthenticatedRef.current ||
+                    !isSupabaseConfigured ||
+                    !hasPersistableEditableMatch(state) ||
+                    (typeof navigator !== 'undefined' && !navigator.onLine)
+                ) {
+                    return;
+                }
+                const curSig = computeGameStateSignature(state);
                 if (curSig !== lastSavedSignatureRef.current && !isSyncingRef.current) {
                     handleSyncToSupabase(undefined, true);
                 }
@@ -369,6 +472,48 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [handleSyncToSupabase]);
 
     const handleLoadGame = useCallback(async (gameId: string, enableEditing: boolean = false): Promise<LoadGameResult | null> => {
+        // 1. Local device match handling
+        if (isLocalGameId(gameId)) {
+            const localEntry = getLocalGameById(gameId);
+            if (!localEntry) {
+                showToast('No se encontró el partido local en este dispositivo.', 'error');
+                return null;
+            }
+
+            const loadedLocalState = buildGameStateFromLocalEntry(localEntry, enableEditing);
+            setGameState(loadedLocalState);
+            lastSavedSignatureRef.current = enableEditing
+                ? ''
+                : computeGameStateSignature(loadedLocalState);
+            return {
+                gameMode: loadedLocalState.gameMode,
+                isOwner: true,
+            };
+        }
+
+        // 2. Cloud match handling with offline/unconfigured fallback to local snapshot
+        const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
+        if (!isSupabaseConfigured || !onlineNow) {
+            const offlineFallback = getLocalGameById(gameId);
+            if (offlineFallback) {
+                const fallbackState = buildGameStateFromLocalEntry(offlineFallback, enableEditing);
+                setGameState(fallbackState);
+                lastSavedSignatureRef.current = computeGameStateSignature(fallbackState);
+                showToast(
+                    isSupabaseConfigured
+                        ? 'Sin conexión: se cargó la copia guardada en este dispositivo.'
+                        : 'Se cargó la copia guardada en este dispositivo.',
+                    'warning'
+                );
+                return {
+                    gameMode: fallbackState.gameMode,
+                    isOwner: true,
+                };
+            }
+            showToast(getFriendlySupabaseErrorMessage(null, onlineNow), 'error');
+            return null;
+        }
+
         setIsLoading(true);
         console.log(`[SyncContext] Cargando partido: ${gameId} (editar: ${enableEditing})`);
         try {
@@ -381,9 +526,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (gameRes.error) throw gameRes.error;
             if (tallyRes.error) throw tallyRes.error;
 
-            const user = sessionRes.data?.session?.user ?? null;
+            const currentUser = sessionRes.data?.session?.user ?? null;
             const gameData = gameRes.data;
-            const isOwner = Boolean(user && gameData.user_id === user.id);
+            const isOwner = Boolean(currentUser && gameData.user_id === currentUser.id);
 
             // Increment views asynchronously in background if someone is just viewing (read-only)
             if (!enableEditing) {
@@ -397,7 +542,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     });
             }
 
-            const loadedTallyStats: any = {};
+            const loadedTallyStats: Record<string, typeof initialPlayerTally> = {};
 
             // 1. Load from relational tally_stats table via dbAdapter
             if (tallyRes.data && tallyRes.data.length > 0) {
@@ -409,7 +554,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         loadedTallyStats[player] = JSON.parse(JSON.stringify(initialPlayerTally));
                     }
 
-                    const period = stat.period;
+                    const period = stat.period as GamePeriod;
                     if (loadedTallyStats[player][period]) {
                         loadedTallyStats[player][period] = mapTallyPeriodFromDb(stat);
                     }
@@ -426,7 +571,8 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     }
 
                     if (plStats['First Half'] || plStats['Second Half']) {
-                        Object.keys(plStats).forEach(period => {
+                        Object.keys(plStats).forEach(periodKey => {
+                            const period = periodKey as GamePeriod;
                             if (loadedTallyStats[pKey][period]) {
                                 const isRelationalEmpty = !tallyRes.data?.some(r => r.player_number?.toString() === pKey && r.period === period);
                                 if (isRelationalEmpty) {
@@ -446,7 +592,7 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // Ensure every participating player and "Equipo" has initialized tally stats structure
-            const availablePlayers = gameData.available_players || [];
+            const availablePlayers: string[] = gameData.available_players || [];
             const allPlayerKeys = ['Equipo', ...availablePlayers];
             allPlayerKeys.forEach(p => {
                 if (!loadedTallyStats[p]) {
@@ -454,10 +600,15 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             });
 
+            const preservedLocalId = enableEditing
+                ? (getLocalGameById(gameData.id)?.localId || `${LOCAL_GAME_ID_PREFIX}cloud_${gameData.id}`)
+                : null;
+
             // Restore complete GameState snapshot
             const loadedGameState: GameState = {
                 ...initialGameState,
                 gameId: gameData.id,
+                localId: preservedLocalId,
                 userId: gameData.user_id,
                 gameMode: gameData.game_mode,
                 isSetupComplete: true,
@@ -491,20 +642,52 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 isOwner
             };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Load Error:', error);
-            showToast(`No se pudo cargar el partido: ${error.message}`, 'error');
+            if (isNetworkOrConfigError(error)) {
+                const localFallback = getLocalGameById(gameId);
+                if (localFallback) {
+                    const fallbackState = buildGameStateFromLocalEntry(localFallback, enableEditing);
+                    setGameState(fallbackState);
+                    lastSavedSignatureRef.current = computeGameStateSignature(fallbackState);
+                    showToast('Sin conexión con la nube: se cargó la copia guardada en este dispositivo.', 'warning');
+                    return {
+                        gameMode: fallbackState.gameMode,
+                        isOwner: true,
+                    };
+                }
+            }
+            const currentOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+            showToast(getFriendlySupabaseErrorMessage(error, currentOnline), 'error');
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [setGameState, showToast]);
+    }, [buildGameStateFromLocalEntry, setGameState, showToast]);
 
     const handleDeleteGame = useCallback(async (gameId: string): Promise<boolean> => {
+        if (isLocalGameId(gameId)) {
+            const deleted = deleteLocalGame(gameId);
+            if (deleted) {
+                if (latestGameStateRef.current.localId === gameId) {
+                    setGameState({ ...initialGameState, hasSeenHomepage: true });
+                }
+                showToast('Partido local eliminado', 'success');
+                return true;
+            }
+            return false;
+        }
+
+        const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
+        if (!isSupabaseConfigured || !onlineNow) {
+            showToast(getFriendlySupabaseErrorMessage(null, onlineNow), 'error');
+            return false;
+        }
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-            if (!user) throw new Error("Usuario no autenticado");
+            const currentUser = session?.user;
+            if (!currentUser) throw new Error('Usuario no autenticado');
 
             // 1. Delete associated tally stats
             await supabase.from('tally_stats').delete().eq('game_id', gameId);
@@ -514,20 +697,24 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .from('games')
                 .delete()
                 .eq('id', gameId)
-                .eq('user_id', user.id);
+                .eq('user_id', currentUser.id);
 
             if (gameError) throw gameError;
 
+            // Remove any linked local backup copy
+            deleteLocalGame(gameId);
+
             // Reset current game if it was the deleted one
             if (latestGameStateRef.current.gameId === gameId) {
-                setGameState(initialGameState);
+                setGameState({ ...initialGameState, hasSeenHomepage: true });
             }
 
             showToast('Partido eliminado correctamente', 'success');
             return true;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Delete Game Error:', error);
-            showToast(`Error al eliminar: ${error.message}`, 'error');
+            const currentOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+            showToast(`Error al eliminar: ${getFriendlySupabaseErrorMessage(error, currentOnline)}`, 'error');
             return false;
         }
     }, [setGameState, showToast]);

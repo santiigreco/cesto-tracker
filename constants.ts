@@ -23,6 +23,7 @@ export const STAT_LABELS: Record<keyof TallyStatsPeriod, string> = {
 
 
 export const GAME_STATE_STORAGE_KEY = 'cestoTrackerGameState';
+export const LOCAL_GAMES_STORAGE_KEY = 'cesto_local_games_v1';
 
 // --- ADMIN CONFIGURATION ---
 // Admin access is controlled via the `is_admin` column in the `profiles` table in Supabase.

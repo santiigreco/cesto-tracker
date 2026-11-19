@@ -62,7 +62,7 @@ const InstallApp: React.FC<InstallAppProps> = ({ className, variant = 'button' }
             <>
                 <button
                     onClick={handleInstallClick}
-                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-750 transition-all group ${className}`}
+                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-700/80 transition-all group ${className}`}
                     title="Instalar App"
                 >
                     <div className="p-3 bg-slate-900 rounded-full group-hover:bg-slate-800 transition-colors">

@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
 import { GameMode, Settings, StatAction, GameEvent } from '../types';
+import { generateLocalGameId } from '../utils/localGamesStorage';
+import { getUserPreferences } from '../utils/userPreferences';
 
 // Helper function moved outside the hook to ensure stability and avoid closure issues.
 // Performs shallow immutable cloning on the target player & period so React.memo on PlayerTallyCard detects changes accurately.
@@ -20,8 +22,9 @@ const modifyStatValue = (tallyStats: any, player: string, period: string, action
 };
 
 export const useGameLogic = () => {
-    const { setGameState, resetGame } = useGameContext();
+    const { gameState, setGameState, resetGame } = useGameContext();
     const { notificationPopup, setNotificationPopup } = useUI();
+    const isReadOnly = gameState.isReadOnly;
 
     // --- SETUP ---
     const handleSetupComplete = useCallback((
@@ -50,6 +53,7 @@ export const useGameLogic = () => {
 
                 return {
                     ...prev,
+                    localId: prev.localId || generateLocalGameId(),
                     hasSeenHomepage: true,
                     availablePlayers: sortedRoster,
                     activePlayers: sortedRoster.slice(0, 6),
@@ -74,6 +78,7 @@ export const useGameLogic = () => {
             return {
                 ...initialGameState,
                 gameId: null,
+                localId: generateLocalGameId(),
                 userId: null,
                 shots: [],
                 opponentScore: 0,
@@ -105,6 +110,16 @@ export const useGameLogic = () => {
 
     // --- TALLY LOGIC ---
     const handleUpdateTallyStat = useCallback((playerNumber: string, stat: StatAction, change: 1) => {
+        if (!isReadOnly && (stat === 'goles' || stat === 'triples' || stat === 'faltasPersonales')) {
+            try {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function' && getUserPreferences().enableHaptics) {
+                    navigator.vibrate(stat === 'faltasPersonales' ? [15, 30, 15] : 15);
+                }
+            } catch {
+                // Ignore vibration API errors on unsupported browsers
+            }
+        }
+
         setGameState(prev => {
             if (prev.isReadOnly) return prev;
             const { currentPeriod } = prev;
@@ -170,7 +185,7 @@ export const useGameLogic = () => {
                 teamFouls: newTeamFouls
             };
         });
-    }, [setGameState, setNotificationPopup]);
+    }, [isReadOnly, setGameState, setNotificationPopup]);
 
     const handleUndoTally = useCallback(() => {
         setGameState(prev => {

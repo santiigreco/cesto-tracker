@@ -112,7 +112,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const handleShare = useCallback(async () => {
         const shareData = {
             title: 'Cesto Tracker App',
-            text: '¡Prueba Cesto Tracker para registrar y analizar los tiros de Cestoball!',
+            text: '¡Probá Cesto Tracker para llevar la planilla digital y estadísticas de Cestoball!',
             url: window.location.href,
         };
         try {

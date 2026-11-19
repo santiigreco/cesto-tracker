@@ -10,6 +10,13 @@ import { HomeShowcase } from './home/HomeShowcase';
 
 const TeamSelectorModal = lazy(() => import('@/components/modals/TeamSelectorModal'));
 
+export interface ActiveMatchSummary {
+  myTeam: string;
+  opponentName: string;
+  myScore: number;
+  opponentScore: number;
+}
+
 interface HomePageProps {
   onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
   onLoadGameClick: () => void;
@@ -17,12 +24,24 @@ interface HomePageProps {
   onLogin?: () => void;
   onLoadGame: (gameId: string, asOwner: boolean) => void;
   canAccessAdmin: boolean;
+  activeMatchSummary?: ActiveMatchSummary | null;
+  localGamesCount?: number;
+  onResumeActiveMatch?: () => void;
 }
 
 const LAST_SETUP_KEY = 'cesto_last_team_setup';
 
 const HomePage: React.FC<HomePageProps> = React.memo(
-  ({ onStart, onLoadGameClick, user, onLogin, canAccessAdmin }) => {
+  ({
+    onStart,
+    onLoadGameClick,
+    user,
+    onLogin,
+    canAccessAdmin,
+    activeMatchSummary,
+    localGamesCount,
+    onResumeActiveMatch,
+  }) => {
     const navigate = useNavigate();
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
@@ -93,6 +112,9 @@ const HomePage: React.FC<HomePageProps> = React.memo(
             onQuickStart={handleQuickStart}
             onLoadGameClick={onLoadGameClick}
             onLogin={onLogin}
+            activeMatchSummary={activeMatchSummary}
+            localGamesCount={localGamesCount}
+            onResumeActiveMatch={onResumeActiveMatch}
           />
 
           <HomeShowcase />

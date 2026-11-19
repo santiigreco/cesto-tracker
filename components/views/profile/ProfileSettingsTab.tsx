@@ -300,7 +300,7 @@ export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
           <button
             type="submit"
             disabled={isSavingPrefs}
-            className="bg-slate-800 hover:bg-slate-750 text-cyan-400 border border-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center gap-2"
+            className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center gap-2"
           >
             {isSavingPrefs ? <Loader className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
             <span>Guardar Preferencias</span>

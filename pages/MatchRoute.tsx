@@ -14,6 +14,7 @@ import { GameEvent, StatAction, AppTab, GamePeriod } from '../types';
 import { STAT_LABELS } from '../constants';
 import { useProfile } from '../hooks/useProfile';
 import { useSync } from '../context/SyncContext';
+import { isLocalGameId } from '../utils/localGamesStorage';
 
 const TAB_TRANSLATIONS: Record<AppTab, string> = {
     tally: 'Planilla',
@@ -54,10 +55,18 @@ export default function MatchRoute() {
 
     // If there is no userId assigned yet, the logged in user creating this match is the owner
     const isGameOwner = Boolean(user && (!gameState.userId || gameState.userId === user.id));
+    const canEditCurrentMatch =
+        isGameOwner ||
+        Boolean(id && isLocalGameId(id) && gameState.localId === id) ||
+        Boolean(!gameState.gameId && gameState.localId);
 
     useEffect(() => {
         if (id && id !== 'new') {
-            if (gameState.gameId !== id) {
+            const matchesCurrentGame = isLocalGameId(id)
+                ? gameState.localId === id
+                : gameState.gameId === id;
+
+            if (!matchesCurrentGame) {
                 const enableEditing = isEditRequested;
                 handleLoadGame(id, enableEditing).then((res) => {
                     if (res) {
@@ -71,18 +80,18 @@ export default function MatchRoute() {
                         navigate('/', { replace: true });
                     }
                 });
-            } else if (isEditRequested && isGameOwner && gameState.isReadOnly) {
+            } else if (isEditRequested && canEditCurrentMatch && gameState.isReadOnly) {
                 setGameState(prev => ({ ...prev, isReadOnly: false }));
                 setActiveTab('tally');
             }
         }
-    }, [id, gameState.gameId, gameState.isReadOnly, isEditRequested, isGameOwner, handleLoadGame, setGameState, setActiveTab, navigate]);
+    }, [id, gameState.gameId, gameState.localId, gameState.isReadOnly, isEditRequested, canEditCurrentMatch, handleLoadGame, setGameState, setActiveTab, navigate]);
 
     useEffect(() => {
-        if (id === 'new' && gameState.gameId) {
+        if ((id === 'new' || isLocalGameId(id)) && gameState.gameId && !gameState.isReadOnly) {
             navigate(`/match/${gameState.gameId}?edit=true`, { replace: true });
         }
-    }, [id, gameState.gameId, navigate]);
+    }, [id, gameState.gameId, gameState.isReadOnly, navigate]);
 
     useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -272,7 +281,7 @@ export default function MatchRoute() {
                     <div className="flex items-center gap-2">
                         <span>⚠️</span>
                         <span>
-                            <strong>Modo local:</strong> Los datos se guardan en este dispositivo. Iniciá sesión con Google para sincronizar y respaldar en la nube.
+                            <strong>Modo local:</strong> Los datos se guardan en este dispositivo. Iniciá sesión para sincronizar y respaldar en la nube.
                         </span>
                     </div>
                     <button
@@ -288,7 +297,7 @@ export default function MatchRoute() {
                 <Scoreboard />
 
                 {/* Read-Only Resume Action */}
-                {isGameOwner && gameState.isReadOnly && (
+                {canEditCurrentMatch && gameState.isReadOnly && (
                     <div className="flex justify-end mb-3">
                         <button
                             type="button"

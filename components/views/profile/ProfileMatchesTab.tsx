@@ -21,12 +21,14 @@ export interface UserSavedGame {
 interface ProfileMatchesTabProps {
   games: UserSavedGame[];
   loading: boolean;
+  error?: string | null;
   onRefresh: () => void;
 }
 
 export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
   games,
   loading,
+  error,
   onRefresh,
 }) => {
   const navigate = useNavigate();
@@ -101,10 +103,7 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
     try {
       const success = await handleDeleteGame(gameId);
       if (success) {
-        showToast('Partido eliminado correctamente', 'success');
         onRefresh();
-      } else {
-        showToast('No se pudo eliminar el partido', 'error');
       }
     } catch (err: any) {
       showToast(`Error: ${err.message}`, 'error');
@@ -179,6 +178,22 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
         <div className="flex flex-col items-center justify-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800">
           <Loader className="h-10 w-10 text-cyan-400" />
           <p className="text-slate-400 text-sm mt-4 font-semibold">Cargando tus partidos oficiales...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 px-4 bg-red-950/20 rounded-3xl border border-red-800/50 space-y-4">
+          <span className="text-4xl block">⚠️</span>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-red-200">No pudimos cargar tus planillas</h3>
+            <p className="text-red-300/90 text-sm max-w-md mx-auto">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="bg-red-600/80 hover:bg-red-500 text-white font-bold px-5 py-2.5 min-h-[44px] rounded-xl text-xs uppercase tracking-wider transition-colors shadow active:scale-95 inline-flex items-center gap-2"
+          >
+            <span>🔄</span>
+            <span>Reintentar</span>
+          </button>
         </div>
       ) : filteredGames.length === 0 ? (
         <div className="text-center py-16 px-4 bg-slate-900/50 rounded-3xl border border-dashed border-slate-800">

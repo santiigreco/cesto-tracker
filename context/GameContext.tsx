@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback, ReactNode } from 'react';
 import { GameState, Shot, TallyStats, TallyStatsPeriod, GamePeriod } from '../types';
 import { GAME_STATE_STORAGE_KEY } from '../constants';
+import { LOCAL_GAME_ID_PREFIX, generateLocalGameId, upsertLocalGame } from '../utils/localGamesStorage';
 
 const initialTallyStatsPeriod: TallyStatsPeriod = {
     goles: 0,
@@ -25,6 +26,7 @@ export const initialPlayerTally: TallyStats = {
 
 export const initialGameState: GameState = {
     gameId: null,
+    localId: null,
     userId: null,
     shots: [],
     isSetupComplete: false,
@@ -124,6 +126,12 @@ const hydrateInitialGameState = (): GameState => {
                 savedState.hasSeenHomepage = true;
             }
 
+            if (savedState.isSetupComplete && !savedState.isReadOnly && !savedState.localId) {
+                savedState.localId = savedState.gameId
+                    ? `${LOCAL_GAME_ID_PREFIX}cloud_${savedState.gameId}`
+                    : generateLocalGameId();
+            }
+
             const combinedSettings = { ...initialGameState.settings, ...savedState.settings };
             return { ...initialGameState, ...savedState, settings: combinedSettings };
         }
@@ -142,6 +150,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 const gameStateJSON = JSON.stringify(gameState);
                 localStorage.setItem(GAME_STATE_STORAGE_KEY, gameStateJSON);
+                if (gameState.isSetupComplete && !gameState.isReadOnly) {
+                    upsertLocalGame(gameState);
+                }
             } catch (error) {
                 console.error("Failed to save game state to localStorage:", error);
             }

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'cesto-tracker-static-v3';
+const CACHE_NAME = 'cesto-tracker-static-v4';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/favicon.svg',
+  '/favicon.ico',
   '/site.webmanifest'
 ];
 

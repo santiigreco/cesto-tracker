@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { SavedTeam, RosterPlayer } from '../types';
+import { getFriendlySupabaseErrorMessage } from '../utils/supabaseErrors';
 
 const TEAMS_CACHE_TTL_MS = 60_000;
 let cachedTeamsByUser: { userId: string; teams: SavedTeam[]; timestamp: number } | null = null;
@@ -13,6 +14,11 @@ export const useTeamManager = () => {
 
     const fetchTeams = useCallback(async (forceRefresh = false) => {
         setError(null);
+        const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
+        if (!isSupabaseConfigured || !onlineNow) {
+            setError(getFriendlySupabaseErrorMessage(null, onlineNow));
+            return;
+        }
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const user = session?.user;
@@ -71,7 +77,7 @@ export const useTeamManager = () => {
             setTeams(result);
         } catch (err: any) {
             console.error(err);
-            setError('Error al cargar equipos.');
+            setError(getFriendlySupabaseErrorMessage(err));
         } finally {
             inFlightTeamsPromise = null;
             setLoading(false);
@@ -117,7 +123,7 @@ export const useTeamManager = () => {
 
         } catch (err: any) {
             console.error(err);
-            setError('Error al guardar el equipo.');
+            setError(getFriendlySupabaseErrorMessage(err));
             return null;
         } finally {
             setLoading(false);
@@ -143,7 +149,7 @@ export const useTeamManager = () => {
             return true;
         } catch (err: any) {
             console.error(err);
-            setError('Error al actualizar el equipo.');
+            setError(getFriendlySupabaseErrorMessage(err));
             return false;
         } finally {
             setLoading(false);
@@ -167,7 +173,7 @@ export const useTeamManager = () => {
             });
         } catch (err: any) {
             console.error(err);
-            setError('Error al borrar el equipo.');
+            setError(getFriendlySupabaseErrorMessage(err));
         }
     }, []);
 

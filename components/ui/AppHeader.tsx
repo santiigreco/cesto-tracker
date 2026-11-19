@@ -203,6 +203,7 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
                         syncStatus={syncStatus}
                         hasUnsavedChanges={hasUnsavedChanges}
                         isOnline={isOnline}
+                        isAuthenticated={Boolean(user)}
                     />
                 </div>
             </header>

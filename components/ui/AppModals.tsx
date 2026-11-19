@@ -243,7 +243,8 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                         closeModal('loadGame');
                         try {
                             const res = await handleLoadGame(id, !!editable);
-                            if (editable && res) {
+                            if (!res) return;
+                            if (editable) {
                                 setActiveTab('tally');
                             } else {
                                 setActiveTab('statistics');
@@ -294,7 +295,7 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
             {modals.clearSheet?.isOpen && (
                 <ConfirmationModal
                     title="Limpiar Planilla"
-                    message="¿Borrar todos los tiros?"
+                    message="¿Borrar todas las estadísticas registradas en este partido?"
                     confirmText="Sí, borrar"
                     cancelText="Cancelar"
                     onConfirm={handleConfirmClearSheet}

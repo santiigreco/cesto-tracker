@@ -1,6 +1,7 @@
 import React from 'react';
 import { LastSetupData, UserProfile } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
+import type { ActiveMatchSummary } from '../HomePage';
 
 interface HomeHeroProps {
   user?: unknown;
@@ -10,6 +11,9 @@ interface HomeHeroProps {
   onQuickStart: () => void;
   onLoadGameClick: () => void;
   onLogin?: () => void;
+  activeMatchSummary?: ActiveMatchSummary | null;
+  localGamesCount?: number;
+  onResumeActiveMatch?: () => void;
 }
 
 /**
@@ -23,6 +27,9 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   onStartClick,
   onQuickStart,
   onLoadGameClick,
+  activeMatchSummary,
+  localGamesCount = 0,
+  onResumeActiveMatch,
 }) => {
   return (
     <section className="text-center max-w-3xl mx-auto pt-6 sm:pt-12 pb-6 px-4 select-none">
@@ -41,6 +48,29 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
 
       {/* CTA principal único */}
       <div className="flex flex-col items-center justify-center gap-3">
+        {activeMatchSummary && onResumeActiveMatch && (
+          <button
+            type="button"
+            onClick={onResumeActiveMatch}
+            className="w-full max-w-md flex items-center justify-between gap-2.5 bg-slate-900/95 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400/70 rounded-2xl px-4 py-2.5 min-h-[48px] shadow-lg transition-all active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <div className="min-w-0 text-left">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                  Partido en curso
+                </span>
+                <span className="block text-xs sm:text-sm font-bold text-white truncate">
+                  {activeMatchSummary.myTeam} {activeMatchSummary.myScore} - {activeMatchSummary.opponentScore} {activeMatchSummary.opponentName}
+                </span>
+              </div>
+            </div>
+            <span className="text-xs font-black text-cyan-300 uppercase tracking-wider shrink-0">
+              Reanudar →
+            </span>
+          </button>
+        )}
+
         <button
           onClick={lastSetup ? onQuickStart : onStartClick}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-400 via-cyan-500 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-base sm:text-lg px-8 py-4 min-h-[56px] rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
@@ -80,7 +110,11 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
           onClick={onLoadGameClick}
           className="min-h-[44px] px-3 text-sm font-bold text-cyan-300 hover:text-cyan-200 transition-colors"
         >
-          {user ? 'Mis partidos →' : 'Ver partidos de la comunidad →'}
+          {user
+            ? 'Mis partidos →'
+            : localGamesCount > 0
+              ? `Mis partidos (${localGamesCount}) →`
+              : 'Ver partidos de la comunidad →'}
         </button>
       </div>
     </section>

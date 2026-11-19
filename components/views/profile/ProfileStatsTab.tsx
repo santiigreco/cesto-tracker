@@ -187,7 +187,7 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
               key={badge.id}
               className={`p-4 rounded-xl border transition-all ${
                 badge.unlocked
-                  ? 'bg-slate-850 border-cyan-500/40 shadow-md'
+                  ? 'bg-slate-800/90 border-cyan-500/40 shadow-md'
                   : 'bg-slate-900/40 border-slate-800 opacity-60'
               }`}
             >

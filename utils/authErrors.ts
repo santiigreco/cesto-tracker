@@ -1,8 +1,14 @@
+import { isSupabaseConfigured } from './supabaseClient';
+
 /**
  * Traduce códigos y mensajes de error habituales de Supabase Auth a explicaciones
  * claras y humanas en español.
  */
 export function getFriendlyAuthErrorMessage(error: any): string {
+    if (!isSupabaseConfigured) {
+        return 'El servicio de cuentas no está configurado en este entorno. Podés seguir usando la planilla en modo local.';
+    }
+
     if (!error) return '';
 
     const message = typeof error === 'string' ? error : (error.message || '');
@@ -28,7 +34,17 @@ export function getFriendlyAuthErrorMessage(error: any): string {
         return 'Demasiados intentos en poco tiempo. Aguardá unos instantes antes de volver a intentar.';
     }
 
-    if (lowerMessage.includes('network') || lowerMessage.includes('failed to fetch') || lowerMessage.includes('timeout')) {
+    if (
+        error?.name === 'AbortError' ||
+        lowerMessage.includes('network') ||
+        lowerMessage.includes('failed to fetch') ||
+        lowerMessage.includes('timeout') ||
+        lowerMessage.includes('abort') ||
+        lowerMessage.includes('load failed') ||
+        lowerMessage.includes('err_name_not_resolved') ||
+        lowerMessage.includes('networkerror') ||
+        lowerMessage.includes('fetch failed')
+    ) {
         return 'Error de conexión con el servidor. Verificá tu conexión a internet.';
     }
 

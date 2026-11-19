@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGameContext } from '@/context/GameContext';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase, isSupabaseConfigured } from '@/utils/supabaseClient';
+import { getFriendlySupabaseErrorMessage } from '@/utils/supabaseErrors';
 import Loader from '@/components/ui/Loader';
 import { GoogleIcon } from '@/components/icons';
 import { ProfileHeader } from '@/components/views/profile/ProfileHeader';
@@ -33,14 +34,24 @@ export default function ProfileRoute() {
   const [activeTab, setActiveTab] = useState<ProfileActiveTab>('matches');
   const [games, setGames] = useState<UserSavedGame[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
+  const [gamesError, setGamesError] = useState<string | null>(null);
   const [teamsCount, setTeamsCount] = useState(0);
 
   // Fetch games owned by this user (omitting unused player_names JSONB)
   const fetchUserGames = useCallback(async () => {
     if (!user) {
       setGames([]);
+      setGamesError(null);
       return;
     }
+    setGamesError(null);
+    const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    if (!isSupabaseConfigured || !onlineNow) {
+      setGamesError(getFriendlySupabaseErrorMessage(null, onlineNow));
+      setGamesLoading(false);
+      return;
+    }
+
     setGamesLoading(true);
     try {
       const { data, error } = await supabase
@@ -53,6 +64,7 @@ export default function ProfileRoute() {
       setGames((data as UserSavedGame[]) || []);
     } catch (err) {
       console.error('[PROFILE_GAMES_FETCH_ERROR]', err);
+      setGamesError(getFriendlySupabaseErrorMessage(err));
     } finally {
       setGamesLoading(false);
     }
@@ -260,6 +272,7 @@ export default function ProfileRoute() {
               <ProfileMatchesTab
                 games={games}
                 loading={gamesLoading}
+                error={gamesError}
                 onRefresh={fetchUserGames}
               />
             )}

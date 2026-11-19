@@ -1,19 +1,19 @@
 export const faqData = [
   {
     question: "¿Cómo arranco un partido?",
-    answer: "¡Es simple! En la pantalla de inicio, tocá en <strong>'Empezar Partido'</strong>. Seleccionás tu equipo, el rival, los jugadores que van a jugar y el modo de juego: <strong>'Planilla'</strong> (para registrar rápido goles, fallos, rebotes y recuperos) o <strong>'Mapa de Tiros'</strong> (modo avanzado para marcar la posición exacta de cada tiro en cancha)."
+    answer: "¡Es simple! En la pantalla de inicio, tocá en <strong>'Empezar planilla'</strong>. Elegís tu equipo, el rival, el torneo/categoría y cargás los dorsales y nombres del plantel para comenzar a anotar en la <strong>Planilla Técnica Digital</strong>."
   },
   {
     question: "¿Para qué sirven las pestañas durante el partido?",
-    answer: "Una vez en el partido tenés dos vistas. <strong>'Planilla'</strong> es donde registrás las acciones en tiempo real: goles, fallos, triples, rebotes y más, por jugador y por tiempo. <strong>'Estadísticas'</strong> muestra el resumen completo del equipo y de cada jugadora — puntos, efectividad, rebotes — y el botón para compartir el reporte."
+    answer: "Una vez en el partido tenés dos vistas. <strong>'Planilla'</strong> es donde registrás las acciones en tiempo real: goles, triples, fallos, recuperos, rebotes, asistencias, pérdidas, goles en contra y faltas personales por período (1er tiempo, 2do tiempo y suplementarios). <strong>'Estadísticas'</strong> muestra el resumen completo del equipo y de cada jugadora, con filtros por período y exportación oficial."
   },
   {
     question: "¿Puedo compartir las estadísticas?",
-    answer: "¡Obvio! En la pestaña 'Estadísticas', tocá el botón <strong>'Compartir'</strong>. Se genera una imagen con el resumen del partido lista para mandar al grupo del equipo por WhatsApp o subir a Instagram. También podés copiar el texto con formato para mandarlo directo. Y si lo necesitás, hay exportación a <strong>Excel para la Federación</strong>."
+    answer: "¡Obvio! Podés tocar el botón <strong>'Reporte'</strong> durante el partido o <strong>'Compartir'</strong> en la pestaña 'Estadísticas'. Se genera una imagen lista para mandar al grupo del equipo por WhatsApp o subir a Instagram, además de copiar el texto con formato y exportar con <strong>'Generar Excel'</strong>."
   },
   {
     question: "¿Cómo funciona el reporte para la Federación?",
-    answer: "En la pestaña 'Estadísticas' encontrás el botón <strong>'Excel Oficial'</strong>. Descarga un archivo con el formato exacto que requiere la Federación Argentina de Cestoball: todos los jugadores, los cuatro tiempos y las estadísticas completas. Listo para enviar como está."
+    answer: "En la pestaña 'Estadísticas' encontrás el botón <strong>'Generar Excel'</strong>. Descarga un archivo con el formato oficial de la <strong>Federación de Cestoball (FCCF)</strong>: todos los jugadores, los cuatro tiempos y las estadísticas completas, listo para enviar."
   },
   {
     question: "¿Tengo que pagar para usar la app?",
@@ -21,19 +21,14 @@ export const faqData = [
   },
   {
     question: "¿Mis datos están seguros? ¿Dónde se guardan?",
-    answer: "Tus datos están protegidos. Si no iniciás sesión, todo queda guardado localmente en tu dispositivo así podés seguir cargando aunque no tengas internet en el club. Si iniciás sesión con Google, los partidos se <strong>sincronizan automáticamente en la nube</strong>, lo que te permite acceder a ellos desde cualquier celular o computadora."
-  },
-  {
-    question: "¿Cómo registro un tiro en el Mapa de Tiros?",
-    answer: `1. <strong>Elegí la jugadora:</strong> Seleccioná el número en la parte de abajo.<br>2. <strong>Marcá la posición:</strong> Tocá en la cancha el punto exacto desde donde se realizó el tiro.<br>3. <strong>Definí el resultado:</strong> Elegí si fue Gol (2 pts), Triple (3 pts) o Fallo. ¡Listo, queda guardado!`
+    answer: "Tus datos están protegidos. Si no iniciás sesión o no tenés internet en la cancha, todo queda guardado localmente en tu dispositivo y podés retomarlo desde <strong>'Mis Partidos'</strong>. Si iniciás sesión con Google o con tu correo electrónico, los partidos se <strong>sincronizan automáticamente en la nube</strong> para acceder desde cualquier celular o computadora."
   },
   {
     question: "¿Puedo corregir algo que cargué mal?",
-    answer: "¡Sí! En la planilla tenés el botón <strong>'Deshacer'</strong> que borra la última acción registrada. Si te arrepentís, <strong>'Rehacer'</strong> la vuelve a poner. También podés tocar cualquier acción del log para editarla o eliminarla individualmente. Para empezar de cero, entrá a Configuración y seleccioná <strong>'Nuevo Partido'</strong>."
+    answer: "¡Sí! En la planilla tenés el botón <strong>'Deshacer'</strong> que borra la última acción registrada y <strong>'Rehacer'</strong> para volverla a aplicar. También podés abrir la lista de correcciones para editar o eliminar cualquier jugada individual, entrar a Configuración → <strong>'Editar Datos del Partido'</strong> para modificar equipos o dorsales sin perder estadísticas, o elegir <strong>'Comenzar Nuevo Partido'</strong> para empezar de cero."
   },
-
   {
     question: "¿Cómo puedo colaborar con el proyecto?",
-    answer: "¡Hay muchas formas de sumarte! Podés colaborar como <strong>administrador</strong> cargando resultados oficiales, o aportando <strong>ideas y feedback</strong> para que sigamos mejorando. Cesto Tracker crece gracias al aporte de toda la comunidad."
+    answer: "¡Hay muchas formas de sumarte! Podés compartir la app en tu club o federación y aportar <strong>ideas y feedback</strong> para que sigamos mejorando. Cesto Tracker crece gracias al aporte de toda la comunidad."
   }
 ];

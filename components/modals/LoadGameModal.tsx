@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '../../utils/supabaseClient';
-import { XIcon, EyeIcon, SearchIcon, CalendarIcon, TrashIcon, GoogleIcon } from '../icons';
+import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
+import { XIcon, EyeIcon, SearchIcon, CalendarIcon, TrashIcon } from '../icons';
 import Loader from '@/components/ui/Loader';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { GameMode } from '../../types';
 import { useSync } from '../../context/SyncContext';
+import { PERIOD_NAMES } from '../../constants';
+import { getFriendlySupabaseErrorMessage } from '../../utils/supabaseErrors';
+import { isLocalGameId, listLocalGames, LocalSavedGame } from '../../utils/localGamesStorage';
 
 interface LightweightSettings {
     gameName?: string;
@@ -37,10 +40,11 @@ const GAMES_LIST_CACHE_TTL_MS = 20_000;
 let cachedGamesList: { games: SavedGame[]; timestamp: number } | null = null;
 
 const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, onLoadGame, user, onLogin }) => {
-    const { handleDeleteGame } = useSync();
+    const { handleDeleteGame, isOnline } = useSync();
 
     // Data State
     const [games, setGames] = useState<SavedGame[]>(() => cachedGamesList?.games || []);
+    const [localGames, setLocalGames] = useState<LocalSavedGame[]>(() => listLocalGames());
     const [loading, setLoading] = useState(!cachedGamesList);
     const [error, setError] = useState<string | null>(null);
 
@@ -55,18 +59,38 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+    // Close on Escape
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     // --- FETCH DATA (Projection excludes heavy settings.gameLog and player_names JSONB) ---
     const fetchGames = useCallback(async (forceRefresh = false) => {
+        const freshLocal = listLocalGames();
+        setLocalGames(freshLocal);
+
+        const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : isOnline;
+        if (!isSupabaseConfigured || !onlineNow) {
+            setError(getFriendlySupabaseErrorMessage(null, false));
+            setLoading(false);
+            if (freshLocal.length > 0) {
+                setActiveTab('myGames');
+            }
+            return;
+        }
+
         const now = Date.now();
         if (!forceRefresh && cachedGamesList && now - cachedGamesList.timestamp < GAMES_LIST_CACHE_TTL_MS) {
             setGames(cachedGamesList.games);
+            setError(null);
             setLoading(false);
-            if (user) {
-                const hasMyGames = cachedGamesList.games.some(g => g.user_id === user.id);
-                setActiveTab(hasMyGames ? 'myGames' : 'community');
-            } else {
-                setActiveTab('community');
-            }
+            const hasMyCloudGames = Boolean(user && cachedGamesList.games.some(g => g.user_id === user.id));
+            setActiveTab(freshLocal.length > 0 || hasMyCloudGames ? 'myGames' : 'community');
             return;
         }
 
@@ -86,6 +110,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
             if (!gamesData || gamesData.length === 0) {
                 cachedGamesList = { games: [], timestamp: Date.now() };
                 setGames([]);
+                setActiveTab(freshLocal.length > 0 ? 'myGames' : 'community');
                 return;
             }
 
@@ -124,20 +149,19 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
             cachedGamesList = { games: enrichedGames, timestamp: Date.now() };
             setGames(enrichedGames);
 
-            // Default tab: if user has games, 'myGames', otherwise 'community'
-            if (user) {
-                const hasMyGames = enrichedGames.some(g => g.user_id === user.id);
-                setActiveTab(hasMyGames ? 'myGames' : 'community');
-            } else {
-                setActiveTab('community');
+            // Default tab: if user has local or cloud games, 'myGames', otherwise 'community'
+            const hasMyCloudGames = Boolean(user && enrichedGames.some(g => g.user_id === user.id));
+            setActiveTab(freshLocal.length > 0 || hasMyCloudGames ? 'myGames' : 'community');
+        } catch (err: unknown) {
+            setError(getFriendlySupabaseErrorMessage(err, isOnline));
+            if (freshLocal.length > 0) {
+                setActiveTab('myGames');
             }
-        } catch (err: any) {
-            setError('No se pudieron cargar los partidos.');
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [isOnline, user]);
 
     useEffect(() => {
         if (isOpen) {
@@ -145,10 +169,20 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
         }
     }, [fetchGames, isOpen]);
 
-    const myGamesCount = useMemo(() => {
-        if (!user) return 0;
-        return games.filter(g => g.user_id === user.id).length;
+    const myCloudGames = useMemo(() => {
+        if (!user) return [];
+        return games.filter(g => g.user_id === user.id);
     }, [games, user]);
+
+    const loadedCloudIds = useMemo(() => {
+        return new Set(myCloudGames.map(g => g.id));
+    }, [myCloudGames]);
+
+    const deduplicatedLocalGames = useMemo(() => {
+        return localGames.filter(lg => !(lg.cloudGameId && loadedCloudIds.has(lg.cloudGameId)));
+    }, [localGames, loadedCloudIds]);
+
+    const myGamesCount = myCloudGames.length + deduplicatedLocalGames.length;
 
     const communityGamesCount = useMemo(() => {
         return games.length;
@@ -163,8 +197,30 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                 teams.add('Sin Equipo');
             }
         });
+        deduplicatedLocalGames.forEach(lg => {
+            if (lg.myTeam) {
+                teams.add(lg.myTeam);
+            } else {
+                teams.add('Sin Equipo');
+            }
+        });
         return Array.from(teams);
-    }, [games]);
+    }, [games, deduplicatedLocalGames]);
+
+    const visibleLocalGames = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+        return deduplicatedLocalGames.filter(lg => {
+            const matchesSearch =
+                !term ||
+                lg.gameName.toLowerCase().includes(term) ||
+                lg.myTeam.toLowerCase().includes(term) ||
+                (lg.tournamentName || '').toLowerCase().includes(term);
+
+            const teamName = lg.myTeam || 'Sin Equipo';
+            const matchesTeam = selectedTeam === 'Todos' || teamName === selectedTeam;
+            return matchesSearch && matchesTeam;
+        });
+    }, [deduplicatedLocalGames, searchTerm, selectedTeam]);
 
     const filteredGames = useMemo(() => {
         const term = searchTerm.toLowerCase();
@@ -194,11 +250,14 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
         try {
             const ok = await handleDeleteGame(gameId);
             if (ok) {
-                setGames(prev => {
-                    const updated = prev.filter(g => g.id !== gameId);
-                    cachedGamesList = { games: updated, timestamp: Date.now() };
-                    return updated;
-                });
+                setLocalGames(listLocalGames());
+                if (!isLocalGameId(gameId)) {
+                    setGames(prev => {
+                        const updated = prev.filter(g => g.id !== gameId);
+                        cachedGamesList = { games: updated, timestamp: Date.now() };
+                        return updated;
+                    });
+                }
                 setConfirmDeleteId(null);
             }
         } finally {
@@ -215,7 +274,12 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 transition-opacity p-3 sm:p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+        <div
+            className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 transition-opacity p-3 sm:p-4 animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            onClick={onClose}
+        >
             <div
                 className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-slate-700 overflow-hidden relative"
                 onClick={e => e.stopPropagation()}
@@ -232,7 +296,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
                         aria-label="Cerrar"
                     >
                         <XIcon />
@@ -250,7 +314,7 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                         }`}
                     >
                         <span>⭐ Mis Partidos</span>
-                        {user && (
+                        {(user || myGamesCount > 0) && (
                             <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                                 activeTab === 'myGames' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-700 text-slate-400'
                             }`}>
@@ -311,48 +375,209 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                 </div>
 
                 {/* --- GAMES LIST --- */}
-                <div className="flex-grow overflow-y-auto custom-scrollbar p-3 sm:p-4 bg-slate-900">
-                    {loading && (
-                        <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-                            <Loader />
-                            <p className="mt-4 animate-pulse text-sm">Cargando partidos...</p>
-                        </div>
-                    )}
-
+                <div className="flex-grow overflow-y-auto custom-scrollbar p-3 sm:p-4 bg-slate-900 space-y-4">
+                    {/* Non-blocking error banner (keeps local matches visible and accessible offline) */}
                     {error && !loading && (
-                        <div className="text-center text-red-400 py-8 bg-red-900/10 rounded-xl border border-red-900/50">
-                            <p>{error}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-red-200 p-4 bg-red-950/30 rounded-xl border border-red-800/60">
+                            <div className="flex items-start gap-2.5 text-xs sm:text-sm">
+                                <span className="shrink-0">⚠️</span>
+                                <span>{error}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => fetchGames(true)}
+                                className="self-start sm:self-auto shrink-0 min-h-[40px] px-3.5 py-2 bg-red-600/80 hover:bg-red-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors"
+                            >
+                                🔄 Reintentar
+                            </button>
                         </div>
                     )}
 
-                    {!loading && !error && activeTab === 'myGames' && !user && (
+                    {/* LOCAL MATCHES ON THIS DEVICE ("Mis Partidos" tab — available offline & without login) */}
+                    {activeTab === 'myGames' && visibleLocalGames.length > 0 && (
+                        <section className="space-y-2.5">
+                            <div className="flex items-center justify-between px-1">
+                                <h3 className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                                    <span>📱</span>
+                                    <span>En este dispositivo (Local)</span>
+                                </h3>
+                                <span className="text-[11px] font-bold text-slate-400">
+                                    {visibleLocalGames.length} {visibleLocalGames.length === 1 ? 'planilla' : 'planillas'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                {visibleLocalGames.map(lg => {
+                                    const matchTitle =
+                                        lg.myTeam && lg.gameName
+                                            ? `${lg.myTeam} vs ${lg.gameName}`
+                                            : lg.gameName || lg.myTeam || 'Partido sin nombre';
+
+                                    return (
+                                        <div
+                                            key={lg.localId}
+                                            className="bg-slate-800/95 hover:bg-slate-800 border border-amber-700/40 hover:border-cyan-500/50 p-3.5 sm:p-4 rounded-xl transition-all duration-200 flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-md"
+                                        >
+                                            <div className="flex-shrink-0 hidden sm:block">
+                                                <TeamLogo
+                                                    teamName={lg.myTeam || ''}
+                                                    className="h-12 w-12"
+                                                    fallbackClassName="bg-slate-700"
+                                                />
+                                            </div>
+
+                                            <div className="flex-grow min-w-0 w-full">
+                                                <div className="flex items-center gap-2 mb-1 min-w-0">
+                                                    <div className="sm:hidden shrink-0">
+                                                        <TeamLogo teamName={lg.myTeam || ''} className="h-6 w-6" />
+                                                    </div>
+                                                    <h4 className="font-black text-white text-sm sm:text-base truncate min-w-0 flex-1">
+                                                        {matchTitle}
+                                                    </h4>
+                                                    <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-700/60">
+                                                        Local
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <CalendarIcon className="h-3.5 w-3.5 text-slate-500" />
+                                                        <span>
+                                                            {new Date(lg.updatedAt || lg.createdAt).toLocaleDateString('es-AR', {
+                                                                day: 'numeric', month: 'short', year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    </div>
+
+                                                    <span>{PERIOD_NAMES[lg.currentPeriod] || 'Primer Tiempo'}</span>
+
+                                                    {lg.tournamentName && (
+                                                        <span className="text-slate-400 font-medium truncate max-w-[180px]">
+                                                            🏆 {lg.tournamentName}
+                                                        </span>
+                                                    )}
+
+                                                    <span className="bg-cyan-950/60 text-cyan-300 font-bold px-2 py-0.5 rounded border border-cyan-800/50">
+                                                        Score: {lg.myScore} - {lg.opponentScore}
+                                                    </span>
+
+                                                    <span className="text-slate-500 font-medium">
+                                                        {lg.eventsCount} {lg.eventsCount === 1 ? 'acción' : 'acciones'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/60">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onLoadGame(lg.localId, true)}
+                                                    className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-2 px-3.5 min-h-[40px] rounded-xl shadow-md text-xs uppercase tracking-wider transition-all"
+                                                    title="Reanudar y continuar registrando jugadas"
+                                                >
+                                                    <span>✏️</span> Continuar
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onLoadGame(lg.localId, false)}
+                                                    className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 px-3 min-h-[40px] rounded-xl border border-slate-600 text-xs transition-colors"
+                                                    title="Ver estadísticas y análisis"
+                                                >
+                                                    📊 Stats
+                                                </button>
+
+                                                {confirmDeleteId === lg.localId ? (
+                                                    <div className="flex items-center gap-1 bg-red-950/80 p-1 rounded-lg border border-red-800 animate-fade-in">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDelete(lg.localId)}
+                                                            disabled={deletingId === lg.localId}
+                                                            className="px-2.5 py-1.5 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black rounded"
+                                                        >
+                                                            {deletingId === lg.localId ? '...' : 'Sí'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setConfirmDeleteId(null)}
+                                                            className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] font-bold rounded"
+                                                        >
+                                                            No
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setConfirmDeleteId(lg.localId)}
+                                                        className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
+                                                        title="Eliminar partido local"
+                                                        aria-label="Eliminar partido local"
+                                                    >
+                                                        <TrashIcon className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    )}
+
+                    {loading && (
+                        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                            <Loader />
+                            <p className="mt-4 animate-pulse text-sm">Cargando partidos en la nube...</p>
+                        </div>
+                    )}
+
+                    {!loading && activeTab === 'myGames' && !user && visibleLocalGames.length > 0 && onLogin && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-800/70 rounded-xl border border-slate-700/80 text-left">
+                            <div className="text-xs sm:text-sm text-slate-300">
+                                <p className="font-bold text-white">¿Querés respaldar estas planillas en la nube?</p>
+                                <p className="text-slate-400 text-xs mt-0.5">
+                                    Iniciá sesión para acceder a tus partidos desde cualquier celular o computadora.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={onLogin}
+                                className="shrink-0 w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-4 py-2.5 min-h-[44px] rounded-xl text-xs uppercase tracking-wider shadow transition-transform active:scale-95"
+                            >
+                                Iniciar Sesión
+                            </button>
+                        </div>
+                    )}
+
+                    {!loading && !error && activeTab === 'myGames' && !user && visibleLocalGames.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                             <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-3xl mb-3">
                                 🔒
                             </div>
-                            <h3 className="text-lg font-bold text-white mb-1">Iniciá sesión para ver tus partidos</h3>
+                            <h3 className="text-lg font-bold text-white mb-1">Iniciá sesión para ver tus partidos en la nube</h3>
                             <p className="text-slate-400 text-sm max-w-sm mb-5">
-                                Accedé con tu cuenta para guardar, reanudar y consultar tu historial personal.
+                                {deduplicatedLocalGames.length > 0
+                                    ? 'No se encontraron partidos locales con los filtros actuales.'
+                                    : 'Accedé con tu cuenta para guardar, reanudar y consultar tu historial personal desde cualquier dispositivo.'}
                             </p>
                             {onLogin && (
                                 <button
                                     type="button"
                                     onClick={onLogin}
-                                    className="bg-white text-slate-900 hover:bg-slate-100 font-bold px-6 py-2.5 rounded-full text-sm transition-transform hover:scale-105 shadow-lg inline-flex items-center gap-2.5 cursor-pointer"
+                                    className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-6 py-2.5 min-h-[44px] rounded-full text-sm transition-transform hover:scale-105 shadow-lg inline-flex items-center gap-2 cursor-pointer"
                                 >
-                                    <GoogleIcon className="h-4 w-4 flex-shrink-0" />
-                                    <span>Iniciar Sesión con Google</span>
+                                    <span>🔐</span>
+                                    <span>Iniciar Sesión</span>
                                 </button>
                             )}
                         </div>
                     )}
 
-                    {!loading && !error && activeTab === 'myGames' && user && filteredGames.length === 0 && (
+                    {!loading && !error && activeTab === 'myGames' && user && filteredGames.length === 0 && visibleLocalGames.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-12 px-4 text-center text-slate-400">
                             <span className="text-4xl mb-3">📋</span>
                             <h3 className="text-lg font-bold text-white mb-1">Aún no tenés partidos guardados</h3>
                             <p className="text-slate-400 text-sm max-w-sm mb-4">
-                                Los partidos que anotes o guardes en la nube aparecerán acá para que los continúes cuando quieras.
+                                Los partidos que anotes o guardes aparecerán acá para que los continúes cuando quieras.
                             </p>
                             <button
                                 onClick={() => setActiveTab('community')}
@@ -371,151 +596,167 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ isOpen = true, onClose, o
                     )}
 
                     {!loading && !error && filteredGames.length > 0 && (
-                        <div className="grid grid-cols-1 gap-3">
-                            {filteredGames.map(game => {
-                                const isMyGame = Boolean(user && game.user_id === user.id);
-                                const hasScore = game.settings?.myScore !== undefined;
+                        <section className="space-y-2.5">
+                            {activeTab === 'myGames' && visibleLocalGames.length > 0 && (
+                                <div className="flex items-center justify-between px-1 pt-1">
+                                    <h3 className="text-xs font-black uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+                                        <span>☁️</span>
+                                        <span>En la nube</span>
+                                    </h3>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-1 gap-3">
+                                {filteredGames.map(game => {
+                                    const isMyGame = Boolean(user && game.user_id === user.id);
+                                    const hasScore = game.settings?.myScore !== undefined;
 
-                                return (
-                                    <div
-                                        key={game.id}
-                                        className="group bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 p-4 rounded-xl transition-all duration-200 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center relative overflow-hidden shadow-md"
-                                    >
-                                        <div className="flex-shrink-0 hidden sm:block">
-                                            <TeamLogo
-                                                teamName={game.settings?.myTeam || ''}
-                                                className="h-12 w-12 opacity-90 group-hover:opacity-100 transition-opacity"
-                                                fallbackClassName="bg-slate-700"
-                                            />
-                                        </div>
+                                    return (
+                                        <div
+                                            key={game.id}
+                                            className="group bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 p-4 rounded-xl transition-all duration-200 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center relative overflow-hidden shadow-md"
+                                        >
+                                            <div className="flex-shrink-0 hidden sm:block">
+                                                <TeamLogo
+                                                    teamName={game.settings?.myTeam || ''}
+                                                    className="h-12 w-12 opacity-90 group-hover:opacity-100 transition-opacity"
+                                                    fallbackClassName="bg-slate-700"
+                                                />
+                                            </div>
 
-                                        <div className="flex-grow min-w-0 w-full">
-                                            <div className="flex items-center justify-between sm:justify-start gap-2 mb-1">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <div className="sm:hidden shrink-0">
-                                                        <TeamLogo teamName={game.settings?.myTeam || ''} className="h-6 w-6" />
+                                            <div className="flex-grow min-w-0 w-full">
+                                                <div className="flex items-center justify-between sm:justify-start gap-2 mb-1">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className="sm:hidden shrink-0">
+                                                            <TeamLogo teamName={game.settings?.myTeam || ''} className="h-6 w-6" />
+                                                        </div>
+                                                        <h3 className="font-black text-white text-base sm:text-lg truncate group-hover:text-cyan-400 transition-colors">
+                                                            {game.settings?.gameName || 'Partido sin nombre'}
+                                                        </h3>
                                                     </div>
-                                                    <h3 className="font-black text-white text-base sm:text-lg truncate group-hover:text-cyan-400 transition-colors">
-                                                        {game.settings?.gameName || 'Partido sin nombre'}
-                                                    </h3>
+
+                                                    {/* Creator badge */}
+                                                    {!isMyGame && game.profiles && (
+                                                        <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 whitespace-nowrap shrink-0">
+                                                            por {game.profiles.full_name?.split(' ')[0] || 'Anónimo'}
+                                                        </span>
+                                                    )}
                                                 </div>
 
-                                                {/* Creator badge */}
-                                                {!isMyGame && game.profiles && (
-                                                    <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 whitespace-nowrap shrink-0">
-                                                        por {game.profiles.full_name?.split(' ')[0] || 'Anónimo'}
-                                                    </span>
-                                                )}
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <CalendarIcon className="h-3.5 w-3.5 text-slate-500" />
+                                                        <span>
+                                                            {new Date(game.created_at).toLocaleDateString('es-AR', {
+                                                                day: 'numeric', month: 'short', year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`w-2 h-2 rounded-full ${game.game_mode === 'shot-chart' ? 'bg-purple-500' : 'bg-emerald-500'}`}></span>
+                                                        <span>{getGameModeLabel(game.game_mode)}</span>
+                                                    </div>
+
+                                                    {game.settings?.tournamentName && (
+                                                        <span className="text-slate-400 font-medium">
+                                                            🏆 {game.settings.tournamentName}
+                                                        </span>
+                                                    )}
+
+                                                    {hasScore && (
+                                                        <span className="bg-cyan-950/60 text-cyan-300 font-bold px-2 py-0.5 rounded border border-cyan-800/50">
+                                                            Score: {game.settings.myScore} - {game.settings.opponentScore || 0}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
-                                                <div className="flex items-center gap-1.5">
-                                                    <CalendarIcon className="h-3.5 w-3.5 text-slate-500" />
-                                                    <span>
-                                                        {new Date(game.created_at).toLocaleDateString('es-AR', {
-                                                            day: 'numeric', month: 'short', year: 'numeric'
-                                                        })}
-                                                    </span>
+                                            {/* Action Buttons */}
+                                            <div className="flex flex-row flex-wrap sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-between sm:justify-center shrink-0">
+                                                <div className="flex items-center gap-1 text-slate-500 text-[11px] font-medium" title="Visualizaciones">
+                                                    <EyeIcon className="h-3 w-3" />
+                                                    <span>{game.views || 0}</span>
                                                 </div>
 
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className={`w-2 h-2 rounded-full ${game.game_mode === 'shot-chart' ? 'bg-purple-500' : 'bg-emerald-500'}`}></span>
-                                                    <span>{getGameModeLabel(game.game_mode)}</span>
-                                                </div>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    {isMyGame ? (
+                                                        <>
+                                                            {/* Continuar Anotando (Modo Edición) */}
+                                                            <button
+                                                                onClick={() => onLoadGame(game.id, true)}
+                                                                className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-2 px-3.5 rounded-xl shadow-md hover:shadow-cyan-500/20 text-xs uppercase tracking-wider transition-all"
+                                                                title="Reanudar y continuar registrando jugadas"
+                                                            >
+                                                                <span>✏️</span> Continuar
+                                                            </button>
 
-                                                {game.settings?.tournamentName && (
-                                                    <span className="text-slate-400 font-medium">
-                                                        🏆 {game.settings.tournamentName}
-                                                    </span>
-                                                )}
+                                                            {/* Ver Estadísticas (Modo Lectura) */}
+                                                            <button
+                                                                onClick={() => onLoadGame(game.id, false)}
+                                                                className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 px-3 rounded-xl border border-slate-600 text-xs transition-colors"
+                                                                title="Ver estadísticas y análisis"
+                                                            >
+                                                                📊 Stats
+                                                            </button>
 
-                                                {hasScore && (
-                                                    <span className="bg-cyan-950/60 text-cyan-300 font-bold px-2 py-0.5 rounded border border-cyan-800/50">
-                                                        Score: {game.settings.myScore} - {game.settings.opponentScore || 0}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex flex-row flex-wrap sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-between sm:justify-center shrink-0">
-                                            <div className="flex items-center gap-1 text-slate-500 text-[11px] font-medium" title="Visualizaciones">
-                                                <EyeIcon className="h-3 w-3" />
-                                                <span>{game.views || 0}</span>
-                                            </div>
-
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                {isMyGame ? (
-                                                    <>
-                                                        {/* Continuar Anotando (Modo Edición) */}
-                                                        <button
-                                                            onClick={() => onLoadGame(game.id, true)}
-                                                            className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-2 px-3.5 rounded-xl shadow-md hover:shadow-cyan-500/20 text-xs uppercase tracking-wider transition-all"
-                                                            title="Reanudar y continuar registrando jugadas"
-                                                        >
-                                                            <span>✏️</span> Continuar
-                                                        </button>
-
-                                                        {/* Ver Estadísticas (Modo Lectura) */}
+                                                            {/* Eliminar Partido */}
+                                                            {confirmDeleteId === game.id ? (
+                                                                <div className="flex items-center gap-1 bg-red-950/80 p-1 rounded-lg border border-red-800 animate-fade-in">
+                                                                    <button
+                                                                        onClick={() => handleDelete(game.id)}
+                                                                        disabled={deletingId === game.id}
+                                                                        className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black rounded"
+                                                                    >
+                                                                        {deletingId === game.id ? '...' : 'Sí'}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setConfirmDeleteId(null)}
+                                                                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] font-bold rounded"
+                                                                    >
+                                                                        No
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setConfirmDeleteId(game.id)}
+                                                                    className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
+                                                                    title="Eliminar partido"
+                                                                >
+                                                                    <TrashIcon className="h-4 w-4" />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        /* Partido ajeno: solo lectura */
                                                         <button
                                                             onClick={() => onLoadGame(game.id, false)}
-                                                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 px-3 rounded-xl border border-slate-600 text-xs transition-colors"
-                                                            title="Ver estadísticas y análisis"
+                                                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 px-4 rounded-xl border border-slate-600 text-xs transition-colors"
                                                         >
-                                                            📊 Stats
+                                                            Ver Partido
                                                         </button>
-
-                                                        {/* Eliminar Partido */}
-                                                        {confirmDeleteId === game.id ? (
-                                                            <div className="flex items-center gap-1 bg-red-950/80 p-1 rounded-lg border border-red-800 animate-fade-in">
-                                                                <button
-                                                                    onClick={() => handleDelete(game.id)}
-                                                                    disabled={deletingId === game.id}
-                                                                    className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black rounded"
-                                                                >
-                                                                    {deletingId === game.id ? '...' : 'Sí'}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setConfirmDeleteId(null)}
-                                                                    className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] font-bold rounded"
-                                                                >
-                                                                    No
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => setConfirmDeleteId(game.id)}
-                                                                className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
-                                                                title="Eliminar partido"
-                                                            >
-                                                                <TrashIcon className="h-4 w-4" />
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    /* Partido ajeno: solo lectura */
-                                                    <button
-                                                        onClick={() => onLoadGame(game.id, false)}
-                                                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 px-4 rounded-xl border border-slate-600 text-xs transition-colors"
-                                                    >
-                                                        Ver Partido
-                                                    </button>
-                                                )}
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
                     )}
                 </div>
 
                 {/* --- FOOTER --- */}
-                <div className="bg-slate-800 px-4 py-2.5 text-center text-xs text-slate-400 border-t border-slate-700 flex justify-between items-center flex-shrink-0">
-                    <span>Mostrando {filteredGames.length} de {games.length} partidos</span>
-                    {user && (
+                <div className="bg-slate-800 px-4 py-2.5 text-center text-xs text-slate-400 border-t border-slate-700 flex flex-wrap justify-between items-center gap-2 flex-shrink-0">
+                    <span>
+                        {activeTab === 'myGames'
+                            ? `Mostrando ${visibleLocalGames.length + (user ? filteredGames.length : 0)} de ${myGamesCount} partidos`
+                            : `Mostrando ${filteredGames.length} de ${communityGamesCount} partidos`}
+                    </span>
+                    {(user || deduplicatedLocalGames.length > 0) && (
                         <span className="text-cyan-400 font-medium text-[11px]">
-                            {myGamesCount} creados por vos
+                            {user
+                                ? `${myGamesCount} en tus partidos`
+                                : `${deduplicatedLocalGames.length} guardado(s) en este dispositivo`}
                         </span>
                     )}
                 </div>

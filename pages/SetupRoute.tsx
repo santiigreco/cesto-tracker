@@ -6,6 +6,7 @@ import { useUI } from '../context/UIContext';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { Settings, GameMode, RosterPlayer } from '../types';
 import { useProfile } from '../hooks/useProfile';
+import { getUserPreferences } from '../utils/userPreferences';
 
 interface SetupLocationState {
     mode?: 'new' | 'edit';
@@ -26,6 +27,7 @@ export default function SetupRoute() {
     const state = (location.state as SetupLocationState | null) || null;
 
     const isEditMode = state?.mode === 'edit' && gameState.isSetupComplete;
+    const userPreferences = getUserPreferences();
 
     const initialPlayers = isEditMode
         ? gameState.availablePlayers
@@ -48,12 +50,16 @@ export default function SetupRoute() {
             tournamentName: state?.tournamentName || initialGameState.settings.tournamentName,
             categoryName: state?.categoryName || 'Primera A',
             gameDate: new Date().toISOString().split('T')[0],
+            isManoCalienteEnabled: userPreferences.isManoCalienteEnabled,
+            manoCalienteThreshold: userPreferences.manoCalienteThreshold,
+            isManoFriaEnabled: userPreferences.isManoFriaEnabled,
+            manoFriaThreshold: userPreferences.manoFriaThreshold,
         };
 
     const onSetupCompleteWrapper = (players: string[], settings: Settings, mode: GameMode, names: Record<string, string>) => {
         handleSetupComplete(players, settings, mode, names, isEditMode);
         if (!isEditMode) {
-            setActiveTab('tally');
+            setActiveTab(getUserPreferences().defaultMatchTab);
         }
         const targetPath = isEditMode && gameState.gameId
             ? `/match/${gameState.gameId}?edit=true`

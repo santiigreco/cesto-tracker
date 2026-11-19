@@ -79,6 +79,7 @@ export interface GameEvent {
 
 export interface GameState {
   gameId: string | null; // Supabase game ID
+  localId?: string | null; // Local device game ID for offline/local history
   userId?: string | null; // Supabase user ID who created the game
   shots: Shot[];
   isSetupComplete: boolean;

@@ -8,6 +8,7 @@ interface CloudIndicatorProps {
     syncStatus?: SyncStatus;
     hasUnsavedChanges?: boolean;
     isOnline?: boolean;
+    isAuthenticated?: boolean;
 }
 
 const CloudIndicator: React.FC<CloudIndicatorProps> = ({
@@ -16,10 +17,9 @@ const CloudIndicator: React.FC<CloudIndicatorProps> = ({
     gameId,
     syncStatus = 'idle',
     hasUnsavedChanges = false,
-    isOnline = true
+    isOnline = true,
+    isAuthenticated = true,
 }) => {
-    if (!gameId) return null;
-
     if (!isOnline) {
         return (
             <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-amber-950/70 text-amber-300 px-2.5 py-1 rounded-full border border-amber-700/60 animate-fade-in shadow-sm">
@@ -33,7 +33,7 @@ const CloudIndicator: React.FC<CloudIndicatorProps> = ({
         return (
             <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-red-950/70 text-red-300 px-2.5 py-1 rounded-full border border-red-700/60 animate-fade-in shadow-sm">
                 <span>⚠️</span>
-                <span>Error de sincronización (datos a salvo en este dispositivo)</span>
+                <span>Error de sincronización (respaldo local)</span>
             </div>
         );
     }
@@ -47,16 +47,16 @@ const CloudIndicator: React.FC<CloudIndicatorProps> = ({
         );
     }
 
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChanges && isAuthenticated) {
         return (
             <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-slate-800/80 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/40 animate-fade-in shadow-sm">
                 <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                <span>Cambios locales pendientes...</span>
+                <span>Cambios pendientes de sincronizar...</span>
             </div>
         );
     }
 
-    if (lastSaved) {
+    if (lastSaved && gameId) {
         return (
             <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700 animate-fade-in shadow-sm">
                 <span className="text-green-400">☁️</span>
@@ -67,11 +67,7 @@ const CloudIndicator: React.FC<CloudIndicatorProps> = ({
         );
     }
 
-    return (
-        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700 animate-fade-in text-slate-500 shadow-sm">
-            <span>Sin cambios guardados en la nube</span>
-        </div>
-    );
+    return null;
 };
 
 export default CloudIndicator;

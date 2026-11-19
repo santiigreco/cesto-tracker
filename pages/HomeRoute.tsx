@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback } from 'react';
+import React, { Suspense, lazy, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HomePage from '@/components/views/HomePage';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { useUI } from '../context/UIContext';
 import { useGameContext } from '../context/GameContext';
 import { useProfile } from '../hooks/useProfile';
 import { RosterPlayer } from '../types';
+import { listLocalGames, computeMyScoreFromTally } from '../utils/localGamesStorage';
 
 const LoadGameModal = lazy(() => import('@/components/modals/LoadGameModal'));
 
@@ -13,7 +14,33 @@ export default function HomeRoute() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { modals, openModal, closeModal, openAuthModal, setActiveTab } = useUI();
-    const { resetGame } = useGameContext();
+    const { gameState, resetGame } = useGameContext();
+
+    const activeMatchSummary = useMemo(() => {
+        if (!gameState.isSetupComplete || gameState.isReadOnly) return null;
+        return {
+            myTeam: gameState.settings.myTeam?.trim() || 'Mi Equipo',
+            opponentName: gameState.settings.gameName?.trim() || 'Rival',
+            myScore: computeMyScoreFromTally(gameState.tallyStats),
+            opponentScore: gameState.opponentScore || 0,
+        };
+    }, [gameState]);
+
+    const localGamesCount = useMemo(
+        () => listLocalGames().length,
+        [gameState.localId, gameState.isSetupComplete, gameState.gameLog.length, modals.loadGame?.isOpen]
+    );
+
+    const handleResumeActiveMatch = useCallback(() => {
+        if (!gameState.isSetupComplete) return;
+        setActiveTab('tally');
+        const targetPath = gameState.gameId
+            ? `/match/${gameState.gameId}?edit=true`
+            : gameState.localId
+                ? `/match/${gameState.localId}?edit=true`
+                : '/match/new';
+        navigate(targetPath);
+    }, [gameState.isSetupComplete, gameState.gameId, gameState.localId, setActiveTab, navigate]);
 
     const handleStartApp = useCallback((teamName?: string, roster?: RosterPlayer[]) => {
         // Clear previous state before starting new game
@@ -48,6 +75,9 @@ export default function HomeRoute() {
                 onLogin={handleLogin}
                 onLoadGame={handleLoadGame}
                 canAccessAdmin={!!canAccessAdmin}
+                activeMatchSummary={activeMatchSummary}
+                localGamesCount={localGamesCount}
+                onResumeActiveMatch={handleResumeActiveMatch}
             />
             {modals.loadGame?.isOpen && (
                 <Suspense fallback={null}>
