@@ -1,7 +1,7 @@
 export const faqData = [
   {
     question: "¿Cómo arranco un partido?",
-    answer: "¡Es simple! En la pantalla de inicio, tocá en <strong>'Empezar planilla'</strong>. Elegís tu equipo, el rival, el torneo/categoría y cargás los dorsales y nombres del plantel para comenzar a anotar en la <strong>Planilla Técnica Digital</strong>."
+    answer: "¡En un toque! Tocá <strong>'Empezar planilla'</strong> desde el inicio y entrás directo a anotar con los dorsales 1 al 15 (y podés sumar cualquier otro dorsal con <strong>'+ Otro dorsal'</strong>). Podés cargar tu equipo, el rival y los nombres en el entretiempo o antes de guardar/exportar, o tocar <strong>'Configurar equipos primero'</strong> si preferís armar todo de entrada."
   },
   {
     question: "¿Para qué sirven las pestañas durante el partido?",

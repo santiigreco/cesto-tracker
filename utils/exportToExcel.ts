@@ -4,6 +4,7 @@ import { GameState } from '../types';
 import { supabase } from './supabaseClient';
 import { initialPlayerTally, initialGameState } from '../context/GameContext';
 import { mapTallyPeriodFromDb } from './dbAdapters';
+import { getPrioritizedPlayersForExcel } from './matchMetadata';
 
 // Helper types for the specific stats structure
 interface CalculatedStats {
@@ -69,9 +70,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
     const MAX_PLAYERS = 12;
     const DATA_START_ROW = 9;
 
-    const players = gameState.availablePlayers
-        .sort((a, b) => Number(a) - Number(b))
-        .slice(0, MAX_PLAYERS);
+    const players = getPrioritizedPlayersForExcel(gameState, MAX_PLAYERS);
 
     // Helper to calculate stats
     const getStats = (playerNum: string, period: string): CalculatedStats => {
@@ -182,7 +181,7 @@ export const generateFederationExcel = async (gameState: GameState) => {
         // Player number
         ws.getCell(`B${rowIdx}`).dataValidation = {
             type: 'whole', allowBlank: true, showInputMessage: true, showErrorMessage: true,
-            formulae: [1, 15]
+            formulae: [1, 99]
         };
         // Standard stats
         const statCols = ['D','E','F','G','H','I','J', 'L','M','N','O','P','Q','R', 'T','U','V','W','X','Y','Z', 'AB','AC','AD','AE','AF','AG','AH'];

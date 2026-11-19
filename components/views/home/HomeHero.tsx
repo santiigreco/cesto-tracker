@@ -7,8 +7,8 @@ interface HomeHeroProps {
   user?: unknown;
   profile?: UserProfile | null;
   lastSetup: LastSetupData | null;
-  onStartClick: () => void;
-  onQuickStart: () => void;
+  onInstantStart: () => void;
+  onConfigureSetup: () => void;
   onLoadGameClick: () => void;
   onLogin?: () => void;
   activeMatchSummary?: ActiveMatchSummary | null;
@@ -24,8 +24,8 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   user,
   profile,
   lastSetup,
-  onStartClick,
-  onQuickStart,
+  onInstantStart,
+  onConfigureSetup,
   onLoadGameClick,
   activeMatchSummary,
   localGamesCount = 0,
@@ -72,7 +72,8 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         )}
 
         <button
-          onClick={lastSetup ? onQuickStart : onStartClick}
+          type="button"
+          onClick={onInstantStart}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-400 via-cyan-500 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-base sm:text-lg px-8 py-4 min-h-[56px] rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
         >
           {lastSetup ? (
@@ -83,22 +84,21 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
           ) : profile?.favorite_club ? (
             <>
               <TeamLogo teamName={profile.favorite_club} className="h-6 w-6" />
-              <span>Empezar planilla</span>
+              <span>⚡ Empezar planilla</span>
             </>
           ) : (
-            <span>Empezar planilla</span>
+            <span>⚡ Empezar planilla</span>
           )}
         </button>
 
-        {/* Con plantel previo, elegir otro club sigue siendo posible */}
-        {lastSetup && (
-          <button
-            onClick={onStartClick}
-            className="min-h-[44px] px-3 text-sm font-bold text-slate-300 hover:text-white underline underline-offset-4 decoration-slate-600 transition-colors"
-          >
-            Elegir otro equipo
-          </button>
-        )}
+        {/* Acceso alternativo al setup clásico previo */}
+        <button
+          type="button"
+          onClick={onConfigureSetup}
+          className="min-h-[44px] px-3 text-sm font-bold text-slate-300 hover:text-white underline underline-offset-4 decoration-slate-600 transition-colors"
+        >
+          Configurar equipos primero
+        </button>
 
         {/* Promesa de fricción baja */}
         <p className="text-sm text-slate-300 font-medium">

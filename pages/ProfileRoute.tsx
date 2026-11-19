@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
-import { useGameContext } from '@/context/GameContext';
+import { useGameLogic } from '@/hooks/useGameLogic';
 import { supabase, isSupabaseConfigured } from '@/utils/supabaseClient';
 import { getFriendlySupabaseErrorMessage } from '@/utils/supabaseErrors';
 import Loader from '@/components/ui/Loader';
@@ -28,8 +28,8 @@ type ProfileActiveTab = 'matches' | 'teams' | 'stats' | 'settings';
 export default function ProfileRoute() {
   const navigate = useNavigate();
   const { user, authLoading, profile, refreshProfile } = useAuth();
-  const { openAuthModal, setActiveTab } = useUI();
-  const { resetGame } = useGameContext();
+  const { openAuthModal } = useUI();
+  const { startQuickMatch } = useGameLogic();
 
   const [activeTab, setActiveTab] = useState<ProfileActiveTab>('matches');
   const [games, setGames] = useState<UserSavedGame[]>([]);
@@ -181,9 +181,11 @@ export default function ProfileRoute() {
 
         <button
           onClick={() => {
-            resetGame();
-            setActiveTab('tally');
-            navigate('/setup', { state: { mode: 'new' } });
+            startQuickMatch({
+              teamName: profile?.favorite_club || undefined,
+              useLastSetup: true,
+            });
+            navigate('/match/new');
           }}
           className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-3.5 py-1.5 rounded-xl text-xs uppercase tracking-wider shadow active:scale-95 flex items-center gap-1.5"
         >

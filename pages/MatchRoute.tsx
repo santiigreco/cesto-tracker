@@ -15,6 +15,7 @@ import { STAT_LABELS } from '../constants';
 import { useProfile } from '../hooks/useProfile';
 import { useSync } from '../context/SyncContext';
 import { isLocalGameId } from '../utils/localGamesStorage';
+import { hasCompleteMatchMetadata } from '../utils/matchMetadata';
 
 const TAB_TRANSLATIONS: Record<AppTab, string> = {
     tally: 'Planilla',
@@ -125,9 +126,19 @@ export default function MatchRoute() {
         openModal('returnHome');
     }, [openModal]);
 
+    const hasMissingMetadata = !hasCompleteMatchMetadata(gameState.settings);
+
+    const handleEditMetadata = useCallback(() => {
+        openModal('matchMetadata', { intent: 'edit' });
+    }, [openModal]);
+
     const handleManualSave = useCallback(() => {
+        if (!gameState.isReadOnly && hasMissingMetadata) {
+            openModal('matchMetadata', { intent: 'save' });
+            return;
+        }
         handleSyncToSupabase(false);
-    }, [handleSyncToSupabase]);
+    }, [gameState.isReadOnly, hasMissingMetadata, openModal, handleSyncToSupabase]);
 
     const handlePeriodChange = useCallback((p: GamePeriod) => {
         setGameState(prev => ({ ...prev, currentPeriod: p }));
@@ -139,8 +150,12 @@ export default function MatchRoute() {
     }, [setActionToAssign, openModal]);
 
     const handleOpenShareModal = useCallback(() => {
+        if (!gameState.isReadOnly && hasMissingMetadata) {
+            openModal('matchMetadata', { intent: 'share' });
+            return;
+        }
         openModal('share');
-    }, [openModal]);
+    }, [gameState.isReadOnly, hasMissingMetadata, openModal]);
 
     if (authLoading || syncLoading) {
         return (
@@ -192,6 +207,8 @@ export default function MatchRoute() {
                 syncStatus={syncState.status}
                 hasUnsavedChanges={hasUnsavedChanges}
                 isOnline={isOnline}
+                hasMissingMetadata={hasMissingMetadata}
+                onEditMetadata={handleEditMetadata}
             />
 
             {/* Sync Cloud Bar Indicator for Logged-in Owners (Displayed on error or offline) */}
@@ -362,7 +379,7 @@ export default function MatchRoute() {
             {activeTab !== 'statistics' && (
                 <button
                     type="button"
-                    onClick={() => openModal('share')}
+                    onClick={handleOpenShareModal}
                     className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest px-4 py-3 rounded-2xl shadow-xl shadow-cyan-900/40 transition-all hover:scale-105 active:scale-95 border border-cyan-400/30 backdrop-blur-sm"
                     title="Compartir reporte del partido"
                     aria-label="Compartir reporte del partido"

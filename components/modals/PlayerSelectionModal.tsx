@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { XIcon } from '../icons';
 
@@ -7,6 +7,7 @@ interface PlayerSelectionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSelectPlayer: (playerNumber: string) => void;
+    onAddPlayer?: (playerNumber: string, playerName?: string) => string | null;
     players: string[];
     playerNames: Record<string, string>;
     actionLabel: string;
@@ -18,12 +19,26 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
     isOpen, 
     onClose, 
     onSelectPlayer, 
+    onAddPlayer,
     players, 
     playerNames, 
     actionLabel,
     playerStatuses = {},
     recentCount = 0
 }) => {
+    const [isAddingCustom, setIsAddingCustom] = useState(false);
+    const [customNumber, setCustomNumber] = useState('');
+    const [customName, setCustomName] = useState('');
+    const [customError, setCustomError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setIsAddingCustom(false);
+            setCustomNumber('');
+            setCustomName('');
+            setCustomError(null);
+        }
+    }, [isOpen]);
     useEffect(() => {
         if (!isOpen || typeof document === 'undefined') return;
         const prevOverflow = document.body.style.overflow;
@@ -43,6 +58,29 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
 
     const handlePlayerClick = (playerNumber: string) => {
         onSelectPlayer(playerNumber);
+    };
+
+    const handleCustomSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!onAddPlayer) return;
+
+        const parsed = parseInt(customNumber.trim(), 10);
+        if (isNaN(parsed) || parsed < 1 || parsed > 99) {
+            setCustomError('Ingresá un dorsal del 1 al 99');
+            return;
+        }
+
+        const addedKey = onAddPlayer(String(parsed), customName.trim() || undefined);
+        if (!addedKey) {
+            setCustomError('Ingresá un dorsal del 1 al 99');
+            return;
+        }
+
+        setIsAddingCustom(false);
+        setCustomNumber('');
+        setCustomName('');
+        setCustomError(null);
+        onSelectPlayer(addedKey);
     };
 
     const recentPlayers = players.slice(0, recentCount);
@@ -119,6 +157,75 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                         )}
                     </div>
                 </div>
+
+                {/* Sticky Footer: Add custom dorsal (16-99) */}
+                {onAddPlayer && (
+                    <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-900 flex-shrink-0">
+                        {!isAddingCustom ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsAddingCustom(true);
+                                    setCustomError(null);
+                                }}
+                                className="w-full min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 border border-dashed border-cyan-500/40 text-cyan-300 font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span>+</span>
+                                <span>Otro dorsal (16–99)</span>
+                            </button>
+                        ) : (
+                            <form onSubmit={handleCustomSubmit} className="space-y-2.5">
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        min={1}
+                                        max={99}
+                                        autoFocus
+                                        value={customNumber}
+                                        onChange={(e) => {
+                                            setCustomNumber(e.target.value.slice(0, 2));
+                                            if (customError) setCustomError(null);
+                                        }}
+                                        placeholder="N°"
+                                        aria-label="Número de dorsal"
+                                        className="w-full sm:w-24 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                    <input
+                                        type="text"
+                                        maxLength={30}
+                                        value={customName}
+                                        onChange={(e) => setCustomName(e.target.value)}
+                                        placeholder="Nombre (opcional)"
+                                        aria-label="Nombre de jugadora opcional"
+                                        className="flex-1 min-w-0 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-base font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                </div>
+                                {customError && (
+                                    <p className="text-xs text-red-400 font-medium px-1">{customError}</p>
+                                )}
+                                <div className="flex gap-2">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 min-h-[44px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider transition-colors"
+                                    >
+                                        Agregar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsAddingCustom(false);
+                                            setCustomError(null);
+                                        }}
+                                        className="px-4 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

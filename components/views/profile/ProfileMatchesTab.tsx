@@ -5,7 +5,7 @@ import TeamLogo from '@/components/ui/TeamLogo';
 import { SearchIcon, TrashIcon } from '@/components/icons';
 import { useSync } from '@/context/SyncContext';
 import { useUI } from '@/context/UIContext';
-import { useGameContext } from '@/context/GameContext';
+import { useGameLogic } from '@/hooks/useGameLogic';
 import { exportGameByIdToExcel } from '@/utils/exportToExcel';
 
 export interface UserSavedGame {
@@ -33,13 +33,12 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
 }) => {
   const navigate = useNavigate();
   const { handleDeleteGame } = useSync();
-  const { showToast, setActiveTab } = useUI();
-  const { resetGame } = useGameContext();
+  const { showToast } = useUI();
+  const { startQuickMatch } = useGameLogic();
 
   const handleStartNewMatch = () => {
-    resetGame();
-    setActiveTab('tally');
-    navigate('/setup', { state: { mode: 'new' } });
+    startQuickMatch({ useLastSetup: true });
+    navigate('/match/new');
   };
 
   const [searchTerm, setSearchTerm] = useState('');

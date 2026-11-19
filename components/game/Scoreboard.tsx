@@ -1,11 +1,20 @@
 import React, { useMemo } from 'react';
 import { useGameContext } from '../../context/GameContext';
 import { useUI } from '../../context/UIContext';
+import { hasCompleteMatchMetadata } from '../../utils/matchMetadata';
 
 const Scoreboard: React.FC = React.memo(() => {
   const { gameState, setGameState } = useGameContext();
   const { activeTab, openModal } = useUI();
   const { tallyStats, currentPeriod, isReadOnly } = gameState;
+
+  const handleFinishClick = () => {
+    if (!hasCompleteMatchMetadata(gameState.settings)) {
+      openModal('matchMetadata', { intent: 'finish' });
+    } else {
+      openModal('finishMatch');
+    }
+  };
 
   const totalPoints = useMemo(() => {
     return Object.entries(tallyStats || {}).reduce((total: number, [playerNumber, playerTally]) => {
@@ -57,7 +66,7 @@ const Scoreboard: React.FC = React.memo(() => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => openModal('finishMatch')}
+                  onClick={handleFinishClick}
                   className="min-h-[44px] flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600 text-white active:scale-95 transition-all outline-none rounded-xl px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-red-900/50 touch-manipulation whitespace-nowrap"
                   title="Finalizar e ir a estadísticas"
                 >
@@ -78,7 +87,7 @@ const Scoreboard: React.FC = React.memo(() => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => openModal('finishMatch')}
+                  onClick={handleFinishClick}
                   className="min-h-[44px] flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600 text-white active:scale-95 transition-all outline-none rounded-xl px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-red-900/50 touch-manipulation whitespace-nowrap"
                   title="Finalizar e ir a estadísticas"
                 >
@@ -89,7 +98,7 @@ const Scoreboard: React.FC = React.memo(() => {
             ) : currentPeriod === 'Second Overtime' ? (
               <button
                 type="button"
-                onClick={() => openModal('finishMatch')}
+                onClick={handleFinishClick}
                 className="min-h-[44px] flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600 text-white active:scale-95 transition-all outline-none rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-red-900/50 touch-manipulation whitespace-nowrap"
                 title="Finalizar e ir a estadísticas"
               >

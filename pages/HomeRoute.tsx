@@ -4,8 +4,8 @@ import HomePage from '@/components/views/HomePage';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useGameContext } from '../context/GameContext';
+import { useGameLogic } from '../hooks/useGameLogic';
 import { useProfile } from '../hooks/useProfile';
-import { RosterPlayer } from '../types';
 import { listLocalGames, computeMyScoreFromTally } from '../utils/localGamesStorage';
 
 const LoadGameModal = lazy(() => import('@/components/modals/LoadGameModal'));
@@ -15,6 +15,8 @@ export default function HomeRoute() {
     const { user } = useAuth();
     const { modals, openModal, closeModal, openAuthModal, setActiveTab } = useUI();
     const { gameState, resetGame } = useGameContext();
+    const { startQuickMatch } = useGameLogic();
+    const { profile } = useProfile();
 
     const activeMatchSummary = useMemo(() => {
         if (!gameState.isSetupComplete || gameState.isReadOnly) return null;
@@ -42,19 +44,24 @@ export default function HomeRoute() {
         navigate(targetPath);
     }, [gameState.isSetupComplete, gameState.gameId, gameState.localId, setActiveTab, navigate]);
 
-    const handleStartApp = useCallback((teamName?: string, roster?: RosterPlayer[]) => {
-        // Clear previous state before starting new game
+    const handleInstantStart = useCallback(() => {
+        startQuickMatch({
+            teamName: profile?.favorite_club || undefined,
+            useLastSetup: true,
+        });
+        navigate('/match/new');
+    }, [startQuickMatch, profile?.favorite_club, navigate]);
+
+    const handleConfigureSetup = useCallback(() => {
         resetGame();
         setActiveTab('tally');
-        // Set initial data and navigate to setup
-        navigate('/setup', { state: { mode: 'new', teamName, roster } });
+        navigate('/setup', { state: { mode: 'new' } });
     }, [resetGame, setActiveTab, navigate]);
 
     const handleLoadGame = useCallback((id: string, asOwner: boolean = false) => {
         navigate(`/match/${id}${asOwner ? '?edit=true' : ''}`);
     }, [navigate]);
 
-    const { profile } = useProfile();
     const isOwner = user && profile?.is_admin === true;
     const canAccessAdmin = isOwner || profile?.permission_role === 'admin';
 
@@ -69,7 +76,8 @@ export default function HomeRoute() {
     return (
         <>
             <HomePage
-                onStart={handleStartApp}
+                onInstantStart={handleInstantStart}
+                onConfigureSetup={handleConfigureSetup}
                 onLoadGameClick={handleOpenLoadGame}
                 user={user}
                 onLogin={handleLogin}

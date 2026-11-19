@@ -1,9 +1,10 @@
 import { useCallback } from 'react';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
-import { GameMode, Settings, StatAction, GameEvent } from '../types';
+import { GameMode, RosterPlayer, Settings, StatAction, GameEvent } from '../types';
 import { generateLocalGameId } from '../utils/localGamesStorage';
 import { getUserPreferences } from '../utils/userPreferences';
+import { DEFAULT_QUICK_PLAYERS, readLastTeamSetup } from '../utils/matchMetadata';
 
 // Helper function moved outside the hook to ensure stability and avoid closure issues.
 // Performs shallow immutable cloning on the target player & period so React.memo on PlayerTallyCard detects changes accurately.
@@ -23,8 +24,116 @@ const modifyStatValue = (tallyStats: any, player: string, period: string, action
 
 export const useGameLogic = () => {
     const { gameState, setGameState, resetGame } = useGameContext();
-    const { notificationPopup, setNotificationPopup } = useUI();
+    const { notificationPopup, setNotificationPopup, setActiveTab } = useUI();
     const isReadOnly = gameState.isReadOnly;
+
+    const startQuickMatch = useCallback((options?: {
+        teamName?: string;
+        categoryName?: string;
+        roster?: RosterPlayer[];
+        useLastSetup?: boolean;
+    }) => {
+        const userPrefs = getUserPreferences();
+        let myTeam = options?.teamName?.trim() || '';
+        let rosterNumbers: string[] = DEFAULT_QUICK_PLAYERS;
+        let playerNames: Record<string, string> = {};
+
+        if (options?.roster && options.roster.length > 0) {
+            rosterNumbers = Array.from(new Set(options.roster.map(p => p.number.trim()).filter(Boolean)));
+            options.roster.forEach(p => {
+                if (p.name?.trim()) playerNames[p.number.trim()] = p.name.trim();
+            });
+        } else if (options?.useLastSetup !== false) {
+            const lastSetup = readLastTeamSetup();
+            if (lastSetup?.myTeam) {
+                myTeam = myTeam || lastSetup.myTeam;
+                if (Array.isArray(lastSetup.players) && lastSetup.players.length > 0) {
+                    rosterNumbers = Array.from(new Set(lastSetup.players));
+                }
+                if (lastSetup.playerNames) {
+                    playerNames = { ...lastSetup.playerNames };
+                }
+            }
+        }
+
+        const sortedRoster = [...rosterNumbers].sort((a, b) => Number(a) - Number(b));
+        const tallyStats: Record<string, typeof initialPlayerTally> = {
+            Equipo: JSON.parse(JSON.stringify(initialPlayerTally)),
+        };
+        sortedRoster.forEach(p => {
+            tallyStats[p] = JSON.parse(JSON.stringify(initialPlayerTally));
+        });
+
+        setGameState({
+            ...initialGameState,
+            gameId: null,
+            localId: generateLocalGameId(),
+            userId: null,
+            shots: [],
+            opponentScore: 0,
+            currentPeriod: 'First Half',
+            teamFouls: { ...initialGameState.teamFouls },
+            gameLog: [],
+            tallyRedoLog: [],
+            hasSeenHomepage: true,
+            availablePlayers: sortedRoster,
+            activePlayers: sortedRoster.slice(0, 6),
+            playerNames,
+            playerStreaks: {},
+            settings: {
+                ...initialGameState.settings,
+                myTeam,
+                gameName: '',
+                categoryName: options?.categoryName || 'Primera A',
+                gameDate: new Date().toISOString().split('T')[0],
+                isManoCalienteEnabled: userPrefs.isManoCalienteEnabled,
+                manoCalienteThreshold: userPrefs.manoCalienteThreshold,
+                isManoFriaEnabled: userPrefs.isManoFriaEnabled,
+                manoFriaThreshold: userPrefs.manoFriaThreshold,
+            },
+            isSetupComplete: true,
+            currentPlayer: '',
+            gameMode: 'stats-tally',
+            isReadOnly: false,
+            tallyStats,
+        });
+
+        setActiveTab(userPrefs.defaultMatchTab);
+    }, [setGameState, setActiveTab]);
+
+    const addPlayerToMatch = useCallback((rawNumber: string, playerName?: string): string | null => {
+        const parsed = parseInt(rawNumber.trim(), 10);
+        if (isNaN(parsed) || parsed < 1 || parsed > 99) return null;
+        const key = String(parsed);
+        const trimmedName = playerName?.trim() || '';
+
+        setGameState(prev => {
+            if (prev.isReadOnly) return prev;
+            const exists = prev.availablePlayers.includes(key);
+            const nextAvailable = exists
+                ? prev.availablePlayers
+                : [...prev.availablePlayers, key].sort((a, b) => Number(a) - Number(b));
+            const nextTallyStats = prev.tallyStats[key]
+                ? prev.tallyStats
+                : {
+                    ...prev.tallyStats,
+                    [key]: JSON.parse(JSON.stringify(initialPlayerTally)),
+                };
+            const nextPlayerNames = trimmedName
+                ? { ...prev.playerNames, [key]: trimmedName }
+                : prev.playerNames;
+
+            return {
+                ...prev,
+                availablePlayers: nextAvailable,
+                activePlayers: nextAvailable.slice(0, 6),
+                tallyStats: nextTallyStats,
+                playerNames: nextPlayerNames,
+            };
+        });
+
+        return key;
+    }, [setGameState]);
 
     // --- SETUP ---
     const handleSetupComplete = useCallback((
@@ -324,6 +433,8 @@ export const useGameLogic = () => {
         handleClearSheet,
         handleConfirmNewGame: resetGame,
         handleDeleteGameEvent,
-        handleEditGameEvent
+        handleEditGameEvent,
+        startQuickMatch,
+        addPlayerToMatch
     };
 };

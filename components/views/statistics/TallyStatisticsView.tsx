@@ -45,6 +45,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
   currentPeriod,
 }) => {
   const [tallyPeriodFilter, setTallyPeriodFilter] = useState<'all' | GamePeriod>('all');
+  const [showAllPlayers, setShowAllPlayers] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
     key: TallySortableKey;
     direction: 'ascending' | 'descending';
@@ -173,6 +174,19 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
       key => (p[key] || 0) > 0
     )
   );
+
+  const activeRows = useMemo(
+    () =>
+      sortedAggregatedStats.filter(p =>
+        (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).some(
+          key => (p[key] || 0) > 0
+        )
+      ),
+    [sortedAggregatedStats]
+  );
+
+  const hasInactiveRows = activeRows.length > 0 && activeRows.length < sortedAggregatedStats.length;
+  const displayedRows = hasInactiveRows && (isSharing || !showAllPlayers) ? activeRows : sortedAggregatedStats;
 
   const periodFilterBar = !isSharing ? (
     <div className="w-full bg-slate-800 p-1.5 rounded-xl shadow-lg">
@@ -305,7 +319,20 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
       {/* Performance Table Section */}
       <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-        <h3 className="text-3xl font-bold text-cyan-400 mb-4">Rendimiento por Jugador</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400">Rendimiento por Jugador</h3>
+          {!isSharing && hasInactiveRows && (
+            <button
+              type="button"
+              onClick={() => setShowAllPlayers(prev => !prev)}
+              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-bold transition-colors"
+            >
+              {showAllPlayers
+                ? `Solo activas (${activeRows.length})`
+                : `Mostrar todas (${sortedAggregatedStats.length})`}
+            </button>
+          )}
+        </div>
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full min-w-[700px] text-left table-auto">
             <thead>
@@ -334,7 +361,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
               </tr>
             </thead>
             <tbody>
-              {sortedAggregatedStats.map(player => (
+              {displayedRows.map(player => (
                 <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
                   <td className="p-2 font-mono text-cyan-300 font-bold sticky left-0 z-10 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] truncate max-w-[120px]">
                     {playerNames[player.playerNumber] ||

@@ -1,11 +1,13 @@
 import React, { Suspense, lazy, useMemo, useState, useCallback } from 'react';
 import { AppTab, Settings, GameEvent, SavedTeam } from '../../types';
-import { useUI } from '../../context/UIContext';
+import { useUI, MatchMetadataIntent } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { useGameContext } from '../../context/GameContext';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useNavigate } from 'react-router-dom';
 import { useSync } from '../../context/SyncContext';
+import { generateFederationExcel } from '../../utils/exportToExcel';
+import { getActivePlayersFromMatch, hasCompleteMatchMetadata } from '../../utils/matchMetadata';
 
 const MobileMenu = lazy(() => import('@/components/ui/MobileMenu'));
 const PlayerSelectionModal = lazy(() => import('@/components/modals/PlayerSelectionModal'));
@@ -16,6 +18,7 @@ const ShareModal = lazy(() => import('@/components/modals/ShareModal'));
 const ConfirmationModal = lazy(() => import('@/components/modals/ConfirmationModal'));
 const NotificationPopup = lazy(() => import('@/components/ui/NotificationPopup'));
 const GameEventEditModal = lazy(() => import('@/components/modals/GameEventEditModal'));
+const MatchMetadataModal = lazy(() => import('@/components/modals/MatchMetadataModal'));
 
 interface AppModalsProps {
     tabTranslations: { [key in AppTab]: string };
@@ -54,10 +57,11 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
     const {
         handleUpdateTallyStat,
         handleClearSheet,
-        handleConfirmNewGame,
         handleDeleteGameEvent,
         handleEditGameEvent,
-        updatePlayerName
+        updatePlayerName,
+        startQuickMatch,
+        addPlayerToMatch,
     } = useGameLogic();
 
     const handleAssignActionToPlayer = useCallback((playerNumber: string) => {
@@ -74,11 +78,10 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
     }, [handleClearSheet, closeModal]);
 
     const handleConfirmNewGameWrapper = useCallback(() => {
-        handleConfirmNewGame();
-        setActiveTab('tally');
+        startQuickMatch({ useLastSetup: true });
         closeModal('newGame');
-        navigate('/setup', { state: { mode: 'new' }, replace: true });
-    }, [handleConfirmNewGame, setActiveTab, closeModal, navigate]);
+        navigate('/match/new', { replace: true });
+    }, [startQuickMatch, closeModal, navigate]);
 
     const handleConfirmReselectPlayers = useCallback(() => {
         closeModal('reselect');
@@ -102,12 +105,16 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
 
     const [isFinalizing, setIsFinalizing] = useState(false);
 
-    const handleConfirmFinalize = useCallback(async () => {
+    const runFinalizeMatch = useCallback(async (stateOverride?: { settings: Settings; playerNames: Record<string, string> }) => {
         if (isFinalizing) return;
         setIsFinalizing(true);
         showToast('Finalizando y guardando partido...', 'info');
         try {
-            const savedGameId = await handleSyncToSupabase(false);
+            const savedGameId = await handleSyncToSupabase(
+                stateOverride?.settings.gameName ?? false,
+                false,
+                stateOverride
+            );
             closeModal('finishMatch');
             setActiveTab('statistics');
             if (savedGameId) {
@@ -124,25 +131,110 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
         }
     }, [isFinalizing, showToast, handleSyncToSupabase, closeModal, setActiveTab]);
 
+    const handleConfirmFinalize = useCallback(() => {
+        runFinalizeMatch();
+    }, [runFinalizeMatch]);
+
     const handleGoToEditNames = useCallback(() => {
         closeModal('finishMatch');
         openModal('completeNames');
     }, [closeModal, openModal]);
 
     const isFinishMatchOpen = Boolean(modals.finishMatch?.isOpen);
+    const playersForNameCompletion = useMemo(() => {
+        const active = getActivePlayersFromMatch(gameState);
+        if (active.length > 0) return active;
+        return [...gameState.availablePlayers].sort((a, b) => Number(a) - Number(b));
+    }, [gameState]);
+
     const hasMissingNames = useMemo(() => {
         if (!isFinishMatchOpen) return false;
-        return gameState.availablePlayers?.some(p => {
+        return playersForNameCompletion.some(p => {
             const name = gameState.playerNames?.[p] || '';
             return !name || name === `Jugador #${p}` || name.includes('Jugador #');
-        }) || false;
-    }, [isFinishMatchOpen, gameState.availablePlayers, gameState.playerNames]);
+        });
+    }, [isFinishMatchOpen, playersForNameCompletion, gameState.playerNames]);
 
     const handleRequestSaveGame = useCallback(() => {
         closeModal('settings');
+        if (!hasCompleteMatchMetadata(gameState.settings)) {
+            openModal('matchMetadata', { intent: 'save' });
+            return;
+        }
         openModal('saveGame');
         setSyncState({ status: 'idle', message: '' });
-    }, [closeModal, openModal, setSyncState]);
+    }, [closeModal, openModal, setSyncState, gameState.settings]);
+
+    const handleMatchMetadataConfirm = useCallback(async (
+        updatedSettings: Settings,
+        updatedPlayerNames: Record<string, string>
+    ) => {
+        setGameState(prev => ({
+            ...prev,
+            settings: updatedSettings,
+            playerNames: updatedPlayerNames,
+        }));
+
+        const intent: MatchMetadataIntent = modals.matchMetadata?.params?.intent || 'edit';
+        closeModal('matchMetadata');
+
+        if (intent === 'edit') {
+            showToast('Datos del partido actualizados', 'success');
+            return;
+        }
+
+        if (intent === 'save') {
+            if (!user) {
+                openModal('saveGame');
+                setSyncState({ status: 'idle', message: '' });
+            } else {
+                await handleSyncToSupabase(updatedSettings.gameName, false, {
+                    settings: updatedSettings,
+                    playerNames: updatedPlayerNames,
+                });
+            }
+            return;
+        }
+
+        if (intent === 'finish') {
+            await runFinalizeMatch({
+                settings: updatedSettings,
+                playerNames: updatedPlayerNames,
+            });
+            return;
+        }
+
+        if (intent === 'excel') {
+            showToast('Generando planilla técnica oficial en Excel...', 'info');
+            try {
+                await generateFederationExcel({
+                    ...gameState,
+                    settings: updatedSettings,
+                    playerNames: updatedPlayerNames,
+                });
+                showToast('¡Planilla oficial descargada con éxito!', 'success');
+            } catch (err: any) {
+                console.error('[EXCEL_EXPORT_ERROR]', err);
+                showToast(`Error al exportar planilla: ${err?.message || 'Error desconocido'}`, 'error');
+            }
+            return;
+        }
+
+        if (intent === 'share') {
+            openModal('share');
+        }
+    }, [
+        setGameState,
+        modals.matchMetadata?.params?.intent,
+        closeModal,
+        showToast,
+        user,
+        openModal,
+        setSyncState,
+        handleSyncToSupabase,
+        runFinalizeMatch,
+        gameState,
+    ]);
 
     const isPlayerSelectionOpen = Boolean(modals.playerSelection?.isOpen && actionToAssign);
 
@@ -227,11 +319,22 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                     isOpen={true}
                     onClose={() => { closeModal('playerSelection'); setActionToAssign(null); }}
                     onSelectPlayer={handleAssignActionToPlayer}
+                    onAddPlayer={addPlayerToMatch}
                     players={sortedPlayersByRecentUsage}
                     playerNames={gameState.playerNames}
                     actionLabel={props.actionLabel || ''}
                     playerStatuses={playerStatuses}
                     recentCount={recentCount}
+                />
+            )}
+
+            {modals.matchMetadata?.isOpen && (
+                <MatchMetadataModal
+                    isOpen={true}
+                    intent={modals.matchMetadata.params?.intent || 'edit'}
+                    gameState={gameState}
+                    onClose={() => closeModal('matchMetadata')}
+                    onConfirm={handleMatchMetadataConfirm}
                 />
             )}
 
@@ -374,7 +477,7 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                         <p className="text-slate-400 mb-6 text-sm">Asigna nombres reales a los números para el reporte oficial.</p>
                         
                         <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar space-y-3 mb-6">
-                            {[...gameState.availablePlayers].sort((a,b) => Number(a)-Number(b)).map(num => (
+                            {playersForNameCompletion.map(num => (
                                 <div key={num} className="flex items-center gap-3 bg-slate-700/30 p-2 rounded-xl border border-slate-600/30">
                                     <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md">
                                         #{num}

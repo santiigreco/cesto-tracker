@@ -15,7 +15,10 @@ export type ModalName =
     | 'mobileMenu'
     | 'playerSelection'
     | 'finishMatch'
-    | 'completeNames';
+    | 'completeNames'
+    | 'matchMetadata';
+
+export type MatchMetadataIntent = 'edit' | 'save' | 'finish' | 'excel' | 'share';
 
 export interface AuthModalParams {
     initialMode?: 'login' | 'signup' | 'reset';
@@ -85,7 +88,8 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         mobileMenu: { isOpen: false },
         playerSelection: { isOpen: false },
         finishMatch: { isOpen: false },
-        completeNames: { isOpen: false }
+        completeNames: { isOpen: false },
+        matchMetadata: { isOpen: false }
     });
 
     const openModal = useCallback((name: ModalName, params?: any) => {

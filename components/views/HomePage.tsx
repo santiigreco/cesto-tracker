@@ -1,14 +1,13 @@
-import React, { Suspense, lazy, useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RosterPlayer, LastSetupData } from '../../types';
+import { LastSetupData } from '../../types';
 import { useProfile } from '../../hooks/useProfile';
+import { readLastTeamSetup } from '../../utils/matchMetadata';
 
 import { HomeNavbar } from './home/HomeNavbar';
 import { HomeHero } from './home/HomeHero';
 import { HomeFooter } from './home/HomeFooter';
 import { HomeShowcase } from './home/HomeShowcase';
-
-const TeamSelectorModal = lazy(() => import('@/components/modals/TeamSelectorModal'));
 
 export interface ActiveMatchSummary {
   myTeam: string;
@@ -18,7 +17,8 @@ export interface ActiveMatchSummary {
 }
 
 interface HomePageProps {
-  onStart: (teamName?: string, roster?: RosterPlayer[]) => void;
+  onInstantStart: () => void;
+  onConfigureSetup: () => void;
   onLoadGameClick: () => void;
   user?: any;
   onLogin?: () => void;
@@ -29,11 +29,10 @@ interface HomePageProps {
   onResumeActiveMatch?: () => void;
 }
 
-const LAST_SETUP_KEY = 'cesto_last_team_setup';
-
 const HomePage: React.FC<HomePageProps> = React.memo(
   ({
-    onStart,
+    onInstantStart,
+    onConfigureSetup,
     onLoadGameClick,
     user,
     onLogin,
@@ -43,45 +42,10 @@ const HomePage: React.FC<HomePageProps> = React.memo(
     onResumeActiveMatch,
   }) => {
     const navigate = useNavigate();
-    const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
-
     const { profile } = useProfile();
 
     // Último setup guardado en localStorage (memoizado al montar)
-    const lastSetup = useMemo<LastSetupData | null>(() => {
-      try {
-        const raw = localStorage.getItem(LAST_SETUP_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (parsed?.myTeam) return parsed as LastSetupData;
-      } catch {
-        /* ignore */
-      }
-      return null;
-    }, []);
-
-    const handleStartClick = useCallback(() => {
-      setIsTeamSelectorOpen(true);
-    }, []);
-
-    const handleQuickStart = useCallback(() => {
-      if (!lastSetup) return;
-      const roster: RosterPlayer[] = (lastSetup.players || []).map(num => ({
-        number: num,
-        name: lastSetup.playerNames?.[num] || '',
-      }));
-      onStart(lastSetup.myTeam, roster.length > 0 ? roster : undefined);
-    }, [lastSetup, onStart]);
-
-    const handleTeamSelected = useCallback((name: string, roster?: RosterPlayer[]) => {
-      setIsTeamSelectorOpen(false);
-      onStart(name, roster);
-    }, [onStart]);
-
-    // Closing the selector only dismisses it; it must not start a new sheet.
-    const handleCloseTeamSelector = useCallback(() => {
-      setIsTeamSelectorOpen(false);
-    }, []);
+    const lastSetup = useMemo<LastSetupData | null>(() => readLastTeamSetup(), []);
 
     const handleOpenProfile = useCallback(() => {
       navigate('/perfil');
@@ -108,8 +72,8 @@ const HomePage: React.FC<HomePageProps> = React.memo(
             user={user}
             profile={profile}
             lastSetup={lastSetup}
-            onStartClick={handleStartClick}
-            onQuickStart={handleQuickStart}
+            onInstantStart={onInstantStart}
+            onConfigureSetup={onConfigureSetup}
             onLoadGameClick={onLoadGameClick}
             onLogin={onLogin}
             activeMatchSummary={activeMatchSummary}
@@ -122,17 +86,6 @@ const HomePage: React.FC<HomePageProps> = React.memo(
           {/* Clean Community Footer */}
           <HomeFooter />
         </main>
-
-        {isTeamSelectorOpen && (
-          <Suspense fallback={null}>
-            <TeamSelectorModal
-              isOpen={isTeamSelectorOpen}
-              onClose={handleCloseTeamSelector}
-              onSelectTeam={handleTeamSelected}
-              currentTeam={profile?.favorite_club || ''}
-            />
-          </Suspense>
-        )}
       </div>
     );
   }

@@ -1,7 +1,9 @@
 import React from 'react';
 import { TallyStats } from '../../types';
 import { useGameContext } from '../../context/GameContext';
+import { useUI } from '../../context/UIContext';
 import { generateFederationExcel } from '../../utils/exportToExcel';
+import { hasCompleteMatchMetadata } from '../../utils/matchMetadata';
 import { FederationExportBanner } from './statistics/FederationExportBanner';
 import { TallyStatisticsView } from './statistics/TallyStatisticsView';
 
@@ -19,14 +21,18 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
   externalTallyStats,
 }) => {
   const { gameState } = useGameContext();
+  const { openModal } = useUI();
 
   const playerNames = externalPlayerNames || gameState.playerNames;
   const tallyStats = externalTallyStats || gameState.tallyStats;
 
   const handleExportExcel = () => {
-    if (!isSharing) {
-      generateFederationExcel(gameState);
+    if (isSharing) return;
+    if (!gameState.isReadOnly && !hasCompleteMatchMetadata(gameState.settings)) {
+      openModal('matchMetadata', { intent: 'excel' });
+      return;
     }
+    generateFederationExcel(gameState);
   };
 
   const hasShareableData = !!(tallyStats && Object.keys(tallyStats).length > 0);

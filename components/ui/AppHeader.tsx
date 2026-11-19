@@ -31,6 +31,8 @@ interface AppHeaderProps {
     onSave?: () => void;
     onOpenProfile?: () => void;
     activeTab?: string;
+    hasMissingMetadata?: boolean;
+    onEditMetadata?: () => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = React.memo(({
@@ -56,7 +58,9 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
     onLogin,
     onSave,
     onOpenProfile,
-    activeTab
+    activeTab,
+    hasMissingMetadata = false,
+    onEditMetadata
 }) => {
     const navigate = useNavigate();
     return (
@@ -166,11 +170,35 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(({
 
                 {/* Subtitle / Period Selector Row */}
                 <div className="flex flex-col items-center gap-1 px-1">
-                    {gameName && (
-                        <p className="text-sm sm:text-lg font-black text-white truncate max-w-[95vw] px-2 text-center tracking-tight">
-                            {myTeam ? `${myTeam} vs ${gameName}` : gameName}
-                        </p>
-                    )}
+                    {!isReadOnly && hasMissingMetadata && onEditMetadata ? (
+                        <button
+                            type="button"
+                            onClick={onEditMetadata}
+                            className="min-h-[38px] px-3.5 py-1 rounded-full bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/40 text-amber-200 text-xs sm:text-sm font-bold flex items-center gap-1.5 max-w-[95vw] transition-colors shadow-sm"
+                            title="Completar equipo y rival del partido"
+                        >
+                            <span className="shrink-0">✏️</span>
+                            <span className="truncate">
+                                {myTeam ? `${myTeam} vs Rival · Completar datos` : 'Partido rápido · Completar equipo y rival'}
+                            </span>
+                        </button>
+                    ) : gameName ? (
+                        !isReadOnly && onEditMetadata ? (
+                            <button
+                                type="button"
+                                onClick={onEditMetadata}
+                                className="group inline-flex items-center gap-1.5 text-sm sm:text-lg font-black text-white hover:text-cyan-300 truncate max-w-[95vw] px-2.5 py-0.5 rounded-lg hover:bg-slate-800/70 text-center tracking-tight transition-colors"
+                                title="Editar equipos o nombres del partido"
+                            >
+                                <span className="truncate">{myTeam ? `${myTeam} vs ${gameName}` : gameName}</span>
+                                <span className="text-xs opacity-60 group-hover:opacity-100 shrink-0">✏️</span>
+                            </button>
+                        ) : (
+                            <p className="text-sm sm:text-lg font-black text-white truncate max-w-[95vw] px-2 text-center tracking-tight">
+                                {myTeam ? `${myTeam} vs ${gameName}` : gameName}
+                            </p>
+                        )
+                    ) : null}
                     <div className="hidden sm:flex items-center gap-3">
                         <p className="text-xs sm:text-base text-slate-400 font-medium">
                             Planilla Técnica y Estadísticas

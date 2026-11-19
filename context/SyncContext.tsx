@@ -3,9 +3,10 @@ import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { useGameContext, initialPlayerTally, initialGameState } from './GameContext';
 import { useUI } from './UIContext';
 import { useAuth } from './AuthContext';
-import { GamePeriod, GameMode, GameState } from '../types';
+import { GamePeriod, GameMode, GameState, Settings } from '../types';
 import { mapTallyPeriodToDb, mapTallyPeriodFromDb, computeGameStateSignature } from '../utils/dbAdapters';
 import { getFriendlySupabaseErrorMessage, isNetworkOrConfigError } from '../utils/supabaseErrors';
+import { hasCompleteMatchMetadata } from '../utils/matchMetadata';
 import {
     LOCAL_GAME_ID_PREFIX,
     isLocalGameId,
@@ -19,6 +20,7 @@ const hasPersistableEditableMatch = (state: GameState): boolean =>
     Boolean(
         state.isSetupComplete &&
         !state.isReadOnly &&
+        (hasCompleteMatchMetadata(state.settings) || !!state.gameId) &&
         ((state.gameLog && state.gameLog.length > 0) || (state.shots && state.shots.length > 0) || !!state.gameId)
     );
 
@@ -33,6 +35,11 @@ export interface LoadGameResult {
     isOwner: boolean;
 }
 
+export interface SyncStateOverride {
+    settings?: Settings;
+    playerNames?: Record<string, string>;
+}
+
 interface SyncContextType {
     syncState: SyncState;
     setSyncState: (state: SyncState) => void;
@@ -41,7 +48,7 @@ interface SyncContextType {
     lastSaved: Date | null;
     isOnline: boolean;
     hasUnsavedChanges: boolean;
-    handleSyncToSupabase: (gameNameInput?: any, isAutoSaveInput?: boolean) => Promise<string | null>;
+    handleSyncToSupabase: (gameNameInput?: any, isAutoSaveInput?: boolean, stateOverride?: SyncStateOverride) => Promise<string | null>;
     handleLoadGame: (gameId: string, enableEditing?: boolean) => Promise<LoadGameResult | null>;
     handleDeleteGame: (gameId: string) => Promise<boolean>;
 }
@@ -123,13 +130,28 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, []);
 
-    const handleSyncToSupabase = useCallback(async (gameNameInput?: any, isAutoSaveInput?: boolean): Promise<string | null> => {
+    const handleSyncToSupabase = useCallback(async (
+        gameNameInput?: any,
+        isAutoSaveInput?: boolean,
+        stateOverride?: SyncStateOverride
+    ): Promise<string | null> => {
         const isAutoSave = (typeof gameNameInput === 'boolean') ? gameNameInput : (isAutoSaveInput === true);
         if (isAutoSave && !isAuthenticatedRef.current) {
             return null;
         }
 
-        const currentState = latestGameStateRef.current;
+        const baseState = latestGameStateRef.current;
+        const currentState: GameState = stateOverride
+            ? {
+                ...baseState,
+                settings: stateOverride.settings
+                    ? { ...baseState.settings, ...stateOverride.settings }
+                    : baseState.settings,
+                playerNames: stateOverride.playerNames
+                    ? { ...baseState.playerNames, ...stateOverride.playerNames }
+                    : baseState.playerNames,
+            }
+            : baseState;
 
         // Mutex lock: if already syncing, queue a follow-up sync instead of silently dropping data
         if (isSyncingRef.current) {
@@ -264,7 +286,14 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 gameId: newGameId,
                 localId: prev.localId || currentState.localId || null,
                 userId: authUser.id,
-                settings: { ...prev.settings, gameName: gameName.trim() }
+                settings: {
+                    ...prev.settings,
+                    ...(stateOverride?.settings || {}),
+                    gameName: gameName.trim(),
+                },
+                playerNames: stateOverride?.playerNames
+                    ? { ...prev.playerNames, ...stateOverride.playerNames }
+                    : prev.playerNames,
             }));
 
             // Mark successful save signature ONLY upon verified DB success (aligned with assigned gameId & gameName)

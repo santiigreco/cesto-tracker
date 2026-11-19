@@ -5,7 +5,7 @@ import TeamLogo from '@/components/ui/TeamLogo';
 import { PlusIcon, TrashIcon, CheckIcon } from '@/components/icons';
 import { useTeamManager } from '@/hooks/useTeamManager';
 import { useUI } from '@/context/UIContext';
-import { useGameContext } from '@/context/GameContext';
+import { useGameLogic } from '@/hooks/useGameLogic';
 import { SavedTeam, RosterPlayer } from '@/types';
 import { CATEGORIES_CONFIG } from '@/constants';
 
@@ -15,8 +15,8 @@ interface ProfileTeamsTabProps {
 
 export const ProfileTeamsTab: React.FC<ProfileTeamsTabProps> = ({ onTeamsCountChange }) => {
   const navigate = useNavigate();
-  const { showToast, setActiveTab } = useUI();
-  const { resetGame } = useGameContext();
+  const { showToast } = useUI();
+  const { startQuickMatch } = useGameLogic();
   const { teams, loading, fetchTeams, saveTeam, updateTeam, deleteTeam } = useTeamManager();
 
   const [isCreatingOrEditing, setIsCreatingOrEditing] = useState(false);
@@ -139,16 +139,13 @@ export const ProfileTeamsTab: React.FC<ProfileTeamsTabProps> = ({ onTeamsCountCh
   };
 
   const handleQuickMatch = (team: SavedTeam) => {
-    resetGame();
-    setActiveTab('tally');
-    navigate('/setup', {
-      state: {
-        mode: 'new',
-        teamName: team.name,
-        categoryName: team.category,
-        roster: team.players,
-      },
+    startQuickMatch({
+      teamName: team.name,
+      categoryName: team.category,
+      roster: team.players,
+      useLastSetup: false,
     });
+    navigate('/match/new');
   };
 
   return (
