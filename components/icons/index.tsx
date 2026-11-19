@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 
 type IconProps = { className?: string };
 
@@ -11,34 +11,6 @@ const BASE_SVG_PROPS = {
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
   'aria-hidden': true as const,
-};
-
-// --- BrandLogoMark ---
-/** Vector cestoball mark aligned with public/favicon.svg using a unique gradient ID per instance. */
-export const BrandLogoMark: React.FC<IconProps> = ({ className }) => {
-  const uid = useId();
-  const gradId = `ct-brand-grad-${uid}`;
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 64 64"
-      fill="none"
-      className={className || 'h-7 w-7'}
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={gradId} x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="100%" stopColor="#34d399" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="14" fill="#111827" />
-      <circle cx="32" cy="32" r="21" stroke={`url(#${gradId})`} strokeWidth="4" />
-      <path d="M12 27.5C22 21.5 42 21.5 52 27.5" stroke={`url(#${gradId})`} strokeWidth="3" strokeLinecap="round" />
-      <path d="M12 36.5C22 42.5 42 42.5 52 36.5" stroke={`url(#${gradId})`} strokeWidth="3" strokeLinecap="round" />
-      <path d="M32 11V53" stroke={`url(#${gradId})`} strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
 };
 
 // --- AlertTriangleIcon ---

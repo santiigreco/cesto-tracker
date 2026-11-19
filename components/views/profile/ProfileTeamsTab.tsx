@@ -4,7 +4,6 @@ import Loader from '@/components/ui/Loader';
 import TeamLogo from '@/components/ui/TeamLogo';
 import {
   BoltIcon,
-  BrandLogoMark,
   CheckIcon,
   PencilIcon,
   PlusIcon,
@@ -358,7 +357,7 @@ export const ProfileTeamsTab: React.FC<ProfileTeamsTabProps> = ({
       ) : teams.length === 0 ? (
         <div className="text-center py-14 px-4 bg-surface-card rounded-2xl border border-dashed border-border-strong">
           <div className="w-12 h-12 rounded-xl bg-surface-elevated border border-border-subtle flex items-center justify-center mx-auto mb-3">
-            <BrandLogoMark className="h-7 w-7" />
+            <span className="text-2xl leading-none select-none" aria-hidden="true">🏐</span>
           </div>
           <h3 className="text-base font-extrabold text-ink-primary">
             No tenés planteles guardados

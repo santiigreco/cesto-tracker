@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { GameState, PlayerStats } from '../../types';
 import StatisticsView from '@/components/views/StatisticsView';
 import TeamLogo from '@/components/ui/TeamLogo';
-import { BrandLogoMark } from '@/components/icons';
 
 interface ShareReportProps {
   gameState: GameState;
@@ -263,7 +262,7 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, viewMode, rivalSco
           {/* Brand Footer */}
           <div className="pt-3 border-t border-[#1F2B3E] w-full flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <BrandLogoMark className="h-5 w-5" />
+              <span className="text-lg leading-none select-none" aria-hidden="true">🏐</span>
               <span className="font-extrabold text-xs tracking-tight text-[#B8C5D6]">
                 Cesto Tracker
               </span>
@@ -299,7 +298,7 @@ const ShareReport: React.FC<ShareReportProps> = ({ gameState, viewMode, rivalSco
 
       <footer className="w-full flex items-center justify-between text-[#8494AB] text-xs mt-8 pt-4 border-t border-[#1F2B3E]">
         <div className="flex items-center gap-2">
-          <BrandLogoMark className="h-5 w-5" />
+          <span className="text-lg leading-none select-none" aria-hidden="true">🏐</span>
           <span className="font-bold text-[#B8C5D6]">Cesto Tracker</span>
         </div>
         <span>cestotracker.com</span>

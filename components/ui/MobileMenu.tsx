@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { AppTab } from '../../types';
 import {
-  BrandLogoMark,
   ChartBarIcon,
   ClipboardIcon,
   ShareIcon,
@@ -65,7 +64,7 @@ const MobileMenu: React.FC<MobileMenuProps> = React.memo(
         <div className="relative z-10 w-72 h-full bg-surface-card border-r border-border-subtle shadow-modal flex flex-col">
           <div className="flex justify-between items-center px-4 py-3.5 border-b border-border-subtle">
             <div className="flex items-center gap-2">
-              <BrandLogoMark className="h-6 w-6" />
+              <span className="text-xl leading-none select-none shrink-0" aria-hidden="true">🏐</span>
               <h2 id="menu-title" className="text-base font-extrabold text-ink-primary">
                 Menú
               </h2>

@@ -9,7 +9,6 @@ import Loader from '@/components/ui/Loader';
 import {
   ArrowLeftIcon,
   BoltIcon,
-  BrandLogoMark,
   ChartBarIcon,
   ClipboardIcon,
   GearIcon,
@@ -130,7 +129,7 @@ export default function ProfileRoute() {
             <span>Volver al Inicio</span>
           </button>
           <div className="flex items-center gap-2">
-            <BrandLogoMark className="h-6 w-6" />
+            <span className="text-xl leading-none select-none shrink-0" aria-hidden="true">🏐</span>
             <span className="text-ink-primary font-extrabold text-sm tracking-tight">
               Cesto Tracker
             </span>
@@ -201,7 +200,7 @@ export default function ProfileRoute() {
           className="flex items-center gap-2 min-h-[44px] px-2 rounded-xl select-none"
           onClick={() => navigate('/')}
         >
-          <BrandLogoMark className="h-6 w-6 shrink-0" />
+          <span className="text-xl leading-none select-none shrink-0" aria-hidden="true">🏐</span>
           <span className="font-extrabold text-sm tracking-tight text-ink-primary hidden xs:inline">
             Cesto Tracker
           </span>

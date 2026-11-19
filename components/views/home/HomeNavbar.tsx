@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BrandLogoMark, GoogleIcon, ShieldIcon } from '@/components/icons';
+import { GoogleIcon, ShieldIcon } from '@/components/icons';
 import { UserProfile } from '@/types';
 import { useUI } from '@/context/UIContext';
 
@@ -33,7 +33,7 @@ export const HomeNavbar: React.FC<HomeNavbarProps> = React.memo(
           className="flex items-center gap-2.5 min-h-[44px] px-1 -ml-1 rounded-xl text-left select-none transition-opacity hover:opacity-90"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         >
-          <BrandLogoMark className="h-7 w-7 shrink-0" />
+          <span className="text-2xl leading-none select-none shrink-0" aria-hidden="true">🏐</span>
           <span className="font-extrabold text-lg tracking-tight text-ink-primary leading-none">
             Cesto Tracker
           </span>

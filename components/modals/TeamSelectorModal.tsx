@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  BrandLogoMark,
   PencilIcon,
   SearchIcon,
   UsersIcon,
@@ -93,7 +92,7 @@ const TeamSelectorModal: React.FC<TeamSelectorModalProps> = ({
       title={modalTitle}
       subtitle="Elegí de la lista o escribí un club personalizado"
       titleId="team-selector-modal-title"
-      headerLeading={<BrandLogoMark className="h-8 w-8" />}
+      headerLeading={<span className="text-2xl leading-none select-none" aria-hidden="true">🏐</span>}
       maxWidth="xl"
       zIndexClass="z-[90]"
       bodyClassName="flex flex-col min-h-0 overflow-hidden p-0"

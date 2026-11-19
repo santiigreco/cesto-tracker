@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  BrandLogoMark,
   ChevronDownIcon,
   InstagramIcon,
   WhatsappIcon,
@@ -63,7 +62,7 @@ const FaqView: React.FC = () => {
       {/* Community Project */}
       <div className="border border-border-subtle rounded-2xl p-5 sm:p-6 bg-surface-canvas/50 text-center space-y-3.5">
         <div className="flex justify-center">
-          <BrandLogoMark className="h-10 w-10" />
+          <span className="text-3xl leading-none select-none" aria-hidden="true">🏐</span>
         </div>
         <p className="text-ink-primary font-extrabold text-base sm:text-lg uppercase tracking-tight">
           Cesto Tracker es de todos

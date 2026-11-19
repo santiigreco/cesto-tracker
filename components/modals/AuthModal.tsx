@@ -5,7 +5,6 @@ import ModalShell from '../ui/ModalShell';
 import {
   AlertTriangleIcon,
   ArrowLeftIcon,
-  BrandLogoMark,
   ChartBarIcon,
   CheckIcon,
   CloudCheckIcon,
@@ -171,7 +170,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClose={onClose}
       title={resolvedTitle}
       subtitle={resolvedSubtitle}
-      headerLeading={<BrandLogoMark className="h-9 w-9" />}
+      headerLeading={
+        <div
+          className="w-10 h-10 rounded-xl bg-surface-elevated border border-border-strong flex items-center justify-center text-xl leading-none select-none"
+          aria-hidden="true"
+        >
+          🏐
+        </div>
+      }
       maxWidth="md"
       zIndexClass="z-[100]"
       disableClose={isSubmitting || isGoogleSubmitting}

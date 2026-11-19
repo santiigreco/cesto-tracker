@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import FaqView from '@/components/views/FaqView';
-import { ArrowLeftIcon, BrandLogoMark } from '@/components/icons';
+import { ArrowLeftIcon } from '@/components/icons';
 
 export default function FaqRoute() {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function FaqRoute() {
         </button>
         <span className="text-border-strong">|</span>
         <div className="flex items-center gap-2">
-          <BrandLogoMark className="h-6 w-6" />
+          <span className="text-xl leading-none select-none shrink-0" aria-hidden="true">🏐</span>
           <span className="text-ink-primary font-extrabold text-sm tracking-tight">
             Cesto Tracker
           </span>

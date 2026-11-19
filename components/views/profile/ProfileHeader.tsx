@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  BrandLogoMark,
   CameraIcon,
   ClipboardIcon,
   ClockIcon,
@@ -26,6 +25,12 @@ interface ProfileHeaderProps {
   teamsCount: number;
 }
 
+const CestoballEmojiIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <span className={`inline-flex items-center justify-center leading-none select-none text-xs ${className || ''}`} aria-hidden="true">
+    🏐
+  </span>
+);
+
 const IDENTITY_ROLES: {
   value: IdentityRole;
   label: string;
@@ -36,7 +41,7 @@ const IDENTITY_ROLES: {
   { value: 'dirigente', label: 'Delegado / Mesa', Icon: ClockIcon },
   { value: 'hincha', label: 'Hincha / Familiar', Icon: StarIcon },
   { value: 'periodista', label: 'Prensa', Icon: MicIcon },
-  { value: 'otro', label: 'Otro', Icon: BrandLogoMark },
+  { value: 'otro', label: 'Otro', Icon: CestoballEmojiIcon },
 ];
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({

@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  BrandLogoMark,
   CloudUploadIcon,
   EyeIcon,
   GearIcon,
@@ -100,7 +99,7 @@ const AppHeader: React.FC<AppHeaderProps> = React.memo(
                 disabled={!isSetupComplete}
                 title={isSetupComplete ? 'Volver al inicio' : undefined}
               >
-                <BrandLogoMark className="h-7 w-7 shrink-0" />
+                <span className="text-xl sm:text-2xl leading-none select-none shrink-0" aria-hidden="true">🏐</span>
                 <span className="font-extrabold text-base sm:text-xl tracking-tight text-ink-primary truncate">
                   Cesto Tracker
                 </span>
