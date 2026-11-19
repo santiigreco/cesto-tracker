@@ -2,7 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Loader from '@/components/ui/Loader';
 import TeamLogo from '@/components/ui/TeamLogo';
-import { SearchIcon, TrashIcon } from '@/components/icons';
+import {
+  AlertTriangleIcon,
+  BoltIcon,
+  CheckIcon,
+  ClipboardIcon,
+  DownloadIcon,
+  LinkIcon,
+  PlusIcon,
+  RefreshIcon,
+  SearchIcon,
+  TrashIcon,
+} from '@/components/icons';
 import { useSync } from '@/context/SyncContext';
 import { useUI } from '@/context/UIContext';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -48,17 +59,18 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Filtered games
   const filteredGames = useMemo(() => {
     let result = [...games];
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(g => {
+      result = result.filter((g) => {
         const gameName = (g.settings?.gameName || g.opponent_name || '').toLowerCase();
         const myTeam = (g.settings?.myTeam || '').toLowerCase();
         const category = (g.settings?.categoryName || '').toLowerCase();
-        return gameName.includes(term) || myTeam.includes(term) || category.includes(term);
+        return (
+          gameName.includes(term) || myTeam.includes(term) || category.includes(term)
+        );
       });
     }
 
@@ -69,7 +81,6 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
     return result;
   }, [games, searchTerm, filterPeriod]);
 
-  // Handle Export to Excel
   const handleExportExcel = async (gameId: string) => {
     setExportingId(gameId);
     try {
@@ -78,13 +89,15 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
       showToast('¡Planilla oficial descargada con éxito!', 'success');
     } catch (err: any) {
       console.error('[EXCEL_EXPORT_ERROR]', err);
-      showToast(`Error al exportar planilla: ${err.message || 'Error desconocido'}`, 'error');
+      showToast(
+        `Error al exportar planilla: ${err.message || 'Error desconocido'}`,
+        'error'
+      );
     } finally {
       setExportingId(null);
     }
   };
 
-  // Handle Share Match Link
   const handleShare = (gameId: string) => {
     const url = `${window.location.origin}/match/${gameId}`;
     if (navigator.clipboard) {
@@ -96,7 +109,6 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
     }
   };
 
-  // Handle Delete Game
   const handleDelete = async (gameId: string) => {
     setDeletingId(gameId);
     try {
@@ -125,38 +137,40 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-card border border-border-subtle p-3.5 sm:p-4 rounded-2xl">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por rival, club o torneo..."
-            className="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+            className="w-full min-h-[44px] bg-surface-elevated border border-border-strong rounded-xl pl-10 pr-4 py-2 text-base sm:text-sm text-ink-primary placeholder-ink-muted focus:border-brand transition-colors"
           />
-          <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+          <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted pointer-events-none" />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <div className="flex bg-slate-800 rounded-xl p-1 border border-slate-700/80 text-xs font-bold">
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          <div className="flex bg-surface-elevated rounded-xl p-1 border border-border-subtle text-xs font-bold">
             <button
+              type="button"
               onClick={() => setFilterPeriod('all')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
+              className={`min-h-[36px] px-3 rounded-lg transition-colors tabular-nums ${
                 filterPeriod === 'all'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-brand text-ink-inverse font-extrabold'
+                  : 'text-ink-muted hover:text-ink-primary'
               }`}
             >
               Todos ({games.length})
             </button>
             <button
+              type="button"
               onClick={() => setFilterPeriod('recent')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
+              className={`min-h-[36px] px-3 rounded-lg transition-colors tabular-nums ${
                 filterPeriod === 'recent'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-brand text-ink-inverse font-extrabold'
+                  : 'text-ink-muted hover:text-ink-primary'
               }`}
             >
               Recientes (5)
@@ -164,178 +178,202 @@ export const ProfileMatchesTab: React.FC<ProfileMatchesTabProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={handleStartNewMatch}
-            className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-95 shrink-0"
+            className="min-h-[44px] bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold px-4 rounded-xl text-xs uppercase tracking-wider transition-colors active:scale-[0.98] shrink-0 inline-flex items-center gap-1.5"
           >
-            + Nueva Planilla
+            <PlusIcon className="h-4 w-4" />
+            <span>Nueva Planilla</span>
           </button>
         </div>
       </div>
 
       {/* Matches List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800">
-          <Loader className="h-10 w-10 text-cyan-400" />
-          <p className="text-slate-400 text-sm mt-4 font-semibold">Cargando tus partidos oficiales...</p>
+        <div className="flex flex-col items-center justify-center py-16 bg-surface-card rounded-2xl border border-border-subtle">
+          <Loader className="h-10 w-10 text-brand" />
+          <p className="text-ink-muted text-sm mt-4 font-semibold">
+            Cargando tus partidos oficiales...
+          </p>
         </div>
       ) : error ? (
-        <div className="text-center py-12 px-4 bg-red-950/20 rounded-3xl border border-red-800/50 space-y-4">
-          <span className="text-4xl block">⚠️</span>
+        <div className="text-center py-12 px-4 bg-sport-miss/10 rounded-2xl border border-sport-miss/35 space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-sport-miss/15 border border-sport-miss/35 text-sport-miss-light flex items-center justify-center mx-auto">
+            <AlertTriangleIcon className="h-6 w-6" />
+          </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-red-200">No pudimos cargar tus planillas</h3>
-            <p className="text-red-300/90 text-sm max-w-md mx-auto">{error}</p>
+            <h3 className="text-lg font-extrabold text-ink-primary">
+              No pudimos cargar tus planillas
+            </h3>
+            <p className="text-sport-miss-light text-sm max-w-md mx-auto">{error}</p>
           </div>
           <button
             type="button"
             onClick={onRefresh}
-            className="bg-red-600/80 hover:bg-red-500 text-white font-bold px-5 py-2.5 min-h-[44px] rounded-xl text-xs uppercase tracking-wider transition-colors shadow active:scale-95 inline-flex items-center gap-2"
+            className="bg-sport-miss hover:bg-red-500 text-white font-bold px-5 min-h-[44px] rounded-xl text-xs uppercase tracking-wider transition-colors active:scale-[0.98] inline-flex items-center gap-2"
           >
-            <span>🔄</span>
+            <RefreshIcon className="h-4 w-4" />
             <span>Reintentar</span>
           </button>
         </div>
       ) : filteredGames.length === 0 ? (
-        <div className="text-center py-16 px-4 bg-slate-900/50 rounded-3xl border border-dashed border-slate-800">
-          <span className="text-5xl block mb-3">📋</span>
-          <h3 className="text-lg font-bold text-white">
+        <div className="text-center py-14 px-4 bg-surface-card rounded-2xl border border-dashed border-border-strong">
+          <div className="w-12 h-12 rounded-xl bg-surface-elevated border border-border-subtle text-ink-muted flex items-center justify-center mx-auto mb-3">
+            <ClipboardIcon className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-extrabold text-ink-primary">
             {searchTerm ? 'No se encontraron partidos' : 'Aún no tenés planillas registradas'}
           </h3>
-          <p className="text-slate-400 text-sm max-w-md mx-auto mt-1 mb-6">
+          <p className="text-ink-muted text-sm max-w-md mx-auto mt-1 mb-6">
             {searchTerm
               ? 'Probá buscando con otro nombre de rival o quitando el filtro.'
               : 'Digitalizá tu primer partido oficial de Cestoball con control de goles, faltas y planilla técnica reglamentaria.'}
           </p>
           {!searchTerm && (
             <button
+              type="button"
               onClick={handleStartNewMatch}
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black px-6 py-3 rounded-xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-95 inline-flex items-center gap-2"
+              className="bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold px-6 min-h-[48px] rounded-xl text-sm uppercase tracking-wider transition-colors active:scale-[0.98] inline-flex items-center gap-2"
             >
-              <span>⚡</span>
+              <BoltIcon className="h-4 w-4" />
               <span>Comenzar Nueva Planilla</span>
             </button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredGames.map(game => {
+        <div className="grid grid-cols-1 gap-3">
+          {filteredGames.map((game) => {
             const myTeam = game.settings?.myTeam || 'Mi Equipo';
-            const opponentName = game.settings?.gameName || game.opponent_name || 'Rival';
+            const opponentName =
+              game.settings?.gameName || game.opponent_name || 'Rival';
             const myScore = game.settings?.myScore ?? 0;
             const opponentScore = game.settings?.opponentScore ?? 0;
-            const tournamentName = game.settings?.tournamentName || game.settings?.categoryName;
+            const tournamentName =
+              game.settings?.tournamentName || game.settings?.categoryName;
 
             return (
               <div
                 key={game.id}
-                className="bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-4 sm:p-5 transition-all shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 sm:gap-5 group"
+                className="bg-surface-card hover:bg-surface-elevated/60 border border-border-subtle hover:border-border-strong rounded-2xl p-4 sm:p-5 transition-colors flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4"
               >
                 {/* Left: Scoreboard preview */}
-                <div className="flex items-center gap-4 min-w-0 flex-grow">
-                  <div className="flex flex-col items-center justify-center bg-slate-800/90 border border-slate-700/60 rounded-xl px-4 py-3 shrink-0 min-w-[90px] text-center shadow-inner">
-                    <span className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">
+                <div className="flex items-center gap-3.5 min-w-0 flex-grow">
+                  <div className="flex flex-col items-center justify-center bg-surface-elevated border border-border-subtle rounded-xl px-3.5 py-2.5 shrink-0 min-w-[88px] text-center">
+                    <span className="text-[11px] uppercase tracking-wider text-ink-muted font-bold mb-1 tabular-nums">
                       {formatDate(game.created_at)}
                     </span>
-                    <div className="flex items-center gap-1.5 font-black text-xl leading-none">
-                      <span className="text-cyan-400">{myScore}</span>
-                      <span className="text-slate-500 text-sm">-</span>
-                      <span className="text-slate-300">{opponentScore}</span>
+                    <div className="flex items-center gap-1.5 font-black text-xl leading-none tabular-nums">
+                      <span className="text-brand">{myScore}</span>
+                      <span className="text-ink-muted text-sm">-</span>
+                      <span className="text-ink-secondary">{opponentScore}</span>
                     </div>
                   </div>
 
-                  {/* Names and info */}
                   <div className="min-w-0 flex-grow">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       {tournamentName && (
-                        <span className="px-2 py-0.5 rounded-md bg-slate-800 text-cyan-400 text-[10px] font-extrabold uppercase tracking-wider border border-slate-700">
+                        <span className="px-2 py-0.5 rounded-md bg-surface-elevated text-brand text-[10px] font-extrabold uppercase tracking-wider border border-border-subtle">
                           {tournamentName}
                         </span>
                       )}
-                      <span className="text-[11px] text-slate-400 font-medium">
+                      <span className="text-xs text-ink-muted font-medium">
                         Planilla Técnica Oficial
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-white font-bold text-base sm:text-lg min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-primary font-bold text-base sm:text-lg min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <TeamLogo teamName={myTeam} className="h-5 w-5 shrink-0" />
-                        <span className="text-cyan-300 truncate max-w-[180px] sm:max-w-[200px]">{myTeam}</span>
+                        <span className="text-ink-primary truncate max-w-[180px] sm:max-w-[200px]">
+                          {myTeam}
+                        </span>
                       </div>
-                      <span className="text-slate-500 font-normal shrink-0">vs</span>
+                      <span className="text-ink-muted font-normal shrink-0">vs</span>
                       <div className="flex items-center gap-1.5 min-w-0">
                         <TeamLogo teamName={opponentName} className="h-5 w-5 shrink-0" />
-                        <span className="text-slate-200 truncate max-w-[180px] sm:max-w-[200px]">{opponentName}</span>
+                        <span className="text-ink-secondary truncate max-w-[180px] sm:max-w-[200px]">
+                          {opponentName}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Actions toolbar */}
-                <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800">
-                  {/* Share Link */}
+                <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-border-subtle">
                   <button
+                    type="button"
                     onClick={() => handleShare(game.id)}
-                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors active:scale-95"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-surface-elevated hover:bg-surface-hover text-ink-secondary hover:text-ink-primary border border-border-strong transition-colors"
                     title="Copiar enlace del partido"
+                    aria-label="Copiar enlace del partido"
                   >
-                    {copiedId === game.id ? <span className="text-xs font-bold text-emerald-400">✓</span> : <span>🔗</span>}
+                    {copiedId === game.id ? (
+                      <CheckIcon className="h-4 w-4 text-sport-goal-light" />
+                    ) : (
+                      <LinkIcon className="h-4 w-4" />
+                    )}
                   </button>
 
-                  {/* Export Official Excel */}
                   <button
+                    type="button"
                     onClick={() => handleExportExcel(game.id)}
                     disabled={exportingId === game.id}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 hover:border-emerald-500 text-emerald-300 text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                    className="min-h-[44px] flex items-center gap-1.5 px-3 bg-sport-goal/15 hover:bg-sport-goal/25 border border-sport-goal/40 text-sport-goal-light text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
                     title="Descargar Planilla Oficial en Excel (.xlsx)"
                   >
                     {exportingId === game.id ? (
-                      <Loader className="h-3.5 w-3.5 text-emerald-400" />
+                      <Loader className="h-4 w-4 text-sport-goal-light" />
                     ) : (
-                      <span>📊</span>
+                      <DownloadIcon className="h-4 w-4 shrink-0" />
                     )}
                     <span className="hidden sm:inline">Excel</span>
                   </button>
 
-                  {/* Read-Only Stats View */}
                   <button
+                    type="button"
                     onClick={() => navigate(`/match/${game.id}`)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold rounded-xl transition-colors active:scale-95"
+                    className="min-h-[44px] px-3.5 bg-surface-elevated hover:bg-surface-hover text-ink-primary border border-border-strong text-xs font-bold rounded-xl transition-colors"
                     title="Ver planilla en modo lectura"
                   >
                     Ver
                   </button>
 
-                  {/* Resume / Edit Match */}
                   <button
+                    type="button"
                     onClick={() => navigate(`/match/${game.id}?edit=true`)}
-                    className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-cyan-900/30 active:scale-95 flex items-center gap-1"
+                    className="min-h-[44px] px-4 bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold text-xs uppercase tracking-wider rounded-xl transition-colors active:scale-[0.98] flex items-center gap-1.5"
                     title="Abrir en modo anotación"
                   >
-                    <span>⚡</span>
+                    <BoltIcon className="h-3.5 w-3.5" />
                     <span>Anotar</span>
                   </button>
 
-                  {/* Delete Match with Confirmation */}
                   {confirmDeleteId === game.id ? (
-                    <div className="flex items-center gap-1 bg-red-950/80 border border-red-700/60 rounded-xl p-1">
+                    <div className="flex items-center gap-1 bg-sport-miss/15 border border-sport-miss/40 rounded-xl p-1">
                       <button
+                        type="button"
                         onClick={() => handleDelete(game.id)}
                         disabled={deletingId === game.id}
-                        className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white text-[11px] font-black rounded-lg transition-colors"
+                        className="min-h-[36px] px-2.5 bg-sport-miss hover:bg-red-500 text-white text-xs font-extrabold rounded-lg transition-colors"
                       >
                         {deletingId === game.id ? '...' : 'Confirmar'}
                       </button>
                       <button
+                        type="button"
                         onClick={() => setConfirmDeleteId(null)}
-                        className="px-2 py-1 text-slate-400 hover:text-white text-[11px]"
+                        className="min-h-[36px] px-2.5 text-ink-secondary hover:text-ink-primary text-xs font-bold"
                       >
-                        ✕
+                        No
                       </button>
                     </div>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => setConfirmDeleteId(game.id)}
-                      className="p-2.5 text-slate-500 hover:text-red-400 hover:bg-red-950/30 rounded-xl transition-colors active:scale-95"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center text-ink-muted hover:text-sport-miss-light hover:bg-sport-miss/10 rounded-xl transition-colors"
                       title="Eliminar partido"
+                      aria-label="Eliminar partido"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>

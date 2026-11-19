@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { useSync } from '../../context/SyncContext';
 import { generateFederationExcel } from '../../utils/exportToExcel';
 import { getActivePlayersFromMatch, hasCompleteMatchMetadata } from '../../utils/matchMetadata';
+import { InfoCircleIcon } from '../icons';
+import ModalShell from './ModalShell';
 
 const MobileMenu = lazy(() => import('@/components/ui/MobileMenu'));
 const PlayerSelectionModal = lazy(() => import('@/components/modals/PlayerSelectionModal'));
@@ -278,13 +280,13 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
             const p = gameState.availablePlayers[i];
             const list: string[] = [];
             const playerFouls = foulsByPlayer[p] || 0;
-            if (playerFouls === 5) list.push('⚠️');
-            if (playerFouls >= 6) list.push('🛑');
+            if (playerFouls === 5) list.push('foul-warning');
+            if (playerFouls >= 6) list.push('foul-out');
 
             const shots = recentShotsByPlayer[p];
             if (shots && shots.length === 3) {
-                if (shots.every(a => a === 'goles' || a === 'triples')) list.push('🔥');
-                else if (shots.every(a => a === 'fallos')) list.push('❄️');
+                if (shots.every(a => a === 'goles' || a === 'triples')) list.push('hot');
+                else if (shots.every(a => a === 'fallos')) list.push('cold');
             }
             statuses[p] = list;
         }
@@ -323,6 +325,7 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                     players={sortedPlayersByRecentUsage}
                     playerNames={gameState.playerNames}
                     actionLabel={props.actionLabel || ''}
+                    actionKey={actionToAssign}
                     playerStatuses={playerStatuses}
                     recentCount={recentCount}
                 />
@@ -445,14 +448,13 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                 <ConfirmationModal
                     title="¿Finalizar Partido?"
                     message={
-                        <div className="flex flex-col gap-4">
-                            <p>Se guardarán los resultados finales en la nube y se generará el resumen estadístico.</p>
+                        <div className="flex flex-col gap-3 text-left">
+                            <p className="text-center">Se guardarán los resultados finales en la nube y se generará el resumen estadístico.</p>
                             {hasMissingNames && (
-                                <div className="bg-cyan-900/40 border border-cyan-500/30 p-3 rounded-lg flex gap-3 text-sm">
-                                    <span className="text-xl">💡</span>
-                                    <p className="text-cyan-100 italic">
-                                        <strong>Sugerencia:</strong> Notamos que algunos jugadores no tienen nombre real cargado. 
-                                        Cargarlos ahora asegurará un reporte Excel impecable.
+                                <div className="bg-brand/10 border border-brand/30 p-3 rounded-xl flex items-start gap-2.5 text-xs sm:text-sm">
+                                    <InfoCircleIcon className="h-5 w-5 text-brand shrink-0 mt-0.5" />
+                                    <p className="text-ink-secondary leading-snug">
+                                        <strong className="text-ink-primary">Sugerencia:</strong> Algunas jugadoras todavía no tienen nombre cargado. Completarlas ahora deja la planilla Excel lista para presentar.
                                     </p>
                                 </div>
                             )}
@@ -462,46 +464,51 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                     cancelText="Cancelar"
                     onConfirm={handleConfirmFinalize}
                     onClose={() => closeModal('finishMatch')}
-                    confirmButtonColor="bg-red-600 hover:bg-red-700"
+                    confirmButtonColor="bg-sport-miss hover:bg-red-500"
                     extraButtonText={hasMissingNames ? "Completar Nombres" : undefined}
                     onExtraClick={hasMissingNames ? handleGoToEditNames : undefined}
-                    extraButtonColor="bg-slate-700 hover:bg-slate-600"
+                    extraButtonColor="bg-surface-elevated hover:bg-surface-hover border border-border-strong"
                     isLoading={isFinalizing}
                 />
             )}
 
             {modals.completeNames?.isOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[110] transition-opacity p-4">
-                    <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl p-6 sm:p-8 max-w-lg w-full max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200">
-                        <h2 className="text-2xl font-black text-white mb-2 tracking-tight italic drop-shadow-md">Completar Nombres</h2>
-                        <p className="text-slate-400 mb-6 text-sm">Asigna nombres reales a los números para el reporte oficial.</p>
-                        
-                        <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar space-y-3 mb-6">
-                            {playersForNameCompletion.map(num => (
-                                <div key={num} className="flex items-center gap-3 bg-slate-700/30 p-2 rounded-xl border border-slate-600/30">
-                                    <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md">
-                                        #{num}
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        maxLength={40}
-                                        placeholder={`Nombre de jugador #${num}`}
-                                        className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-base focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all font-semibold"
-                                        value={gameState.playerNames[num] || ''}
-                                        onChange={(e) => updatePlayerName(num, e.target.value)}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-
+                <ModalShell
+                    isOpen={true}
+                    onClose={() => { closeModal('completeNames'); openModal('finishMatch'); }}
+                    title="Completar Nombres"
+                    subtitle="Asigná nombres reales a los dorsales para el reporte oficial."
+                    maxWidth="lg"
+                    zIndexClass="z-[110]"
+                    footer={
                         <button
+                            type="button"
                             onClick={() => { closeModal('completeNames'); openModal('finishMatch'); }}
-                            className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-black py-4 rounded-xl transition-all active:scale-95 shadow-xl shadow-cyan-900/30 tracking-widest uppercase text-sm"
+                            className="w-full min-h-[48px] bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold rounded-xl transition-all active:scale-[0.98] tracking-wider uppercase text-xs sm:text-sm"
                         >
                             Listo, volver al cierre
                         </button>
+                    }
+                >
+                    <div className="space-y-2.5">
+                        {playersForNameCompletion.map(num => (
+                            <div key={num} className="flex items-center gap-3 bg-surface-elevated/70 p-2 rounded-xl border border-border-subtle">
+                                <div className="w-10 h-10 bg-brand/15 border border-brand/30 rounded-lg flex items-center justify-center font-extrabold text-brand text-xs tabular-nums shrink-0">
+                                    #{num}
+                                </div>
+                                <input
+                                    type="text"
+                                    maxLength={40}
+                                    placeholder={`Nombre jugadora #${num}`}
+                                    aria-label={`Nombre jugadora #${num}`}
+                                    className="flex-grow min-w-0 bg-surface-canvas border border-border-strong rounded-xl px-3 py-2 text-ink-primary text-base sm:text-sm focus:border-brand transition-colors font-medium placeholder-ink-muted"
+                                    value={gameState.playerNames[num] || ''}
+                                    onChange={(e) => updatePlayerName(num, e.target.value)}
+                                />
+                            </div>
+                        ))}
                     </div>
-                </div>
+                </ModalShell>
             )}
 
             {notificationPopup && (

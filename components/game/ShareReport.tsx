@@ -1,201 +1,311 @@
-
 import React, { useMemo } from 'react';
 import { GameState, PlayerStats } from '../../types';
 import StatisticsView from '@/components/views/StatisticsView';
 import TeamLogo from '@/components/ui/TeamLogo';
+import { BrandLogoMark } from '@/components/icons';
 
 interface ShareReportProps {
-    gameState: GameState;
-    playerStats?: PlayerStats[];
-    viewMode: 'summary' | 'detailed';
-    rivalScore?: number | null;
+  gameState: GameState;
+  playerStats?: PlayerStats[];
+  viewMode: 'summary' | 'detailed';
+  rivalScore?: number | null;
 }
 
 const ShareReport: React.FC<ShareReportProps> = ({ gameState, viewMode, rivalScore }) => {
-    const { playerNames, tallyStats, settings } = gameState;
+  const { playerNames, tallyStats, settings } = gameState;
 
-    // Calculate aggregated stats for Summary Card
-    const summaryData = useMemo(() => {
-        let totalPoints = 0;
-        let totalGoles = 0;
-        let totalTriples = 0;
-        let totalFallos = 0;
-        let totalRecuperos = 0;
-        let totalPerdidas = 0;
-        const playersMap: Record<string, { points: number, name: string }> = {};
+  const summaryData = useMemo(() => {
+    let totalPoints = 0;
+    let totalGoles = 0;
+    let totalTriples = 0;
+    let totalFallos = 0;
+    let totalRecuperos = 0;
+    let totalPerdidas = 0;
+    const playersMap: Record<string, { points: number; name: string }> = {};
 
-        Object.entries(tallyStats || {}).forEach(([playerNum, stats]) => {
-            if (playerNum === 'Equipo') return; // Skip aggregate team entry
+    Object.entries(tallyStats || {}).forEach(([playerNum, stats]) => {
+      if (playerNum === 'Equipo') return;
 
-            let pGoles = 0;
-            let pTriples = 0;
-            let pFallos = 0;
-            let pRecuperos = 0;
-            let pPerdidas = 0;
-            Object.values(stats || {}).forEach(periodStats => {
-                pGoles += periodStats?.goles || 0;
-                pTriples += periodStats?.triples || 0;
-                pFallos += periodStats?.fallos || 0;
-                pRecuperos += periodStats?.recuperos || 0;
-                pPerdidas += periodStats?.perdidas || 0;
-            });
+      let pGoles = 0;
+      let pTriples = 0;
+      let pFallos = 0;
+      let pRecuperos = 0;
+      let pPerdidas = 0;
+      Object.values(stats || {}).forEach((periodStats) => {
+        pGoles += periodStats?.goles || 0;
+        pTriples += periodStats?.triples || 0;
+        pFallos += periodStats?.fallos || 0;
+        pRecuperos += periodStats?.recuperos || 0;
+        pPerdidas += periodStats?.perdidas || 0;
+      });
 
-            const pPoints = (pGoles * 2) + (pTriples * 3);
-            totalPoints += pPoints;
-            totalGoles += pGoles;
-            totalTriples += pTriples;
-            totalFallos += pFallos;
-            totalRecuperos += pRecuperos;
-            totalPerdidas += pPerdidas;
+      const pPoints = pGoles * 2 + pTriples * 3;
+      totalPoints += pPoints;
+      totalGoles += pGoles;
+      totalTriples += pTriples;
+      totalFallos += pFallos;
+      totalRecuperos += pRecuperos;
+      totalPerdidas += pPerdidas;
 
-            playersMap[playerNum] = {
-                points: pPoints,
-                name: playerNames[playerNum] || `#${playerNum}`
-            };
-        });
+      playersMap[playerNum] = {
+        points: pPoints,
+        name: playerNames[playerNum] || `#${playerNum}`,
+      };
+    });
 
-        const sortedPlayers = Object.values(playersMap).sort((a, b) => b.points - a.points);
-        const topScorers = sortedPlayers.filter(p => p.points > 0).slice(0, 3);
-        const totalShots = totalGoles + totalTriples + totalFallos;
-        const efficiency = totalShots > 0 ? ((totalGoles + totalTriples) / totalShots * 100).toFixed(0) : '0';
+    const sortedPlayers = Object.values(playersMap).sort((a, b) => b.points - a.points);
+    const topScorers = sortedPlayers.filter((p) => p.points > 0).slice(0, 3);
+    const totalShots = totalGoles + totalTriples + totalFallos;
+    const efficiency =
+      totalShots > 0 ? (((totalGoles + totalTriples) / totalShots) * 100).toFixed(0) : '0';
 
-        return { totalPoints, totalGoles, totalTriples, totalFallos, totalRecuperos, totalPerdidas, topScorers, efficiency };
-    }, [gameState]);
+    return {
+      totalPoints,
+      totalGoles,
+      totalTriples,
+      totalFallos,
+      totalRecuperos,
+      totalPerdidas,
+      topScorers,
+      efficiency,
+    };
+  }, [tallyStats, playerNames]);
 
-
-    // --- VIRAL CARD LAYOUT (SUMMARY) ---
-    if (viewMode === 'summary') {
-        const hasRivalScore = rivalScore !== null && rivalScore !== undefined;
-        const isWin = hasRivalScore && summaryData.totalPoints > rivalScore!;
-        const isLoss = hasRivalScore && summaryData.totalPoints < rivalScore!;
-        const isDraw = hasRivalScore && summaryData.totalPoints === rivalScore!;
-
-        const resultBadge = isWin ? { label: 'Victoria', color: 'text-emerald-400', bg: 'bg-emerald-500/20 border-emerald-500/40' }
-            : isLoss ? { label: 'Derrota', color: 'text-red-400', bg: 'bg-red-500/20 border-red-500/40' }
-                : isDraw ? { label: 'Empate', color: 'text-amber-400', bg: 'bg-amber-500/20 border-amber-500/40' }
-                    : null;
-
-        return (
-            <div className="w-[450px] bg-slate-900 text-white font-sans relative overflow-hidden flex flex-col items-center">
-                {/* Top accent bar */}
-                <div className={`absolute top-0 left-0 w-full h-1.5 ${isWin ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' : isLoss ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}></div>
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl"></div>
-
-                <div className="relative z-10 w-full p-8 flex flex-col items-center gap-5">
-                    {/* Header */}
-                    <div className="flex flex-col items-center text-center gap-2">
-                        <TeamLogo teamName={settings.myTeam || ''} className="h-14 w-14" />
-                        <h3 className="text-cyan-400 tracking-widest text-xs font-bold uppercase">
-                            {settings.myTeam || 'Resultado Final'}
-                        </h3>
-                        <h1 className="text-lg font-bold text-slate-300 leading-tight break-words max-w-[350px]">
-                            {settings.gameName || 'Partido Amistoso'}
-                        </h1>
-                        <p className="text-slate-500 text-xs">{new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                    </div>
-
-                    {/* Scoreboard — main focus of the card */}
-                    <div className="flex flex-col items-center justify-center py-5 border-y border-slate-800 w-full gap-3">
-                        {hasRivalScore ? (
-                            <>
-                                <div className="flex items-center justify-center gap-4">
-                                    <span className={`text-7xl font-black leading-none tracking-tighter drop-shadow-2xl ${isWin ? 'text-white' : 'text-slate-400'}`}>
-                                        {summaryData.totalPoints}
-                                    </span>
-                                    <span className="text-3xl font-black text-slate-700">—</span>
-                                    <span className={`text-7xl font-black leading-none tracking-tighter drop-shadow-2xl ${isLoss ? 'text-white' : 'text-slate-400'}`}>
-                                        {rivalScore}
-                                    </span>
-                                </div>
-                                {resultBadge && (
-                                    <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border ${resultBadge.bg} ${resultBadge.color}`}>
-                                        {resultBadge.label}
-                                    </span>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <span className="text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
-                                    {summaryData.totalPoints}
-                                </span>
-                                <span className="text-slate-400 text-sm font-bold uppercase tracking-wide">Puntos Totales</span>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="w-full grid grid-cols-2 gap-4">
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                            <span className="text-3xl font-bold text-green-400">{summaryData.efficiency}%</span>
-                            <span className="text-[10px] text-slate-400 uppercase font-bold mt-1">Efectividad</span>
-                        </div>
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                            <span className="text-3xl font-bold text-blue-400">{summaryData.totalTriples}</span>
-                            <span className="text-[10px] text-slate-400 uppercase font-bold mt-1">Triples</span>
-                        </div>
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                            <span className="text-3xl font-bold text-white">{summaryData.totalRecuperos}</span>
-                            <span className="text-[10px] text-slate-400 uppercase font-bold mt-1">Recuperos</span>
-                        </div>
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                            <span className="text-3xl font-bold text-red-400">{summaryData.totalPerdidas}</span>
-                            <span className="text-[10px] text-slate-400 uppercase font-bold mt-1">Pérdidas</span>
-                        </div>
-                    </div>
-
-                    {/* Top Scorers Section */}
-                    {summaryData.topScorers.length > 0 && (
-                        <div className="w-full bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
-                            <h4 className="text-[10px] text-cyan-400 font-bold uppercase mb-3 tracking-widest text-center">Top Goleadoras</h4>
-                            <div className="flex flex-col gap-2">
-                                {summaryData.topScorers.map((player, idx) => (
-                                    <div key={idx} className="flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-black text-slate-500 w-4">{idx + 1}º</span>
-                                            <span className="text-sm font-bold text-white">{player.name}</span>
-                                        </div>
-                                        <span className="text-sm font-black text-cyan-300">{player.points} pts</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Footer / Branding */}
-                    <div className="mt-2 pt-4 w-full flex justify-between items-center opacity-70">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">🏐</span>
-                            <span className="font-bold text-sm tracking-tight">Cesto Tracker</span>
-                        </div>
-                        <span className="text-[10px] text-slate-500">cestotracker.com</span>
-                    </div>
-                </div>
-            </div>
-        );
+  const matchDateLabel = useMemo(() => {
+    const raw = settings.gameDate ? new Date(`${settings.gameDate}T12:00:00`) : new Date();
+    if (isNaN(raw.getTime())) {
+      return new Date().toLocaleDateString('es-AR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
     }
+    return raw.toLocaleDateString('es-AR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }, [settings.gameDate]);
 
-    // --- DETAILED LAYOUT (CLASSIC) ---
+  // --- BROADCAST SUMMARY CARD (html2canvas safe: no blur, no bg-clip-text, no emojis) ---
+  if (viewMode === 'summary') {
+    const hasRivalScore = rivalScore !== null && rivalScore !== undefined;
+    const isWin = hasRivalScore && summaryData.totalPoints > rivalScore!;
+    const isLoss = hasRivalScore && summaryData.totalPoints < rivalScore!;
+    const isDraw = hasRivalScore && summaryData.totalPoints === rivalScore!;
+
+    const accentBarColor = isWin
+      ? 'bg-emerald-500'
+      : isLoss
+        ? 'bg-rose-500'
+        : isDraw
+          ? 'bg-amber-500'
+          : 'bg-cyan-400';
+
+    const resultBadge = isWin
+      ? {
+          label: 'Victoria',
+          color: 'text-emerald-300',
+          bg: 'bg-emerald-500/15 border-emerald-500/40',
+        }
+      : isLoss
+        ? {
+            label: 'Derrota',
+            color: 'text-rose-300',
+            bg: 'bg-rose-500/15 border-rose-500/40',
+          }
+        : isDraw
+          ? {
+              label: 'Empate',
+              color: 'text-amber-300',
+              bg: 'bg-amber-500/15 border-amber-500/40',
+            }
+          : null;
+
+    const contextLabel = [settings.tournamentName, settings.categoryName]
+      .filter(Boolean)
+      .join(' · ');
+
     return (
-        <div className="p-8 bg-slate-900 text-slate-200 font-sans max-w-[800px] mx-auto">
-            <div className="flex flex-col items-center mb-6">
-                <TeamLogo teamName={settings.myTeam || ''} className="h-20 w-20 mb-4" />
-                <h1 className="text-4xl font-bold text-cyan-400 text-center mb-1">{settings.myTeam ? `${settings.myTeam} - ` : ''}{settings.gameName || 'Reporte de Partido'}</h1>
-                <p className="text-center text-slate-400 text-lg">Generado con Cesto Tracker el {new Date().toLocaleDateString()}</p>
+      <div className="w-[450px] bg-[#0A0F18] text-[#F8FAFC] font-sans border border-[#1F2B3E] flex flex-col">
+        {/* Top Solid Accent Bar */}
+        <div className={`w-full h-1.5 ${accentBarColor}`} />
+
+        <div className="w-full p-7 flex flex-col items-center gap-5">
+          {/* Header Context */}
+          <div className="flex flex-col items-center text-center gap-1.5 w-full">
+            {(contextLabel || matchDateLabel) && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#111827] border border-[#1F2B3E] text-[10px] font-bold uppercase tracking-wider text-[#8494AB] tabular-nums">
+                {contextLabel && <span className="text-[#22D3EE]">{contextLabel}</span>}
+                {contextLabel && <span>·</span>}
+                <span>{matchDateLabel}</span>
+              </div>
+            )}
+
+            <div className="mt-2 flex items-center justify-center gap-3">
+              <TeamLogo teamName={settings.myTeam || ''} className="h-12 w-12 shrink-0" />
             </div>
 
-            <div className="space-y-8">
-                <StatisticsView
-                    externalPlayerNames={playerNames}
-                    isSharing={true}
-                    externalTallyStats={tallyStats}
-                />
+            <h2 className="text-xl font-black text-[#F8FAFC] tracking-tight leading-tight mt-1 max-w-[360px] break-words">
+              {settings.myTeam || 'Resultado Final'}
+            </h2>
+            <p className="text-sm font-semibold text-[#B8C5D6] max-w-[360px] break-words">
+              {settings.gameName ? `vs ${settings.gameName}` : 'Partido Amistoso'}
+            </p>
+          </div>
+
+          {/* Broadcast Scoreboard Focus */}
+          <div className="w-full bg-[#111827] border border-[#1F2B3E] rounded-2xl py-6 px-5 flex flex-col items-center justify-center gap-3">
+            {hasRivalScore ? (
+              <>
+                <div className="flex items-center justify-center gap-5">
+                  <span
+                    className={`text-7xl font-black leading-none tracking-tight tabular-nums ${
+                      isWin || isDraw ? 'text-[#F8FAFC]' : 'text-[#8494AB]'
+                    }`}
+                  >
+                    {summaryData.totalPoints}
+                  </span>
+                  <span className="text-2xl font-black text-[#32435C]">—</span>
+                  <span
+                    className={`text-7xl font-black leading-none tracking-tight tabular-nums ${
+                      isLoss || isDraw ? 'text-[#F8FAFC]' : 'text-[#8494AB]'
+                    }`}
+                  >
+                    {rivalScore}
+                  </span>
+                </div>
+                {resultBadge && (
+                  <span
+                    className={`px-3.5 py-1 rounded-lg text-[11px] font-extrabold uppercase tracking-widest border ${resultBadge.bg} ${resultBadge.color}`}
+                  >
+                    {resultBadge.label}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="text-7xl font-black text-[#F8FAFC] leading-none tracking-tight tabular-nums">
+                  {summaryData.totalPoints}
+                </span>
+                <span className="text-[#8494AB] text-xs font-bold uppercase tracking-widest">
+                  Puntos Totales
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* KPI Grid */}
+          <div className="w-full grid grid-cols-2 gap-3">
+            <div className="bg-[#111827] p-3.5 rounded-xl border border-[#1F2B3E] flex flex-col items-center">
+              <span className="text-3xl font-black text-[#34D399] leading-none tabular-nums">
+                {summaryData.efficiency}%
+              </span>
+              <span className="text-[10px] text-[#8494AB] uppercase font-bold tracking-wider mt-1.5">
+                Efectividad
+              </span>
             </div>
-            <footer className="w-full text-center text-slate-500 text-sm mt-10 pt-4 border-t border-slate-700">
-                Cesto Tracker 🏐 - Tu planilla digital
-            </footer>
+            <div className="bg-[#111827] p-3.5 rounded-xl border border-[#1F2B3E] flex flex-col items-center">
+              <span className="text-3xl font-black text-[#38BDF8] leading-none tabular-nums">
+                {summaryData.totalTriples}
+              </span>
+              <span className="text-[10px] text-[#8494AB] uppercase font-bold tracking-wider mt-1.5">
+                Triples (+3)
+              </span>
+            </div>
+            <div className="bg-[#111827] p-3.5 rounded-xl border border-[#1F2B3E] flex flex-col items-center">
+              <span className="text-3xl font-black text-[#F8FAFC] leading-none tabular-nums">
+                {summaryData.totalRecuperos}
+              </span>
+              <span className="text-[10px] text-[#8494AB] uppercase font-bold tracking-wider mt-1.5">
+                Recuperos
+              </span>
+            </div>
+            <div className="bg-[#111827] p-3.5 rounded-xl border border-[#1F2B3E] flex flex-col items-center">
+              <span className="text-3xl font-black text-[#FB7185] leading-none tabular-nums">
+                {summaryData.totalPerdidas}
+              </span>
+              <span className="text-[10px] text-[#8494AB] uppercase font-bold tracking-wider mt-1.5">
+                Pérdidas
+              </span>
+            </div>
+          </div>
+
+          {/* Top Scorers */}
+          {summaryData.topScorers.length > 0 && (
+            <div className="w-full bg-[#111827] p-4 rounded-xl border border-[#1F2B3E]">
+              <h4 className="text-[10px] text-[#22D3EE] font-extrabold uppercase mb-2.5 tracking-widest text-center">
+                Top Goleadoras
+              </h4>
+              <div className="flex flex-col gap-1.5">
+                {summaryData.topScorers.map((player, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between bg-[#1A2436] border border-[#1F2B3E] px-3 py-2 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-xs font-black text-[#22D3EE] w-5 tabular-nums shrink-0">
+                        {idx + 1}°
+                      </span>
+                      <span className="text-sm font-bold text-[#F8FAFC] truncate">
+                        {player.name}
+                      </span>
+                    </div>
+                    <span className="text-sm font-black text-[#F8FAFC] tabular-nums shrink-0 ml-2">
+                      {player.points} pts
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Brand Footer */}
+          <div className="pt-3 border-t border-[#1F2B3E] w-full flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <BrandLogoMark className="h-5 w-5" />
+              <span className="font-extrabold text-xs tracking-tight text-[#B8C5D6]">
+                Cesto Tracker
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-[#8494AB]">cestotracker.com</span>
+          </div>
         </div>
+      </div>
     );
+  }
+
+  // --- DETAILED LAYOUT ---
+  return (
+    <div className="p-7 bg-[#0A0F18] text-[#F8FAFC] font-sans max-w-[800px] mx-auto border border-[#1F2B3E]">
+      <div className="flex flex-col items-center mb-6 text-center">
+        <TeamLogo teamName={settings.myTeam || ''} className="h-16 w-16 mb-3" />
+        <h1 className="text-2xl sm:text-3xl font-black text-[#F8FAFC] tracking-tight mb-1">
+          {settings.myTeam ? `${settings.myTeam} vs ` : ''}
+          {settings.gameName || 'Reporte de Partido'}
+        </h1>
+        <p className="text-[#8494AB] text-sm font-medium tabular-nums">
+          Planilla generada con Cesto Tracker · {matchDateLabel}
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        <StatisticsView
+          externalPlayerNames={playerNames}
+          isSharing={true}
+          externalTallyStats={tallyStats}
+        />
+      </div>
+
+      <footer className="w-full flex items-center justify-between text-[#8494AB] text-xs mt-8 pt-4 border-t border-[#1F2B3E]">
+        <div className="flex items-center gap-2">
+          <BrandLogoMark className="h-5 w-5" />
+          <span className="font-bold text-[#B8C5D6]">Cesto Tracker</span>
+        </div>
+        <span>cestotracker.com</span>
+      </footer>
+    </div>
+  );
 };
 
 export default ShareReport;

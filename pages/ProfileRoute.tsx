@@ -6,21 +6,39 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { supabase, isSupabaseConfigured } from '@/utils/supabaseClient';
 import { getFriendlySupabaseErrorMessage } from '@/utils/supabaseErrors';
 import Loader from '@/components/ui/Loader';
-import { GoogleIcon } from '@/components/icons';
+import {
+  ArrowLeftIcon,
+  BoltIcon,
+  BrandLogoMark,
+  ChartBarIcon,
+  ClipboardIcon,
+  GearIcon,
+  GoogleIcon,
+  UserIcon,
+  UsersIcon,
+} from '@/components/icons';
 import { ProfileHeader } from '@/components/views/profile/ProfileHeader';
 import type { UserSavedGame } from '@/components/views/profile/ProfileMatchesTab';
 
 const ProfileMatchesTab = lazy(() =>
-  import('@/components/views/profile/ProfileMatchesTab').then(m => ({ default: m.ProfileMatchesTab }))
+  import('@/components/views/profile/ProfileMatchesTab').then((m) => ({
+    default: m.ProfileMatchesTab,
+  }))
 );
 const ProfileTeamsTab = lazy(() =>
-  import('@/components/views/profile/ProfileTeamsTab').then(m => ({ default: m.ProfileTeamsTab }))
+  import('@/components/views/profile/ProfileTeamsTab').then((m) => ({
+    default: m.ProfileTeamsTab,
+  }))
 );
 const ProfileStatsTab = lazy(() =>
-  import('@/components/views/profile/ProfileStatsTab').then(m => ({ default: m.ProfileStatsTab }))
+  import('@/components/views/profile/ProfileStatsTab').then((m) => ({
+    default: m.ProfileStatsTab,
+  }))
 );
 const ProfileSettingsTab = lazy(() =>
-  import('@/components/views/profile/ProfileSettingsTab').then(m => ({ default: m.ProfileSettingsTab }))
+  import('@/components/views/profile/ProfileSettingsTab').then((m) => ({
+    default: m.ProfileSettingsTab,
+  }))
 );
 
 type ProfileActiveTab = 'matches' | 'teams' | 'stats' | 'settings';
@@ -37,7 +55,6 @@ export default function ProfileRoute() {
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [teamsCount, setTeamsCount] = useState(0);
 
-  // Fetch games owned by this user (omitting unused player_names JSONB)
   const fetchUserGames = useCallback(async () => {
     if (!user) {
       setGames([]);
@@ -70,7 +87,6 @@ export default function ProfileRoute() {
     }
   }, [user]);
 
-  // Fetch count of saved teams
   const fetchTeamsCount = useCallback(async () => {
     if (!user) return;
     try {
@@ -94,58 +110,62 @@ export default function ProfileRoute() {
 
   if (authLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-400">
-        <Loader className="h-10 w-10 text-cyan-400 mb-3" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-surface-canvas text-ink-muted">
+        <Loader className="h-10 w-10 text-brand mb-3" />
         <p className="text-sm font-semibold">Cargando tu perfil...</p>
       </div>
     );
   }
 
-  // Unauthenticated screen
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
-        {/* Top Navbar */}
-        <div className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <div className="min-h-screen bg-surface-canvas text-ink-primary flex flex-col font-sans selection:bg-brand/25 selection:text-ink-primary">
+        <div className="sticky top-0 z-30 bg-surface-canvas/95 border-b border-border-subtle px-4 sm:px-8 py-3 flex items-center justify-between">
           <button
+            type="button"
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm font-bold"
+            className="min-h-[44px] px-2 -ml-2 flex items-center gap-1.5 text-ink-secondary hover:text-ink-primary transition-colors text-sm font-bold rounded-xl"
           >
-            <span>←</span>
+            <ArrowLeftIcon className="h-4 w-4" />
             <span>Volver al Inicio</span>
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🏐</span>
-            <span className="text-white font-black text-sm tracking-tight">Cesto Tracker</span>
+            <BrandLogoMark className="h-6 w-6" />
+            <span className="text-ink-primary font-extrabold text-sm tracking-tight">
+              Cesto Tracker
+            </span>
           </div>
         </div>
 
-        {/* Hero Card for Auth */}
         <div className="flex-grow flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center space-y-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-emerald-600 flex items-center justify-center mx-auto text-3xl shadow-lg">
-              👤
+          <div className="max-w-md w-full bg-surface-card border border-border-subtle rounded-2xl p-7 shadow-card text-center space-y-6">
+            <div className="w-14 h-14 rounded-2xl bg-brand/15 border border-brand/30 text-brand flex items-center justify-center mx-auto">
+              <UserIcon className="h-7 w-7" />
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">Accedé a tu Perfil</h2>
-              <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+              <h2 className="text-2xl font-black text-ink-primary tracking-tight">
+                Accedé a tu Perfil
+              </h2>
+              <p className="text-ink-muted text-sm mt-2 leading-relaxed">
                 Iniciá sesión para guardar y administrar tus planillas técnicas oficiales, pre-configurar tus planteles de club y acumular estadísticas.
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2.5 pt-1">
               <button
+                type="button"
                 onClick={() => openAuthModal({ initialMode: 'login' })}
-                className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black py-3 rounded-xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-95 flex items-center justify-center gap-2"
+                className="w-full min-h-[48px] bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold py-3 px-4 rounded-xl text-sm uppercase tracking-wider transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <GoogleIcon className="h-4 w-4" />
                 <span>Ingresar con Google o Email</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => navigate('/')}
-                className="w-full py-2.5 text-slate-400 hover:text-white text-xs font-bold transition-colors"
+                className="w-full min-h-[44px] text-ink-muted hover:text-ink-primary text-xs font-bold transition-colors"
               >
                 Volver a la página principal
               </button>
@@ -156,30 +176,43 @@ export default function ProfileRoute() {
     );
   }
 
+  const getTabClass = (tab: ProfileActiveTab) =>
+    `min-h-[44px] px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-colors whitespace-nowrap flex items-center gap-2 border ${
+      activeTab === tab
+        ? 'bg-surface-elevated text-ink-primary border-brand/50'
+        : 'bg-transparent text-ink-muted hover:text-ink-primary hover:bg-surface-card border-transparent'
+    }`;
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200 pb-16">
+    <div className="min-h-screen bg-surface-canvas text-ink-primary flex flex-col font-sans selection:bg-brand/25 selection:text-ink-primary pb-16">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-surface-canvas/95 border-b border-border-subtle px-4 sm:px-8 py-2.5 flex items-center justify-between gap-2">
         <button
+          type="button"
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs sm:text-sm font-bold bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-xl active:scale-95"
+          className="min-h-[44px] flex items-center gap-2 text-ink-secondary hover:text-ink-primary transition-colors text-xs sm:text-sm font-bold bg-surface-card border border-border-subtle px-3 rounded-xl active:scale-[0.98]"
         >
-          <span>←</span>
-          <span>Volver al Inicio</span>
+          <ArrowLeftIcon className="h-4 w-4 shrink-0" />
+          <span>Inicio</span>
         </button>
 
-        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => navigate('/')}>
-          <span className="text-xl">🏐</span>
-          <span className="font-black text-sm tracking-tight text-white hidden xs:inline">
+        <button
+          type="button"
+          className="flex items-center gap-2 min-h-[44px] px-2 rounded-xl select-none"
+          onClick={() => navigate('/')}
+        >
+          <BrandLogoMark className="h-6 w-6 shrink-0" />
+          <span className="font-extrabold text-sm tracking-tight text-ink-primary hidden xs:inline">
             Cesto Tracker
           </span>
-          <span className="text-slate-600 hidden xs:inline">|</span>
-          <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+          <span className="text-border-strong hidden xs:inline">|</span>
+          <span className="text-xs font-bold text-brand uppercase tracking-wider">
             Mi Perfil
           </span>
-        </div>
+        </button>
 
         <button
+          type="button"
           onClick={() => {
             startQuickMatch({
               teamName: profile?.favorite_club || undefined,
@@ -187,16 +220,15 @@ export default function ProfileRoute() {
             });
             navigate('/match/new');
           }}
-          className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black px-3.5 py-1.5 rounded-xl text-xs uppercase tracking-wider shadow active:scale-95 flex items-center gap-1.5"
+          className="min-h-[44px] bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold px-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors active:scale-[0.98] flex items-center gap-1.5"
         >
-          <span>⚡</span>
+          <BoltIcon className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">Anotar Partido</span>
         </button>
       </header>
 
       {/* Main Container */}
       <main className="flex-grow w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        {/* Profile Card Header */}
         <ProfileHeader
           profile={profile}
           user={user}
@@ -205,68 +237,72 @@ export default function ProfileRoute() {
         />
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto custom-scrollbar">
+        <div className="flex items-center gap-2 border-b border-border-subtle pb-3 overflow-x-auto custom-scrollbar">
           <button
+            type="button"
             onClick={() => setActiveTab('matches')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'matches'
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-            }`}
+            className={getTabClass('matches')}
           >
-            <span>📋</span>
+            <ClipboardIcon
+              className={`h-4 w-4 shrink-0 ${
+                activeTab === 'matches' ? 'text-brand' : 'text-ink-muted'
+              }`}
+            />
             <span>Mis Planillas</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-800 text-slate-300">
+            <span className="px-1.5 py-0.5 rounded-md text-[11px] font-extrabold bg-surface-card border border-border-subtle text-ink-secondary tabular-nums">
               {games.length}
             </span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('teams')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'teams'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-            }`}
+            className={getTabClass('teams')}
           >
-            <span>👥</span>
+            <UsersIcon
+              className={`h-4 w-4 shrink-0 ${
+                activeTab === 'teams' ? 'text-brand' : 'text-ink-muted'
+              }`}
+            />
             <span>Mis Planteles</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-800 text-slate-300">
+            <span className="px-1.5 py-0.5 rounded-md text-[11px] font-extrabold bg-surface-card border border-border-subtle text-ink-secondary tabular-nums">
               {teamsCount}
             </span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('stats')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'stats'
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-            }`}
+            className={getTabClass('stats')}
           >
-            <span>📊</span>
-            <span>Mis Métricas & Insignias</span>
+            <ChartBarIcon
+              className={`h-4 w-4 shrink-0 ${
+                activeTab === 'stats' ? 'text-brand' : 'text-ink-muted'
+              }`}
+            />
+            <span>Métricas e Insignias</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'settings'
-                ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-            }`}
+            className={getTabClass('settings')}
           >
-            <span>⚙️</span>
-            <span>Ajustes & Cuenta</span>
+            <GearIcon
+              className={`h-4 w-4 shrink-0 ${
+                activeTab === 'settings' ? 'text-brand' : 'text-ink-muted'
+              }`}
+            />
+            <span>Ajustes y Cuenta</span>
           </button>
         </div>
 
         {/* Tab Views Content */}
-        <div className="pt-2">
+        <div>
           <Suspense
             fallback={
               <div className="flex justify-center items-center py-16">
-                <Loader className="h-8 w-8 text-cyan-400" />
+                <Loader className="h-8 w-8 text-brand" />
               </div>
             }
           >
@@ -280,16 +316,11 @@ export default function ProfileRoute() {
             )}
 
             {activeTab === 'teams' && (
-              <ProfileTeamsTab
-                onTeamsCountChange={count => setTeamsCount(count)}
-              />
+              <ProfileTeamsTab onTeamsCountChange={(count) => setTeamsCount(count)} />
             )}
 
             {activeTab === 'stats' && (
-              <ProfileStatsTab
-                games={games}
-                loading={gamesLoading}
-              />
+              <ProfileStatsTab games={games} loading={gamesLoading} />
             )}
 
             {activeTab === 'settings' && (

@@ -9,117 +9,120 @@ import Loader from '@/components/ui/Loader';
 const StatisticsView = lazy(() => import('@/components/views/StatisticsView'));
 
 interface GameMainContentProps {
-    activeTab: AppTab;
-    isReadOnly: boolean;
+  activeTab: AppTab;
+  isReadOnly: boolean;
 
-    // Tally Props
-    onActionSelect: (action: StatAction) => void;
-    handleUndoTally: () => void;
-    handleRedoTally: () => void;
-    gameLog: GameEvent[];
-    tallyRedoLog: GameEvent[];
-    isCorrectionsVisible: boolean;
-    setIsCorrectionsVisible: React.Dispatch<React.SetStateAction<boolean>>;
-    playerNames: Record<string, string>;
-    setEditingEvent: (e: GameEvent | null) => void;
+  // Tally Props
+  onActionSelect: (action: StatAction) => void;
+  handleUndoTally: () => void;
+  handleRedoTally: () => void;
+  gameLog: GameEvent[];
+  tallyRedoLog: GameEvent[];
+  isCorrectionsVisible: boolean;
+  setIsCorrectionsVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  playerNames: Record<string, string>;
+  setEditingEvent: (e: GameEvent | null) => void;
 
-    // Statistics Props
-    setIsShareModalOpen: (v: boolean) => void;
+  // Statistics Props
+  setIsShareModalOpen: (v: boolean) => void;
 }
 
 const GameMainContent: React.FC<GameMainContentProps> = React.memo((props) => {
-    const {
-        activeTab,
-        isReadOnly,
-        playerNames,
-        setIsCorrectionsVisible,
-        setIsShareModalOpen,
-        setEditingEvent
-    } = props;
+  const {
+    activeTab,
+    isReadOnly,
+    playerNames,
+    setIsCorrectionsVisible,
+    setIsShareModalOpen,
+    setEditingEvent,
+  } = props;
 
-    const handleToggleCorrections = useCallback(() => {
-        setIsCorrectionsVisible((prev: boolean) => !prev);
-    }, [setIsCorrectionsVisible]);
+  const handleToggleCorrections = useCallback(() => {
+    setIsCorrectionsVisible((prev: boolean) => !prev);
+  }, [setIsCorrectionsVisible]);
 
-    const handleShareClick = useCallback(() => {
-        setIsShareModalOpen(true);
-    }, [setIsShareModalOpen]);
+  const handleShareClick = useCallback(() => {
+    setIsShareModalOpen(true);
+  }, [setIsShareModalOpen]);
 
-    return (
-        <main className="flex flex-col gap-6">
-            {activeTab === 'tally' && (
-                <div className="flex flex-col gap-6">
-                    {!isReadOnly && <QuickActionsPanel onActionSelect={props.onActionSelect} />}
+  return (
+    <main className="flex flex-col gap-4 sm:gap-5">
+      {activeTab === 'tally' && (
+        <div className="flex flex-col gap-4 sm:gap-5">
+          {!isReadOnly && <QuickActionsPanel onActionSelect={props.onActionSelect} />}
 
-                    {!isReadOnly && (
-                        <div className="flex justify-center gap-3 sm:gap-4">
-                            <button
-                                type="button"
-                                onClick={props.handleUndoTally}
-                                disabled={props.gameLog.length === 0}
-                                aria-label="Deshacer última acción"
-                                title="Deshacer última acción"
-                                className="min-h-[44px] flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none touch-manipulation"
-                            >
-                                <UndoIcon className="h-5 w-5" />
-                                <span>Deshacer</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={props.handleRedoTally}
-                                disabled={props.tallyRedoLog.length === 0}
-                                aria-label="Rehacer acción"
-                                title="Rehacer acción"
-                                className="min-h-[44px] flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-transform hover:scale-105 disabled:bg-slate-600 disabled:opacity-50 disabled:transform-none touch-manipulation"
-                            >
-                                <RedoIcon className="h-5 w-5" />
-                                <span>Rehacer</span>
-                            </button>
-                        </div>
-                    )}
+          {!isReadOnly && (
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={props.handleUndoTally}
+                disabled={props.gameLog.length === 0}
+                aria-label="Deshacer última acción"
+                title="Deshacer última acción"
+                className="min-h-[44px] flex items-center justify-center gap-2 bg-surface-card hover:bg-surface-elevated border border-border-strong text-ink-primary font-semibold text-sm py-2 px-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <UndoIcon className="h-4 w-4 text-ink-secondary" />
+                <span>Deshacer</span>
+              </button>
+              <button
+                type="button"
+                onClick={props.handleRedoTally}
+                disabled={props.tallyRedoLog.length === 0}
+                aria-label="Rehacer acción"
+                title="Rehacer acción"
+                className="min-h-[44px] flex items-center justify-center gap-2 bg-surface-card hover:bg-surface-elevated border border-border-strong text-ink-primary font-semibold text-sm py-2 px-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <RedoIcon className="h-4 w-4 text-ink-secondary" />
+                <span>Rehacer</span>
+              </button>
+            </div>
+          )}
 
-                    <GameLogView
-                        log={props.gameLog}
-                        playerNames={playerNames}
-                        onEventClick={!isReadOnly ? setEditingEvent : undefined}
-                    />
+          <GameLogView
+            log={props.gameLog}
+            playerNames={playerNames}
+            onEventClick={!isReadOnly ? setEditingEvent : undefined}
+          />
 
-                    <div className="bg-slate-800 rounded-lg shadow-lg mb-4">
-                        <button
-                            type="button"
-                            onClick={handleToggleCorrections}
-                            className="w-full flex justify-between items-center text-left p-4 font-bold text-xl text-cyan-400 hover:bg-slate-700/50 transition-colors rounded-lg"
-                        >
-                            <span>Planilla de Jugadores</span>
-                            <ChevronDownIcon className={`h-6 w-6 text-slate-400 transition-transform duration-300 ${props.isCorrectionsVisible ? 'rotate-180' : ''}`} />
-                        </button>
-                        {props.isCorrectionsVisible && (
-                            <div className="transition-all duration-500 ease-in-out overflow-hidden max-h-[8000px] opacity-100">
-                                <div className="p-2.5 sm:p-4 border-t border-slate-700">
-                                    <StatsTallyView />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
+          <div className="bg-surface-card border border-border-subtle rounded-2xl shadow-card mb-4 overflow-hidden">
+            <button
+              type="button"
+              onClick={handleToggleCorrections}
+              aria-expanded={props.isCorrectionsVisible}
+              className="w-full min-h-[52px] flex justify-between items-center text-left px-4 py-3 font-bold text-sm sm:text-base text-ink-primary hover:bg-surface-elevated/60 transition-colors"
+            >
+              <span>Planilla de Jugadoras</span>
+              <ChevronDownIcon
+                className={`h-5 w-5 text-ink-muted transition-transform duration-200 ${
+                  props.isCorrectionsVisible ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {props.isCorrectionsVisible && (
+              <div className="p-3 sm:p-4 border-t border-border-subtle">
+                <StatsTallyView />
+              </div>
             )}
+          </div>
+        </div>
+      )}
 
-            {activeTab === 'statistics' && (
-                <div className="flex flex-col gap-8">
-                    <Suspense
-                        fallback={
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <Loader />
-                                <p className="text-slate-400 mt-3 text-sm">Cargando estadísticas...</p>
-                            </div>
-                        }
-                    >
-                        <StatisticsView onShareClick={handleShareClick} />
-                    </Suspense>
-                </div>
-            )}
-        </main>
-    );
+      {activeTab === 'statistics' && (
+        <div className="flex flex-col gap-6">
+          <Suspense
+            fallback={
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader />
+                <p className="text-ink-muted mt-3 text-sm">Cargando estadísticas...</p>
+              </div>
+            }
+          >
+            <StatisticsView onShareClick={handleShareClick} />
+          </Suspense>
+        </div>
+      )}
+    </main>
+  );
 });
 
 export default GameMainContent;

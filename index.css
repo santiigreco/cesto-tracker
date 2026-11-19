@@ -2,13 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --surface-canvas: #0A0F18;
+  --surface-card: #111827;
+  --surface-elevated: #1A2436;
+  --surface-hover: #243147;
+  --border-subtle: #1F2B3E;
+  --border-strong: #32435C;
+  --ink-primary: #F8FAFC;
+  --ink-secondary: #B8C5D6;
+  --ink-muted: #8494AB;
+  --brand: #22D3EE;
+}
+
 @layer base {
   body {
-    @apply bg-[#0a0f18] text-slate-200;
+    @apply bg-surface-canvas text-ink-primary antialiased;
     font-family: 'Outfit', sans-serif;
   }
 
-  /* Prevenir auto-zoom forzado en iOS Safari en inputs de formulario */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [tabindex] {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-strong focus-visible:ring-offset-2 focus-visible:ring-offset-surface-canvas;
+  }
+
+  /* Prevent forced auto-zoom in iOS Safari on form inputs */
   input, select, textarea {
     font-size: 16px;
   }
@@ -16,6 +38,12 @@
     input, select, textarea {
       font-size: inherit;
     }
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -30,92 +58,26 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #1F2B3E;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #32435C;
 }
 
-.bg-pattern-hoops {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'%3e%3cpath d='M40 32.5c4.142 0 7.5 3.358 7.5 7.5s-3.358 7.5-7.5 7.5-7.5-3.358-7.5-7.5 3.358-7.5 7.5-7.5z' fill='none' stroke='%231e293b' stroke-width='1'/%3e%3c/svg%3e");
-  background-size: 40px 40px;
-}
-
-/* ── Premium Animations ── */
-
-@keyframes text-shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  100% {
-    background-position: 200% 50%;
-  }
-}
-
-@keyframes pulse-slow {
-
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.1;
-  }
-
-  50% {
-    transform: scale(1.1);
-    opacity: 0.2;
-  }
-}
-
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-text-shimmer {
-  animation: text-shimmer 4s linear infinite;
-  background-size: 200% auto;
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 8s ease-in-out infinite;
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-.animate-shimmer {
-  animation: shimmer 1s ease-in-out infinite;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
-}
-
+/* Lightweight UI Motion */
 @keyframes fade-in {
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
   }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out forwards;
 }
 
 @keyframes shake {

@@ -1,4 +1,13 @@
 import React, { useMemo } from 'react';
+import {
+  AwardIcon,
+  BoltIcon,
+  CheckIcon,
+  ClockIcon,
+  StarIcon,
+  TargetIcon,
+  TrophyIcon,
+} from '@/components/icons';
 import { UserSavedGame } from './ProfileMatchesTab';
 
 interface ProfileStatsTabProps {
@@ -8,7 +17,7 @@ interface ProfileStatsTabProps {
 
 interface Badge {
   id: string;
-  emoji: string;
+  Icon: React.FC<{ className?: string }>;
   title: string;
   description: string;
   unlocked: boolean;
@@ -16,8 +25,7 @@ interface Badge {
   maxProgress: number;
 }
 
-export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading }) => {
-  // Compute aggregated sports metrics from user's games
+export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games }) => {
   const aggregatedStats = useMemo(() => {
     let totalPoints = 0;
     let totalGoles = 0;
@@ -25,12 +33,11 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
     let totalFouls = 0;
     let totalOvertimeMatches = 0;
 
-    games.forEach(g => {
+    games.forEach((g) => {
       const myScore = Number(g.settings?.myScore) || 0;
       const oppScore = Number(g.settings?.opponentScore) || 0;
       totalPoints += myScore + oppScore;
 
-      // Extract stats from settings.tallyStats or gameLog if available
       const log = g.settings?.gameLog || [];
       if (Array.isArray(log) && log.length > 0) {
         log.forEach((event: any) => {
@@ -39,7 +46,6 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
           if (event.action === 'faltasPersonales') totalFouls++;
         });
       } else {
-        // Fallback approximation from score
         totalGoles += Math.floor(myScore / 2);
       }
 
@@ -58,14 +64,14 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
     };
   }, [games]);
 
-  // Sports Badges
   const badges: Badge[] = useMemo(() => {
-    const { totalMatches, totalPoints, totalTriples, totalOvertimeMatches } = aggregatedStats;
+    const { totalMatches, totalPoints, totalTriples, totalOvertimeMatches } =
+      aggregatedStats;
 
     return [
       {
         id: 'first-match',
-        emoji: '🥉',
+        Icon: BoltIcon,
         title: 'Primer Silbatazo',
         description: 'Registraste tu primer partido oficial de Cestoball.',
         unlocked: totalMatches >= 1,
@@ -74,7 +80,7 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
       },
       {
         id: 'pro-scorer',
-        emoji: '🥈',
+        Icon: AwardIcon,
         title: 'Planillero Oficial',
         description: 'Alcanzaste 5 planillas técnicas completas.',
         unlocked: totalMatches >= 5,
@@ -83,7 +89,7 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
       },
       {
         id: 'master-desk',
-        emoji: '🥇',
+        Icon: TrophyIcon,
         title: 'Capitán de Mesa',
         description: 'Más de 10 partidos oficiales gestionados.',
         unlocked: totalMatches >= 10,
@@ -92,7 +98,7 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
       },
       {
         id: 'century-club',
-        emoji: '💎',
+        Icon: StarIcon,
         title: 'Mano de Oro',
         description: 'Más de 100 puntos totales registrados en tus partidos.',
         unlocked: totalPoints >= 100,
@@ -101,7 +107,7 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
       },
       {
         id: 'sharpshooter',
-        emoji: '🎯',
+        Icon: TargetIcon,
         title: 'Tridente Letal',
         description: 'Más de 15 lanzamientos triples registrados.',
         unlocked: totalTriples >= 15,
@@ -110,7 +116,7 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
       },
       {
         id: 'clutch-master',
-        emoji: '⏱️',
+        Icon: ClockIcon,
         title: 'Minuto Cero',
         description: 'Al menos un partido definido en tiempo suplementario.',
         unlocked: totalOvertimeMatches >= 1,
@@ -120,102 +126,113 @@ export const ProfileStatsTab: React.FC<ProfileStatsTabProps> = ({ games, loading
     ];
   }, [aggregatedStats]);
 
-  const unlockedCount = badges.filter(b => b.unlocked).length;
+  const unlockedCount = badges.filter((b) => b.unlocked).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-center">
-          <span className="text-3xl font-black text-cyan-400 block leading-tight">
+        <div className="bg-surface-card border border-border-subtle rounded-2xl p-4 text-center">
+          <span className="text-3xl font-black text-brand block leading-tight tabular-nums">
             {aggregatedStats.totalMatches}
           </span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1 block">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mt-1 block">
             Partidos Dirigidos
           </span>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-center">
-          <span className="text-3xl font-black text-emerald-400 block leading-tight">
+        <div className="bg-surface-card border border-border-subtle rounded-2xl p-4 text-center">
+          <span className="text-3xl font-black text-sport-goal-light block leading-tight tabular-nums">
             {aggregatedStats.totalPoints}
           </span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1 block">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mt-1 block">
             Puntos Totales
           </span>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-center">
-          <span className="text-3xl font-black text-purple-400 block leading-tight">
+        <div className="bg-surface-card border border-border-subtle rounded-2xl p-4 text-center">
+          <span className="text-3xl font-black text-sport-triple-light block leading-tight tabular-nums">
             {aggregatedStats.totalTriples}
           </span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1 block">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mt-1 block">
             Triples Anotados
           </span>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-center">
-          <span className="text-3xl font-black text-amber-400 block leading-tight">
+        <div className="bg-surface-card border border-border-subtle rounded-2xl p-4 text-center">
+          <span className="text-3xl font-black text-sport-warn-light block leading-tight tabular-nums">
             {aggregatedStats.totalFouls}
           </span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1 block">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mt-1 block">
             Faltas Personales
           </span>
         </div>
       </div>
 
       {/* Gamification Badges Section */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800 pb-4 mb-6">
+      <div className="bg-surface-card border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-card">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border-subtle pb-4 mb-5">
           <div>
-            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-              <span>🏆</span>
+            <h3 className="text-base font-extrabold text-ink-primary flex items-center gap-2">
+              <TrophyIcon className="h-5 w-5 text-sport-warn-light shrink-0" />
               <span>Insignias de la Comunidad Cestoball</span>
             </h3>
-            <p className="text-slate-400 text-xs mt-0.5">
+            <p className="text-ink-muted text-xs sm:text-sm mt-0.5">
               Reconocimientos desbloqueados a medida que digitalizás partidos y planillas.
             </p>
           </div>
 
-          <span className="px-3 py-1 bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 text-xs font-black uppercase rounded-full">
+          <span className="px-3 py-1 bg-brand/10 border border-brand/30 text-brand text-xs font-extrabold uppercase rounded-lg tabular-nums shrink-0">
             {unlockedCount} de {badges.length} Desbloqueadas
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {badges.map(badge => (
+          {badges.map(({ Icon, ...badge }) => (
             <div
               key={badge.id}
-              className={`p-4 rounded-xl border transition-all ${
+              className={`p-4 rounded-xl border transition-colors ${
                 badge.unlocked
-                  ? 'bg-slate-800/90 border-cyan-500/40 shadow-md'
-                  : 'bg-slate-900/40 border-slate-800 opacity-60'
+                  ? 'bg-surface-elevated border-brand/40'
+                  : 'bg-surface-canvas/50 border-border-subtle opacity-65'
               }`}
             >
               <div className="flex items-start gap-3">
-                <span className="text-3xl shrink-0 filter drop-shadow">{badge.emoji}</span>
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
+                    badge.unlocked
+                      ? 'bg-brand/15 border-brand/35 text-brand'
+                      : 'bg-surface-card border-border-subtle text-ink-muted'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
                 <div className="min-w-0 flex-grow">
-                  <div className="flex items-center justify-between gap-1">
-                    <h4 className="font-bold text-sm text-white truncate">{badge.title}</h4>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <h4 className="font-bold text-sm text-ink-primary truncate">
+                      {badge.title}
+                    </h4>
                     {badge.unlocked && (
-                      <span className="text-[10px] bg-emerald-950 border border-emerald-700/60 text-emerald-400 font-extrabold px-1.5 py-0.5 rounded">
-                        ✓
+                      <span className="inline-flex items-center justify-center w-5 h-5 bg-sport-goal/20 border border-sport-goal/40 text-sport-goal-light rounded-md shrink-0">
+                        <CheckIcon className="h-3 w-3" />
                       </span>
                     )}
                   </div>
-                  <p className="text-slate-400 text-xs mt-1 leading-snug">{badge.description}</p>
+                  <p className="text-ink-muted text-xs mt-1 leading-snug">
+                    {badge.description}
+                  </p>
 
-                  {/* Progress bar */}
                   <div className="mt-3">
-                    <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                    <div className="flex justify-between text-[11px] font-semibold text-ink-muted mb-1 tabular-nums">
                       <span>Progreso</span>
                       <span>
                         {badge.progress} / {badge.maxProgress}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-surface-canvas rounded-full h-1.5 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          badge.unlocked ? 'bg-gradient-to-r from-cyan-400 to-emerald-400' : 'bg-slate-700'
+                          badge.unlocked ? 'bg-brand' : 'bg-border-strong'
                         }`}
                         style={{ width: `${(badge.progress / badge.maxProgress) * 100}%` }}
                       />

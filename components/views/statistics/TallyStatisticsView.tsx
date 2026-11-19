@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GamePeriod, TallyStats, TallyStatsPeriod } from '@/types';
+import { ChartBarIcon } from '@/components/icons';
 import { TopPerformerCategory, TopPerformerItem } from './StatWidgets';
 
 export type TallySortableKey = keyof (TallyStatsPeriod & {
@@ -53,11 +54,11 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
   const visibleFilters = useMemo<Array<'all' | GamePeriod>>(() => {
     const hasPeriodStats = (period: GamePeriod) =>
-      Object.values(tallyStats).some(playerTally => {
+      Object.values(tallyStats).some((playerTally) => {
         const ps = playerTally?.[period];
         if (!ps) return false;
         return (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).some(
-          key => (ps[key] || 0) > 0
+          (key) => (ps[key] || 0) > 0
         );
       });
 
@@ -66,8 +67,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
       currentPeriod === 'Second Overtime' ||
       hasPeriodStats('First Overtime');
     const showSecondOt =
-      currentPeriod === 'Second Overtime' ||
-      hasPeriodStats('Second Overtime');
+      currentPeriod === 'Second Overtime' || hasPeriodStats('Second Overtime');
 
     const filters: Array<'all' | GamePeriod> = ['all', 'First Half', 'Second Half'];
     if (showFirstOt) filters.push('First Overtime');
@@ -87,7 +87,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
       if (tallyPeriodFilter === 'all') {
         Object.values(playerTally).forEach((periodStats: TallyStatsPeriod) => {
-          (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach(key => {
+          (Object.keys(stats) as Array<keyof TallyStatsPeriod>).forEach((key) => {
             stats[key] += periodStats[key] || 0;
           });
         });
@@ -97,7 +97,8 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
       const totalShots = stats.goles + stats.triples + stats.fallos;
       const totalRebounds = stats.reboteOfensivo + stats.reboteDefensivo;
-      const golPercentage = totalShots > 0 ? ((stats.goles + stats.triples) / totalShots) * 100 : 0;
+      const golPercentage =
+        totalShots > 0 ? ((stats.goles + stats.triples) / totalShots) * 100 : 0;
       const points = stats.goles * 2 + stats.triples * 3;
 
       return { playerNumber, ...stats, totalRebounds, golPercentage, totalShots, points };
@@ -105,7 +106,7 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
   }, [tallyStats, tallyPeriodFilter]);
 
   const sortedAggregatedStats = useMemo(() => {
-    let sortableItems = [...aggregatedStats];
+    const sortableItems = [...aggregatedStats];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         if (sortConfig.key === 'playerNumber') {
@@ -138,15 +139,21 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
   const getSortIndicator = (key: TallySortableKey) => {
     if (isSharing) return null;
-    if (!sortConfig || sortConfig.key !== key) return <span className="text-slate-500 opacity-50">↕</span>;
-    return <span className="text-cyan-400">{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
+    if (!sortConfig || sortConfig.key !== key) {
+      return <span className="text-ink-muted/50 text-[10px]">↕</span>;
+    }
+    return (
+      <span className="text-brand text-[10px]">
+        {sortConfig.direction === 'ascending' ? '▲' : '▼'}
+      </span>
+    );
   };
 
   const teamTotals = useMemo(() => {
     return aggregatedStats.reduce(
       (acc, playerStats) => {
         if (playerStats.playerNumber !== 'Equipo') {
-          (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).forEach(key => {
+          (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).forEach((key) => {
             acc[key] += playerStats[key];
           });
           acc.points += playerStats.points;
@@ -157,8 +164,12 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
     );
   }, [aggregatedStats]);
 
+  const teamMadeShots = teamTotals.goles + teamTotals.triples;
+  const teamTotalShots = teamMadeShots + teamTotals.fallos;
+  const teamEfficiency = teamTotalShots > 0 ? (teamMadeShots / teamTotalShots) * 100 : 0;
+
   const topPerformers = useMemo(() => {
-    const playersOnly = aggregatedStats.filter(p => p.playerNumber !== 'Equipo');
+    const playersOnly = aggregatedStats.filter((p) => p.playerNumber !== 'Equipo');
     const sortedByPoints = [...playersOnly].sort((a, b) => b.points - a.points);
     const sortedByRebounds = [...playersOnly].sort((a, b) => b.totalRebounds - a.totalRebounds);
     const sortedByAsistencias = [...playersOnly].sort((a, b) => b.asistencias - a.asistencias);
@@ -169,29 +180,31 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
     };
   }, [aggregatedStats]);
 
-  const hasData = aggregatedStats.some(p =>
+  const hasData = aggregatedStats.some((p) =>
     (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).some(
-      key => (p[key] || 0) > 0
+      (key) => (p[key] || 0) > 0
     )
   );
 
   const activeRows = useMemo(
     () =>
-      sortedAggregatedStats.filter(p =>
+      sortedAggregatedStats.filter((p) =>
         (Object.keys(initialTallyStatsPeriod) as Array<keyof TallyStatsPeriod>).some(
-          key => (p[key] || 0) > 0
+          (key) => (p[key] || 0) > 0
         )
       ),
     [sortedAggregatedStats]
   );
 
-  const hasInactiveRows = activeRows.length > 0 && activeRows.length < sortedAggregatedStats.length;
-  const displayedRows = hasInactiveRows && (isSharing || !showAllPlayers) ? activeRows : sortedAggregatedStats;
+  const hasInactiveRows =
+    activeRows.length > 0 && activeRows.length < sortedAggregatedStats.length;
+  const displayedRows =
+    hasInactiveRows && (isSharing || !showAllPlayers) ? activeRows : sortedAggregatedStats;
 
   const periodFilterBar = !isSharing ? (
-    <div className="w-full bg-slate-800 p-1.5 rounded-xl shadow-lg">
-      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-        {visibleFilters.map(filterKey => {
+    <div className="w-full bg-surface-card border border-border-subtle p-1 rounded-xl shadow-card">
+      <div className="flex flex-wrap justify-center gap-1">
+        {visibleFilters.map((filterKey) => {
           const isActive = tallyPeriodFilter === filterKey;
           return (
             <button
@@ -199,8 +212,10 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
               type="button"
               aria-pressed={isActive}
               onClick={() => setTallyPeriodFilter(filterKey)}
-              className={`min-h-[44px] flex-1 min-w-[78px] sm:flex-none px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                isActive ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-600/50'
+              className={`min-h-[44px] flex-1 min-w-[74px] sm:flex-none px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                isActive
+                  ? 'bg-brand text-ink-inverse font-extrabold'
+                  : 'text-ink-secondary hover:bg-surface-elevated hover:text-ink-primary'
               }`}
             >
               {periodTranslations[filterKey]}
@@ -213,18 +228,25 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
 
   if (!hasData && !isSharing) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-5">
         {periodFilterBar}
-        <div className="bg-slate-800 p-8 rounded-lg shadow-lg text-center">
-          <h2 className="text-3xl font-bold text-cyan-400 mb-2">Estadísticas</h2>
-          <p className="text-slate-400">Registra algunos datos para ver las estadísticas de los jugadores aquí.</p>
+        <div className="bg-surface-card border border-border-subtle p-8 rounded-2xl shadow-card text-center flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-surface-elevated border border-border-strong flex items-center justify-center text-brand mb-1">
+            <ChartBarIcon className="h-6 w-6" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-extrabold text-ink-primary">
+            Todavía no hay estadísticas
+          </h2>
+          <p className="text-ink-muted text-sm max-w-sm">
+            Registrá jugadas en la planilla para ver el rendimiento de tu equipo acá.
+          </p>
         </div>
       </div>
     );
   }
 
   const tableHeaders: { key: TallySortableKey; label: string; title: string }[] = [
-    { key: 'playerNumber', label: 'Jugador', title: 'Jugador' },
+    { key: 'playerNumber', label: 'Jugadora', title: 'Jugadora' },
     { key: 'points', label: 'Pts', title: 'Puntos Totales' },
     { key: 'goles', label: 'G', title: 'Goles (2 pts)' },
     { key: 'triples', label: '3P', title: 'Triples (3 pts)' },
@@ -239,63 +261,115 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
     { key: 'golesContra', label: 'GC', title: 'Goles en Contra' },
   ];
 
+  const renderMetricCell = (val: number, extraClass = 'text-ink-primary') => (
+    <span className={val === 0 ? 'text-ink-muted/50' : extraClass}>{val}</span>
+  );
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
       {periodFilterBar}
 
       {/* Team Statistics Section */}
-      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-        <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Estadísticas del Equipo</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-center">
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg border border-slate-600">
-            <p className="text-3xl sm:text-4xl font-extrabold text-cyan-400">{teamTotals.points}</p>
-            <p className="text-xs sm:text-sm text-slate-400 uppercase tracking-wide">Puntos Totales</p>
+      <section className="bg-surface-card border border-border-subtle p-4 sm:p-5 rounded-2xl shadow-card space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+            Resumen del Equipo
+          </h3>
+          <span className="text-xs font-semibold text-ink-muted tabular-nums">
+            {periodTranslations[tallyPeriodFilter]}
+          </span>
+        </div>
+
+        {/* Hero KPIs: Points & Efficiency */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3.5 sm:p-4 bg-surface-elevated border border-border-strong rounded-xl flex flex-col items-center text-center">
+            <span className="text-3xl sm:text-4xl font-black text-brand leading-none tabular-nums">
+              {teamTotals.points}
+            </span>
+            <span className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider mt-1.5">
+              Puntos Totales
+            </span>
           </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-green-400">{teamTotals.goles}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Goles</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-blue-400">{teamTotals.triples}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Triples</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-red-400">{teamTotals.fallos}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Fallos</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.recuperos}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Recuperos</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.perdidas}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Pérdidas</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-white">
-              {teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}
-            </p>
-            <p className="text-xs sm:text-sm text-slate-400">Rebotes</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.asistencias}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Asistencias</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.faltasPersonales}</p>
-            <p className="text-xs sm:text-sm text-slate-400">Faltas</p>
-          </div>
-          <div className="p-2 sm:p-4 bg-slate-700/50 rounded-lg">
-            <p className="text-2xl sm:text-3xl font-bold text-white">{teamTotals.golesContra}</p>
-            <p className="text-xs sm:text-sm text-slate-400">G. en Contra</p>
+
+          <div className="p-3.5 sm:p-4 bg-surface-elevated border border-border-strong rounded-xl flex flex-col items-center text-center">
+            <span className="text-3xl sm:text-4xl font-black text-sport-goal-light leading-none tabular-nums">
+              {teamEfficiency.toFixed(0)}%
+            </span>
+            <span className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider mt-1.5 tabular-nums">
+              Efectividad ({teamMadeShots}/{teamTotalShots})
+            </span>
           </div>
         </div>
-      </div>
+
+        {/* Shooting Breakdown */}
+        <div className="grid grid-cols-3 gap-2.5 text-center">
+          <div className="p-3 bg-sport-goal/10 border border-sport-goal/25 rounded-xl">
+            <p className="text-2xl font-extrabold text-sport-goal-light leading-none tabular-nums">
+              {teamTotals.goles}
+            </p>
+            <p className="text-[11px] font-semibold text-ink-secondary mt-1">Goles</p>
+          </div>
+          <div className="p-3 bg-sport-triple/10 border border-sport-triple/25 rounded-xl">
+            <p className="text-2xl font-extrabold text-sport-triple-light leading-none tabular-nums">
+              {teamTotals.triples}
+            </p>
+            <p className="text-[11px] font-semibold text-ink-secondary mt-1">Triples</p>
+          </div>
+          <div className="p-3 bg-sport-miss/10 border border-sport-miss/25 rounded-xl">
+            <p className="text-2xl font-extrabold text-sport-miss-light leading-none tabular-nums">
+              {teamTotals.fallos}
+            </p>
+            <p className="text-[11px] font-semibold text-ink-secondary mt-1">Fallos</p>
+          </div>
+        </div>
+
+        {/* Technical & Foul Breakdown */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+          <div className="p-2.5 bg-surface-elevated/60 border border-border-subtle rounded-xl">
+            <p className="text-lg sm:text-xl font-extrabold text-ink-primary leading-none tabular-nums">
+              {teamTotals.recuperos}
+            </p>
+            <p className="text-[11px] text-ink-muted font-medium mt-1">Recuperos</p>
+          </div>
+          <div className="p-2.5 bg-surface-elevated/60 border border-border-subtle rounded-xl">
+            <p className="text-lg sm:text-xl font-extrabold text-sport-miss-light leading-none tabular-nums">
+              {teamTotals.perdidas}
+            </p>
+            <p className="text-[11px] text-ink-muted font-medium mt-1">Pérdidas</p>
+          </div>
+          <div className="p-2.5 bg-surface-elevated/60 border border-border-subtle rounded-xl">
+            <p className="text-lg sm:text-xl font-extrabold text-ink-primary leading-none tabular-nums">
+              {teamTotals.reboteOfensivo + teamTotals.reboteDefensivo}
+            </p>
+            <p className="text-[11px] text-ink-muted font-medium mt-1">Rebotes</p>
+          </div>
+          <div className="p-2.5 bg-surface-elevated/60 border border-border-subtle rounded-xl">
+            <p className="text-lg sm:text-xl font-extrabold text-ink-primary leading-none tabular-nums">
+              {teamTotals.asistencias}
+            </p>
+            <p className="text-[11px] text-ink-muted font-medium mt-1">Asist.</p>
+          </div>
+          <div className="p-2.5 bg-surface-elevated/60 border border-border-subtle rounded-xl">
+            <p className="text-lg sm:text-xl font-extrabold text-sport-warn-light leading-none tabular-nums">
+              {teamTotals.faltasPersonales}
+            </p>
+            <p className="text-[11px] text-ink-muted font-medium mt-1">Faltas</p>
+          </div>
+          <div className="p-2.5 bg-surface-elevated/60 border border-border-subtle rounded-xl">
+            <p className="text-lg sm:text-xl font-extrabold text-ink-primary leading-none tabular-nums">
+              {teamTotals.golesContra}
+            </p>
+            <p className="text-[11px] text-ink-muted font-medium mt-1">G. Contra</p>
+          </div>
+        </div>
+      </section>
 
       {/* Top Performers Section */}
-      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-        <h3 className="text-3xl font-bold text-cyan-400 mb-6 text-center">Jugadores Destacados</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section className="bg-surface-card border border-border-subtle p-4 sm:p-5 rounded-2xl shadow-card">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted mb-3">
+          Jugadoras Destacadas
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <TopPerformerCategory
             title="Puntos"
             performers={topPerformers.points}
@@ -315,17 +389,19 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
             playerNames={playerNames}
           />
         </div>
-      </div>
+      </section>
 
       {/* Performance Table Section */}
-      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400">Rendimiento por Jugador</h3>
+      <section className="bg-surface-card border border-border-subtle p-4 sm:p-5 rounded-2xl shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+            Rendimiento por Jugadora
+          </h3>
           {!isSharing && hasInactiveRows && (
             <button
               type="button"
-              onClick={() => setShowAllPlayers(prev => !prev)}
-              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-bold transition-colors"
+              onClick={() => setShowAllPlayers((prev) => !prev)}
+              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-surface-elevated hover:bg-surface-hover text-ink-secondary hover:text-ink-primary border border-border-strong text-xs font-bold transition-colors tabular-nums"
             >
               {showAllPlayers
                 ? `Solo activas (${activeRows.length})`
@@ -333,58 +409,102 @@ export const TallyStatisticsView: React.FC<TallyStatisticsViewProps> = ({
             </button>
           )}
         </div>
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full min-w-[700px] text-left table-auto">
+
+        <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
+          <table className="w-full min-w-[700px] text-left table-auto border-collapse">
             <thead>
-              <tr className="border-b-2 border-slate-600">
-                {tableHeaders.map(({ key, label, title }) => (
-                  <th
-                    key={key}
-                    title={title}
-                    className={`p-2 text-sm tracking-wider font-semibold ${
-                      key === 'playerNumber'
-                        ? 'text-left sticky left-0 z-20 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] min-w-[110px]'
-                        : 'text-center'
-                    }`}
-                  >
-                    <button
-                      onClick={() => requestSort(key)}
-                      className={`w-full font-semibold flex items-center gap-2 hover:text-cyan-300 transition-colors disabled:cursor-default disabled:hover:text-inherit ${
-                        key === 'playerNumber' ? 'justify-start' : 'justify-center'
-                      }`}
-                      disabled={isSharing}
+              <tr className="border-b border-border-strong">
+                {tableHeaders.map(({ key, label, title }) => {
+                  const isSorted = sortConfig?.key === key;
+                  return (
+                    <th
+                      key={key}
+                      title={title}
+                      className={`py-2.5 px-2 text-[11px] uppercase tracking-wider font-bold ${
+                        key === 'playerNumber'
+                          ? 'text-left sticky left-0 z-20 bg-surface-card border-r border-border-subtle min-w-[120px]'
+                          : 'text-center'
+                      } ${isSorted ? 'text-brand' : 'text-ink-muted'}`}
                     >
-                      {label} {getSortIndicator(key)}
-                    </button>
-                  </th>
-                ))}
+                      <button
+                        type="button"
+                        onClick={() => requestSort(key)}
+                        className={`w-full min-h-[32px] font-bold flex items-center gap-1 hover:text-ink-primary transition-colors disabled:cursor-default disabled:hover:text-inherit ${
+                          key === 'playerNumber' ? 'justify-start' : 'justify-center'
+                        }`}
+                        disabled={isSharing}
+                      >
+                        <span>{label}</span>
+                        {getSortIndicator(key)}
+                      </button>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
-              {displayedRows.map(player => (
-                <tr key={player.playerNumber} className="border-b border-slate-700 hover:bg-slate-700/50">
-                  <td className="p-2 font-mono text-cyan-300 font-bold sticky left-0 z-10 bg-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] truncate max-w-[120px]">
-                    {playerNames[player.playerNumber] ||
-                      (player.playerNumber === 'Equipo' ? 'Equipo' : `#${player.playerNumber}`)}
-                  </td>
-                  <td className="p-2 font-mono text-cyan-400 font-bold text-center">{player.points}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.goles}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.triples}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.totalShots}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.golPercentage.toFixed(0)}%</td>
-                  <td className="p-2 font-mono text-white text-center">{player.recuperos}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.perdidas}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.reboteOfensivo}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.reboteDefensivo}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.asistencias}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.faltasPersonales}</td>
-                  <td className="p-2 font-mono text-white text-center">{player.golesContra}</td>
-                </tr>
-              ))}
+              {displayedRows.map((player) => {
+                const foulColor =
+                  player.faltasPersonales >= 6
+                    ? 'text-sport-miss-light font-extrabold'
+                    : player.faltasPersonales === 5
+                      ? 'text-sport-warn-light font-extrabold'
+                      : undefined;
+
+                return (
+                  <tr
+                    key={player.playerNumber}
+                    className="border-b border-border-subtle/70 hover:bg-surface-elevated/45 transition-colors text-sm"
+                  >
+                    <td className="py-2.5 px-2 font-bold text-ink-primary sticky left-0 z-10 bg-surface-card border-r border-border-subtle truncate max-w-[130px] tabular-nums">
+                      {playerNames[player.playerNumber] ||
+                        (player.playerNumber === 'Equipo' ? 'Equipo' : `#${player.playerNumber}`)}
+                    </td>
+                    <td className="py-2.5 px-2 font-extrabold text-center tabular-nums">
+                      {renderMetricCell(player.points, 'text-brand')}
+                    </td>
+                    <td className="py-2.5 px-2 font-semibold text-center tabular-nums">
+                      {renderMetricCell(player.goles, 'text-sport-goal-light')}
+                    </td>
+                    <td className="py-2.5 px-2 font-semibold text-center tabular-nums">
+                      {renderMetricCell(player.triples, 'text-sport-triple-light')}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.totalShots)}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      <span className={player.totalShots === 0 ? 'text-ink-muted/50' : 'text-ink-secondary'}>
+                        {player.golPercentage.toFixed(0)}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.recuperos)}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.perdidas, 'text-sport-miss-light')}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.reboteOfensivo)}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.reboteDefensivo)}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.asistencias)}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.faltasPersonales, foulColor)}
+                    </td>
+                    <td className="py-2.5 px-2 font-medium text-center tabular-nums">
+                      {renderMetricCell(player.golesContra)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

@@ -21,7 +21,7 @@ const ScrollToTop: React.FC = () => {
 };
 
 const RouteLoader = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
+  <div className="flex flex-col items-center justify-center min-h-screen bg-surface-canvas">
     <Loader />
   </div>
 );

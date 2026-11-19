@@ -1,5 +1,11 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { JerseySvgIcon, ChevronDownIcon } from '../icons';
+import {
+  ArrowRightIcon,
+  ChevronDownIcon,
+  JerseySvgIcon,
+  ShieldIcon,
+  TrophyIcon,
+} from '../icons';
 import { Settings, GameMode, RosterPlayer } from '../../types';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -150,7 +156,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
     const handleStart = () => {
         if (selectedPlayers.size < 1) {
-            alert("Debes seleccionar al menos un jugador.");
+            alert("Debés seleccionar al menos una jugadora.");
             return;
         }
 
@@ -196,58 +202,46 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     const isCorrection = Boolean(isEditMode);
 
     return (
-        <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center justify-center p-4 sm:p-6 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 relative">
+        <div className="min-h-screen bg-surface-canvas text-ink-primary flex flex-col items-center justify-center p-4 sm:p-6 font-sans overflow-x-hidden selection:bg-brand/25 selection:text-ink-primary">
 
-            {/* ── Background Glows ── */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full animate-pulse-slow opacity-50"></div>
-            </div>
-
-            <div className="w-full max-w-xl z-10 space-y-6">
+            <div className="w-full max-w-xl space-y-6">
                 {/* ── Header ── */}
                 <div className="text-center space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-2">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                        </span>
-                        Configuración del Encuentro
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-brand/10 border border-brand/25 text-brand text-[11px] font-extrabold uppercase tracking-widest mb-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand" />
+                        <span>Configuración del Encuentro</span>
                     </div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                    <h1 className="text-3xl sm:text-4xl font-black text-ink-primary tracking-tight leading-tight">
                         {isCorrection ? 'Editar Partido' : 'Nuevo Partido'}
                     </h1>
-                    <p className="text-slate-500 text-sm sm:text-base font-medium">
-                        Define los equipos y jugadores para comenzar.
+                    <p className="text-ink-muted text-sm sm:text-base font-medium">
+                        Definí los equipos y jugadoras para empezar.
                     </p>
                 </div>
 
                 {/* ── Main Setup Card ── */}
-                <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-slate-700/50 p-6 sm:p-8 shadow-2xl space-y-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
-                        <JerseySvgIcon className="w-32 h-32 rotate-12" />
-                    </div>
-
+                <div className="bg-surface-card rounded-2xl border border-border-subtle p-5 sm:p-7 shadow-card space-y-6 relative">
                     {/* ── Advanced Settings Trigger ── */}
                     <button
                         type="button"
                         onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                        className="absolute top-6 right-6 p-2 rounded-xl bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all border border-slate-700/50 z-20"
-                        title="Opciones Avanzadas"
-                        aria-label="Opciones Avanzadas"
+                        className="absolute top-4 right-4 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-surface-elevated text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors border border-border-strong z-20"
+                        title="Opciones avanzadas"
+                        aria-label="Opciones avanzadas"
+                        aria-expanded={isAdvancedOpen}
                     >
-                        <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* ── Advanced Settings Panel ── */}
                     {isAdvancedOpen && (
-                        <div className="space-y-6 animate-fade-in bg-slate-800/30 p-5 rounded-2xl border border-slate-700/30 mb-8 mt-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Mano Caliente</label>
-                                    <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-700/50 space-y-4">
+                        <div className="space-y-4 animate-fade-in bg-surface-elevated/50 p-4 rounded-xl border border-border-subtle mt-10">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Mano Caliente</label>
+                                    <div className="bg-surface-card p-3.5 rounded-xl border border-border-subtle space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-300">Activar detección</span>
+                                            <span className="text-xs font-semibold text-ink-secondary">Activar detección</span>
                                             <ToggleSwitch
                                                 isEnabled={settings.isManoCalienteEnabled}
                                                 onToggle={() => setSettings(prev => ({ ...prev, isManoCalienteEnabled: !prev.isManoCalienteEnabled }))}
@@ -255,23 +249,23 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                         </div>
                                         {settings.isManoCalienteEnabled && (
                                             <div className="flex items-center justify-between gap-4 animate-fade-in">
-                                                <span className="text-[10px] font-medium text-slate-400">Umbral (goles)</span>
+                                                <span className="text-xs font-medium text-ink-muted">Umbral (goles)</span>
                                                 <input
                                                     type="number"
                                                     value={settings.manoCalienteThreshold}
                                                     onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
-                                                    className="w-16 bg-slate-800 text-center text-cyan-400 font-black rounded-lg py-1 border border-slate-700 focus:border-cyan-500 outline-none"
+                                                    className="w-16 bg-surface-elevated text-center text-brand font-extrabold rounded-lg py-1 border border-border-strong focus:border-brand text-base sm:text-sm tabular-nums"
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Mano Fría</label>
-                                    <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-700/50 space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Mano Fría</label>
+                                    <div className="bg-surface-card p-3.5 rounded-xl border border-border-subtle space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-300">Activar detección</span>
+                                            <span className="text-xs font-semibold text-ink-secondary">Activar detección</span>
                                             <ToggleSwitch
                                                 isEnabled={settings.isManoFriaEnabled}
                                                 onToggle={() => setSettings(prev => ({ ...prev, isManoFriaEnabled: !prev.isManoFriaEnabled }))}
@@ -279,12 +273,12 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                                         </div>
                                         {settings.isManoFriaEnabled && (
                                             <div className="flex items-center justify-between gap-4 animate-fade-in">
-                                                <span className="text-[10px] font-medium text-slate-400">Umbral (fallos)</span>
+                                                <span className="text-xs font-medium text-ink-muted">Umbral (fallos)</span>
                                                 <input
                                                     type="number"
                                                     value={settings.manoFriaThreshold}
                                                     onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
-                                                    className="w-16 bg-slate-800 text-center text-blue-400 font-black rounded-lg py-1 border border-slate-700 focus:border-blue-500 outline-none"
+                                                    className="w-16 bg-surface-elevated text-center text-sport-triple-light font-extrabold rounded-lg py-1 border border-border-strong focus:border-sport-triple-light text-base sm:text-sm tabular-nums"
                                                 />
                                             </div>
                                         )}
@@ -295,106 +289,114 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                     )}
 
                     {/* ── Teams Selection ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Tu Equipo</label>
-                            <div className="relative group/field">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsTeamSelectorOpen(true)}
-                                    className="w-full flex items-center justify-between gap-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white rounded-2xl px-4 sm:px-5 py-4 transition-all group-hover/field:border-cyan-500/50"
-                                >
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        {settings.myTeam ? (
-                                            <TeamLogo teamName={settings.myTeam} className="w-8 h-8 shrink-0" />
-                                        ) : (
-                                            <div className="p-2 bg-cyan-900/30 rounded-xl text-cyan-400 shrink-0">
-                                                <JerseySvgIcon className="h-5 w-5" />
-                                            </div>
-                                        )}
-                                        <span className="font-bold text-sm sm:text-base truncate">{settings.myTeam || 'Selecciona equipo'}</span>
-                                    </div>
-                                    <ChevronDownIcon className="h-4 w-4 text-slate-500 shrink-0" />
-                                </button>
-                            </div>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!isAdvancedOpen ? 'pt-6' : ''}`}>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Tu Equipo</label>
+                            <button
+                                type="button"
+                                onClick={() => setIsTeamSelectorOpen(true)}
+                                className="w-full min-h-[56px] flex items-center justify-between gap-2 bg-surface-elevated hover:bg-surface-hover border border-border-strong hover:border-brand/50 text-ink-primary rounded-xl px-4 py-3 transition-colors"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {settings.myTeam ? (
+                                        <TeamLogo teamName={settings.myTeam} className="w-8 h-8 shrink-0" />
+                                    ) : (
+                                        <div className="p-2 bg-brand/15 border border-brand/25 rounded-lg text-brand shrink-0">
+                                            <JerseySvgIcon className="h-4 w-4" />
+                                        </div>
+                                    )}
+                                    <span className={`font-bold text-sm sm:text-base truncate ${settings.myTeam ? 'text-ink-primary' : 'text-ink-muted'}`}>
+                                        {settings.myTeam || 'Seleccioná equipo'}
+                                    </span>
+                                </div>
+                                <ChevronDownIcon className="h-4 w-4 text-ink-muted shrink-0" />
+                            </button>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Rival</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Rival</label>
                             <button
                                 type="button"
                                 onClick={() => setIsRivalSelectorOpen(true)}
-                                className="w-full flex items-center justify-between gap-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white rounded-2xl px-4 sm:px-5 py-4 transition-all group-hover/field:border-cyan-500/50"
+                                className="w-full min-h-[56px] flex items-center justify-between gap-2 bg-surface-elevated hover:bg-surface-hover border border-border-strong hover:border-brand/50 text-ink-primary rounded-xl px-4 py-3 transition-colors"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <div className="p-2 bg-slate-900/80 rounded-xl text-slate-500 shrink-0">
-                                        <span className="text-xl">🛡️</span>
-                                    </div>
-                                    <span className="font-bold text-sm sm:text-base truncate">{settings.gameName || 'Nombre del Rival'}</span>
+                                    {settings.gameName ? (
+                                        <TeamLogo teamName={settings.gameName} className="w-8 h-8 shrink-0" />
+                                    ) : (
+                                        <div className="p-2 bg-surface-card border border-border-subtle rounded-lg text-ink-muted shrink-0">
+                                            <ShieldIcon className="h-4 w-4" />
+                                        </div>
+                                    )}
+                                    <span className={`font-bold text-sm sm:text-base truncate ${settings.gameName ? 'text-ink-primary' : 'text-ink-muted'}`}>
+                                        {settings.gameName || 'Nombre del rival'}
+                                    </span>
                                 </div>
-                                <ChevronDownIcon className="h-4 w-4 text-slate-500 shrink-0" />
+                                <ChevronDownIcon className="h-4 w-4 text-ink-muted shrink-0" />
                             </button>
                         </div>
                     </div>
 
                     {/* ── Tournament Selection ── */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Competencia / Torneo</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Competencia / Torneo</label>
                         <button
                             type="button"
                             onClick={() => setIsTournamentSelectorOpen(true)}
-                            className="w-full flex items-center justify-between gap-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white rounded-2xl px-4 sm:px-5 py-4 transition-all group-hover:border-cyan-500/50"
+                            className="w-full min-h-[52px] flex items-center justify-between gap-2 bg-surface-elevated hover:bg-surface-hover border border-border-strong hover:border-brand/50 text-ink-primary rounded-xl px-4 py-3 transition-colors"
                         >
                             <div className="flex items-center gap-3 min-w-0">
-                                <span className="text-xl shrink-0">🏆</span>
+                                <TrophyIcon className="h-5 w-5 text-sport-warn-light shrink-0" />
                                 <span className="font-bold text-sm sm:text-base truncate">{settings.tournamentName || 'Todos'}</span>
                             </div>
-                            <ChevronDownIcon className="h-4 w-4 text-slate-500 shrink-0" />
+                            <ChevronDownIcon className="h-4 w-4 text-ink-muted shrink-0" />
                         </button>
                     </div>
 
                     {/* ── Category and Date ── */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Categoría</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Categoría</label>
                             <div className="relative">
                                 <select
                                     value={settings.categoryName || ''}
                                     onChange={(e) => setSettings({ ...settings, categoryName: e.target.value })}
-                                    className="w-full bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all focus:border-cyan-500/50 outline-none appearance-none font-bold text-sm sm:text-base cursor-pointer"
+                                    className="w-full min-h-[52px] bg-surface-elevated hover:bg-surface-hover border border-border-strong focus:border-brand text-ink-primary rounded-xl px-4 py-3 transition-colors appearance-none font-bold text-base sm:text-sm cursor-pointer"
                                 >
                                     <option value="" disabled>Seleccionar Categoría</option>
                                     {CATEGORIES_CONFIG.map(cat => (
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
-                                <ChevronDownIcon className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                                <ChevronDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted pointer-events-none" />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Fecha</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Fecha</label>
                             <input
                                 type="date"
                                 value={settings.gameDate || ''}
                                 onChange={(e) => setSettings({ ...settings, gameDate: e.target.value })}
-                                className="w-full bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white rounded-2xl px-5 py-4 transition-all focus:border-cyan-500/50 outline-none font-bold text-sm sm:text-base [color-scheme:dark]"
+                                className="w-full min-h-[52px] bg-surface-elevated hover:bg-surface-hover border border-border-strong focus:border-brand text-ink-primary rounded-xl px-4 py-3 transition-colors font-bold text-base sm:text-sm tabular-nums [color-scheme:dark]"
                             />
                         </div>
                     </div>
 
                     {/* ── Start Button ── */}
-                    <div className="pt-6">
+                    <div className="pt-2 space-y-2">
                         <button
+                            type="button"
                             onClick={handleStart}
-                            className="w-full py-4 sm:py-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-sm sm:text-base uppercase tracking-[0.2em] shadow-xl shadow-cyan-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 group/start"
+                            className="w-full min-h-[52px] py-3.5 rounded-xl bg-brand hover:bg-brand-hover text-ink-inverse font-black text-sm sm:text-base uppercase tracking-wider shadow-card active:scale-[0.98] transition-all flex items-center justify-center gap-2 group/start"
                         >
-                            {isCorrection ? 'Guardar Cambios' : 'Comenzar Seguimiento'}
-                            <span className="group-hover/start:translate-x-1 transition-transform">→</span>
+                            <span>{isCorrection ? 'Guardar Cambios' : 'Comenzar Seguimiento'}</span>
+                            <ArrowRightIcon className="h-4 w-4 group-hover/start:translate-x-0.5 transition-transform" />
                         </button>
                         <button
+                            type="button"
                             onClick={onBack}
-                            className="w-full py-3 text-slate-500 hover:text-slate-300 font-bold text-xs uppercase tracking-widest transition-colors mt-2"
+                            className="w-full min-h-[44px] text-ink-muted hover:text-ink-primary font-bold text-xs uppercase tracking-wider transition-colors"
                         >
                             Cancelar
                         </button>
@@ -410,7 +412,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         onClose={() => setIsTeamSelectorOpen(false)}
                         onSelectTeam={handleTeamSelectedFromDropdown}
                         currentTeam={settings.myTeam || ''}
-                        title="Selecciona tu Equipo"
+                        title="Seleccioná tu Equipo"
                         isRival={false}
                     />
                 )}
@@ -424,7 +426,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                             setIsRivalSelectorOpen(false);
                         }}
                         currentTeam={settings.gameName || ''}
-                        title="Selecciona el Rival"
+                        title="Seleccioná el Rival"
                         isRival={true}
                     />
                 )}

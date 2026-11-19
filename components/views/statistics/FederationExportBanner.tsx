@@ -13,37 +13,40 @@ export const FederationExportBanner: React.FC<FederationExportBannerProps> = ({
   hasShareableData = true,
 }) => {
   return (
-    <div className="bg-slate-900/80 border border-slate-700 rounded-2xl p-6 shadow-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-      <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="flex items-center gap-5 relative z-10 w-full md:w-auto">
-        <div className="p-4 bg-emerald-500/20 rounded-2xl shadow-inner border border-emerald-500/30 flex-shrink-0">
-          <DownloadIcon className="h-8 w-8 text-emerald-400" />
+    <div className="bg-surface-card border border-border-subtle rounded-2xl p-4 sm:p-5 shadow-card mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex items-center gap-3.5 w-full md:w-auto">
+        <div className="p-3 bg-sport-goal/15 rounded-xl border border-sport-goal/35 shrink-0">
+          <DownloadIcon className="h-6 w-6 text-sport-goal-light" />
         </div>
-        <div className="flex-1">
-          <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight leading-tight">
-            Reporte para la Federación
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base sm:text-lg font-extrabold text-ink-primary tracking-tight leading-tight">
+            Planilla Oficial para la Federación
           </h3>
-          <p className="text-emerald-400/80 text-xs sm:text-sm font-bold mt-1">
-            Descargá el Excel oficial (FCCF) listo para enviar.
+          <p className="text-ink-secondary text-xs sm:text-sm font-medium mt-0.5">
+            Descargá el Excel reglamentario (FCCF) listo para presentar.
           </p>
         </div>
       </div>
-      <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto relative z-10">
+
+      <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto shrink-0">
         <button
+          type="button"
           onClick={onExportExcel}
-          className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 sm:px-8 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-900/50 uppercase tracking-widest border border-emerald-400/30"
+          className="flex-1 md:flex-none min-h-[44px] flex items-center justify-center gap-2 bg-sport-goal hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm py-2.5 px-5 rounded-xl transition-colors active:scale-[0.98] uppercase tracking-wider touch-manipulation"
         >
-          <DownloadIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+          <DownloadIcon className="h-4 w-4 shrink-0" />
           <span className="whitespace-nowrap">Generar Excel</span>
         </button>
+
         {onShareClick && hasShareableData && (
           <button
+            type="button"
             onClick={onShareClick}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 px-4 sm:px-6 rounded-xl transition-all shadow-md border border-slate-600 hover:border-cyan-500/50"
+            className="flex-1 md:flex-none min-h-[44px] flex items-center justify-center gap-2 bg-surface-elevated hover:bg-surface-hover text-ink-primary font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-colors border border-border-strong hover:border-brand/50 active:scale-[0.98] touch-manipulation"
             aria-label="Compartir Resumen"
-            title="Compartir resumen para WhatsApp"
+            title="Compartir resumen para WhatsApp o Instagram"
           >
-            <ShareIcon className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
+            <ShareIcon className="h-4 w-4 text-brand shrink-0" />
             <span className="whitespace-nowrap">Compartir</span>
           </button>
         )}

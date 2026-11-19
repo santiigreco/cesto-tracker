@@ -48,7 +48,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = React.memo(({
       )}
 
       {tallyStats && (
-        <div className="pt-4">
+        <div>
           <TallyStatisticsView
             tallyStats={tallyStats}
             playerNames={playerNames}

@@ -2,67 +2,111 @@ import React from 'react';
 import { StatAction } from '../../types';
 
 interface QuickActionsPanelProps {
-    onActionSelect: (action: StatAction) => void;
+  onActionSelect: (action: StatAction) => void;
 }
 
-const MAIN_ACTIONS: { action: StatAction, label: string }[] = [
-    { action: 'recuperos', label: 'Recupero' },
-    { action: 'perdidas', label: 'Pérdida' },
-    { action: 'asistencias', label: 'Asistencia' },
-    { action: 'faltasPersonales', label: 'Falta' },
-    { action: 'reboteOfensivo', label: 'Reb. Of.' },
-    { action: 'reboteDefensivo', label: 'Reb. Def.' },
+interface TechnicalActionItem {
+  action: StatAction;
+  label: string;
+  tone: 'positive' | 'neutral' | 'negative';
+}
+
+const TECHNICAL_ACTIONS: TechnicalActionItem[] = [
+  { action: 'recuperos', label: 'Recupero', tone: 'positive' },
+  { action: 'asistencias', label: 'Asistencia', tone: 'positive' },
+  { action: 'reboteOfensivo', label: 'Reb. Of.', tone: 'neutral' },
+  { action: 'reboteDefensivo', label: 'Reb. Def.', tone: 'neutral' },
+  { action: 'perdidas', label: 'Pérdida', tone: 'negative' },
+  { action: 'faltasPersonales', label: 'Falta', tone: 'negative' },
 ];
 
 const QuickActionsPanel: React.FC<QuickActionsPanelProps> = React.memo(({ onActionSelect }) => {
-    return (
-        <div className="w-full bg-slate-800 p-3 sm:p-4 rounded-lg shadow-lg">
-            <h3 className="text-xl font-bold text-cyan-400 mb-3 sm:mb-4 text-center">Acción de juego</h3>
-            <div className="flex gap-2 sm:gap-3">
-                {/* Left Side: Grid of stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-grow">
-                    {MAIN_ACTIONS.map(({ action, label }) => (
-                        <button
-                            key={action}
-                            type="button"
-                            onClick={() => onActionSelect(action)}
-                            className="h-20 sm:h-24 px-1.5 sm:px-2 rounded-lg text-white font-bold text-xs xs:text-sm sm:text-base text-center leading-tight transition-all bg-slate-700 hover:bg-slate-600 flex items-center justify-center shadow-sm active:bg-slate-500 active:scale-95 transform duration-100 border-b-4 border-slate-900/50 active:border-b-0 active:translate-y-1 touch-manipulation"
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
+  return (
+    <section
+      aria-label="Panel de anotación rápida"
+      className="w-full bg-surface-card border border-border-subtle p-3 sm:p-4 rounded-2xl shadow-card"
+    >
+      <div className="flex items-center justify-between mb-2.5 px-0.5">
+        <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+          Registrar acción
+        </h3>
+        <span className="text-[11px] text-ink-muted hidden xs:inline">
+          Tiro · Técnicas
+        </span>
+      </div>
 
-                {/* Right Side: Scoring Buttons */}
-                <div className="flex flex-col gap-2 w-[34%] min-w-[96px] sm:w-1/3 sm:min-w-[110px]">
-                    <button
-                        type="button"
-                        onClick={() => onActionSelect('triples')}
-                        className="flex-1 p-2 rounded-lg text-white font-bold text-xs xs:text-sm sm:text-base transition-all bg-blue-600 hover:bg-blue-700 flex items-center justify-center shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 active:scale-95 transform duration-100 touch-manipulation"
-                    >
-                        <span className="flex flex-col sm:flex-row items-center justify-center sm:gap-1 leading-tight">
-                            <span>TRIPLE</span>
-                            <span className="text-[11px] sm:text-sm opacity-90">(+3)</span>
-                        </span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => onActionSelect('goles')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-xs xs:text-sm sm:text-base transition-all bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1 active:scale-95 transform duration-100 touch-manipulation"
-                    >
-                        GOL
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => onActionSelect('fallos')}
-                        className="flex-1 p-3 rounded-lg text-white font-bold text-xs xs:text-sm sm:text-base transition-all bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg border-b-4 border-red-800 active:border-b-0 active:translate-y-1 active:scale-95 transform duration-100 touch-manipulation"
-                    >
-                        FALLO
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
+      {/* Primary Scoring Row: GOL (+2), TRIPLE (+3), FALLO */}
+      <div className="grid grid-cols-12 gap-2 sm:gap-2.5">
+        <button
+          type="button"
+          onClick={() => onActionSelect('goles')}
+          className="col-span-5 min-h-[72px] sm:min-h-[82px] px-2 rounded-xl bg-sport-goal hover:bg-emerald-500 active:bg-emerald-700 text-white border border-emerald-400/20 flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] active:brightness-95 transition-all duration-75 touch-manipulation select-none"
+        >
+          <span className="text-lg sm:text-xl font-black tracking-tight leading-none">
+            GOL
+          </span>
+          <span className="text-[11px] font-bold text-emerald-100/90 tabular-nums">
+            +2 pts
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onActionSelect('triples')}
+          className="col-span-4 min-h-[72px] sm:min-h-[82px] px-2 rounded-xl bg-sport-triple hover:bg-sky-500 active:bg-sky-700 text-white border border-sky-400/20 flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] active:brightness-95 transition-all duration-75 touch-manipulation select-none"
+        >
+          <span className="text-sm xs:text-base sm:text-lg font-black tracking-tight leading-none">
+            TRIPLE
+          </span>
+          <span className="text-[11px] font-bold text-sky-100/90 tabular-nums">
+            +3 pts
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onActionSelect('fallos')}
+          className="col-span-3 min-h-[72px] sm:min-h-[82px] px-1.5 rounded-xl bg-sport-miss hover:bg-red-500 active:bg-red-700 text-white border border-rose-400/20 flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] active:brightness-95 transition-all duration-75 touch-manipulation select-none"
+        >
+          <span className="text-sm xs:text-base font-black tracking-tight leading-none">
+            FALLO
+          </span>
+          <span className="text-[11px] font-semibold text-rose-100/80 tabular-nums">
+            0 pts
+          </span>
+        </button>
+      </div>
+
+      {/* Secondary Technical & Foul Grid (3x2) */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mt-2.5">
+        {TECHNICAL_ACTIONS.map(({ action, label, tone }) => {
+          const isNegative = tone === 'negative';
+          const dotColor =
+            tone === 'positive'
+              ? 'bg-sport-goal-light'
+              : tone === 'negative'
+                ? 'bg-sport-miss-light'
+                : 'bg-brand';
+
+          return (
+            <button
+              key={action}
+              type="button"
+              onClick={() => onActionSelect(action)}
+              className={`min-h-[56px] sm:min-h-[60px] px-2 rounded-xl font-bold text-xs xs:text-sm text-center leading-tight flex flex-col items-center justify-center gap-1 border active:scale-[0.97] transition-all duration-75 touch-manipulation select-none ${
+                isNegative
+                  ? 'bg-sport-miss/10 hover:bg-sport-miss/20 active:bg-sport-miss/25 border-sport-miss/35 text-rose-200'
+                  : 'bg-surface-elevated hover:bg-surface-hover active:bg-surface-hover border-border-strong text-ink-primary'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
 });
 
 export default QuickActionsPanel;

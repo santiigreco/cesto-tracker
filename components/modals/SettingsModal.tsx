@@ -1,19 +1,16 @@
-
 import React, { useState } from 'react';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
+import ModalShell from '@/components/ui/ModalShell';
 import { Settings } from '../../types';
-import { XIcon } from '../icons';
-import { ChevronDownIcon } from '../icons';
+import {
+  ChevronDownIcon,
+  CloudUploadIcon,
+  FlameIcon,
+  GoogleIcon,
+  SnowflakeIcon,
+} from '../icons';
 import TeamSelectorModal from '@/components/modals/TeamSelectorModal';
-import { GoogleIcon } from '../icons';
 import { useProfile } from '../../hooks/useProfile';
-
-// --- ICONS (local to this component) ---
-const CloudUploadIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m-4-4l4-4 4 4" />
-    </svg>
-);
 
 interface SettingsModalProps {
   settings: Settings;
@@ -27,225 +24,297 @@ interface SettingsModalProps {
   onLogin: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = React.memo(({ settings, setSettings, onClose, onRequestNewGame, onRequestReselectPlayers, onRequestSaveGame, user, onLogout, onLogin }) => {
+const SettingsModal: React.FC<SettingsModalProps> = React.memo(
+  ({
+    settings,
+    setSettings,
+    onClose,
+    onRequestNewGame,
+    onRequestReselectPlayers,
+    onRequestSaveGame,
+    user,
+    onLogout,
+    onLogin,
+  }) => {
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
     const { profile } = useProfile();
 
-    const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
-        const numValue = parseInt(value, 10);
-        if (!isNaN(numValue)) {
-            setSettings({ ...settings, [key]: numValue });
-        }
+    const handleThresholdChange = (
+      key: 'manoCalienteThreshold' | 'manoFriaThreshold',
+      value: string
+    ) => {
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue)) {
+        setSettings({ ...settings, [key]: numValue });
+      }
     };
 
-    return (
-        <div
-            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity"
-            aria-labelledby="settings-modal-title"
-            role="dialog"
-            aria-modal="true"
+    const modalFooter = (
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onClose}
+          className="min-h-[44px] bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold py-2 px-6 rounded-xl text-sm transition-colors"
         >
-            <div className="bg-slate-800 rounded-xl shadow-2xl p-6 sm:p-8 m-4 max-w-lg w-full transform transition-all scale-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 id="settings-modal-title" className="text-3xl font-bold text-cyan-400">Configuración</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white p-2 -mr-2 rounded-full" aria-label="Cerrar"><XIcon/></button>
-                </div>
+          Cerrar
+        </button>
+      </div>
+    );
 
-                <div className="space-y-6">
-                    {/* User Session Info */}
-                    {user && (
-                        <div className="bg-slate-700/50 p-4 rounded-lg flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-lg uppercase overflow-hidden relative">
-                                    {profile?.avatar_url ? (
-                                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                                    ) : (
-                                        user.email?.charAt(0) || 'U'
-                                    )}
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-sm text-slate-400">Sesión iniciada como:</p>
-                                    <p className="text-white font-semibold truncate">{user.email}</p>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={onLogout}
-                                className="text-xs text-red-400 hover:text-red-300 font-bold border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded-lg hover:bg-red-900/40 transition-colors"
-                            >
-                                Cerrar Sesión
-                            </button>
-                        </div>
+    return (
+      <>
+        <ModalShell
+          isOpen={true}
+          onClose={onClose}
+          title="Configuración"
+          titleId="settings-modal-title"
+          maxWidth="lg"
+          zIndexClass="z-[70]"
+          disableEscape={isTeamSelectorOpen}
+          footer={modalFooter}
+        >
+          <div className="space-y-4">
+            {/* User Session Info */}
+            {user && (
+              <div className="bg-surface-elevated p-3.5 rounded-xl border border-border-subtle flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-surface-card border border-border-strong flex items-center justify-center text-ink-primary font-bold text-sm uppercase overflow-hidden shrink-0">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt="Perfil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user.email?.charAt(0) || 'U'
                     )}
-
-                     {/* Game Info Settings */}
-                    <div className="bg-slate-700/50 p-4 rounded-lg space-y-4">
-                        <h3 className="text-xl font-bold text-white mb-2">Información del Partido</h3>
-                        
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wide">Tu Equipo</label>
-                            <button
-                                onClick={() => setIsTeamSelectorOpen(true)}
-                                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg block p-3 text-left flex justify-between items-center transition-all hover:bg-slate-800 hover:border-cyan-500 group mb-2"
-                            >
-                                <span className={`text-base ${settings.myTeam ? 'text-white font-bold' : 'text-slate-500'}`}>
-                                    {settings.myTeam || 'Seleccionar Equipo...'}
-                                </span>
-                                <ChevronDownIcon className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
-                            </button>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wide">Nombre del Partido</label>
-                            <input
-                                type="text"
-                                value={settings.gameName || ''}
-                                onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
-                                className="bg-slate-900/50 border border-slate-600 text-white text-base rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5"
-                                placeholder="Ej: Final vs. Vélez"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Mano Caliente Settings */}
-                    <div className="bg-slate-700/50 p-4 rounded-lg">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white">Mano Caliente 🔥</h3>
-                            <ToggleSwitch
-                                isEnabled={settings.isManoCalienteEnabled}
-                                onToggle={() => setSettings({ ...settings, isManoCalienteEnabled: !settings.isManoCalienteEnabled })}
-                            />
-                        </div>
-                        <p className="text-slate-400 mt-2 mb-4">Avisar cuando un jugador anota <span className="font-bold text-white">{settings.manoCalienteThreshold}</span> goles seguidos.</p>
-                        <div className="flex items-center gap-4 relative">
-                            <span className="text-slate-300 font-mono">3</span>
-                            <input
-                                type="range"
-                                id="manoCalienteThreshold"
-                                value={settings.manoCalienteThreshold}
-                                onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
-                                disabled={!settings.isManoCalienteEnabled}
-                                className="w-full flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-                                min="3"
-                                max="10"
-                            />
-                            <span className="text-slate-300 font-mono">10</span>
-                            {!settings.isManoCalienteEnabled && (
-                                <div
-                                    className="absolute inset-0 cursor-pointer"
-                                    onClick={() => setSettings({ ...settings, isManoCalienteEnabled: true })}
-                                    aria-hidden="true"
-                                ></div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Mano Fría Settings */}
-                    <div className="bg-slate-700/50 p-4 rounded-lg">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white">Mano Fría ❄️</h3>
-                            <ToggleSwitch
-                                isEnabled={settings.isManoFriaEnabled}
-                                onToggle={() => setSettings({ ...settings, isManoFriaEnabled: !settings.isManoFriaEnabled })}
-                            />
-                        </div>
-                        <p className="text-slate-400 mt-2 mb-4">Avisar cuando un jugador falla <span className="font-bold text-white">{settings.manoFriaThreshold}</span> tiros seguidos.</p>
-                        <div className="flex items-center gap-4 relative">
-                             <span className="text-slate-300 font-mono">3</span>
-                            <input
-                                type="range"
-                                id="manoFriaThreshold"
-                                value={settings.manoFriaThreshold}
-                                onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
-                                disabled={!settings.isManoFriaEnabled}
-                                className="w-full flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-                                min="3"
-                                max="10"
-                            />
-                            <span className="text-slate-300 font-mono">10</span>
-                             {!settings.isManoFriaEnabled && (
-                                <div
-                                    className="absolute inset-0 cursor-pointer"
-                                    onClick={() => setSettings({ ...settings, isManoFriaEnabled: true })}
-                                    aria-hidden="true"
-                                ></div>
-                            )}
-                        </div>
-                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-ink-muted">Sesión iniciada como:</p>
+                    <p className="text-ink-primary text-sm font-semibold truncate">{user.email}</p>
+                  </div>
                 </div>
-                
-                 {/* Cloud Sync Section */}
-                <div className="border-t border-slate-700 mt-8 pt-6">
-                    <h3 className="text-xl font-bold text-white mb-2">Sincronización</h3>
-                    <p className="text-slate-400 mb-4">
-                        Guarda los datos de este partido en la nube para tener un respaldo.
-                    </p>
-                    <div className="flex flex-col items-center">
-                        {user ? (
-                             <button
-                                onClick={onRequestSaveGame}
-                                className="w-full max-w-xs flex items-center justify-center gap-3 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform bg-cyan-600 hover:bg-cyan-700 hover:scale-105"
-                            >
-                                <CloudUploadIcon className="h-5 w-5" />
-                                <span>Guardar Partido en la Nube</span>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={onLogin}
-                                className="w-full max-w-xs flex items-center justify-center gap-3 bg-white text-slate-900 hover:bg-gray-100 font-bold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105"
-                            >
-                                <GoogleIcon className="h-5 w-5" />
-                                <span>Ingresar para Guardar</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="shrink-0 min-h-[40px] text-xs text-sport-miss-light hover:bg-sport-miss/20 font-bold border border-sport-miss/40 bg-sport-miss/10 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
+            )}
 
-                {/* Session Management Section */}
-                <div className="border-t border-slate-700 mt-8 pt-6">
-                    <h3 className="text-xl font-bold text-white mb-2">Gestión del Partido</h3>
-                    <p className="text-slate-400 mb-4">
-                        Estas acciones afectarán el partido actual.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         <button
-                            onClick={onRequestReselectPlayers}
-                            className="w-full sm:col-span-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
-                        >
-                            Editar Datos del Partido
-                        </button>
-                         <button
-                            onClick={onRequestNewGame}
-                            className="w-full sm:col-span-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
-                        >
-                            Comenzar Nuevo Partido
-                        </button>
-                    </div>
-                </div>
+            {/* Game Info Settings */}
+            <div className="bg-surface-elevated/60 p-4 rounded-xl border border-border-subtle space-y-3.5">
+              <h3 className="text-sm font-extrabold text-ink-primary uppercase tracking-wider">
+                Información del Partido
+              </h3>
 
+              <div>
+                <label className="block text-xs font-bold text-ink-secondary mb-1.5 uppercase tracking-wider">
+                  Tu Equipo
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsTeamSelectorOpen(true)}
+                  className="w-full min-h-[48px] bg-surface-canvas border border-border-strong rounded-xl px-3.5 py-2.5 text-left flex justify-between items-center transition-colors hover:border-brand/50 group"
+                >
+                  <span
+                    className={`text-sm ${
+                      settings.myTeam ? 'text-ink-primary font-bold' : 'text-ink-muted'
+                    }`}
+                  >
+                    {settings.myTeam || 'Seleccioná equipo...'}
+                  </span>
+                  <ChevronDownIcon className="h-4 w-4 text-ink-muted group-hover:text-brand transition-colors" />
+                </button>
+              </div>
 
-                <div className="mt-8 text-right">
-                    <button
-                        onClick={onClose}
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300"
-                    >
-                        Cerrar
-                    </button>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-ink-secondary mb-1.5 uppercase tracking-wider">
+                  Nombre del Partido / Rival
+                </label>
+                <input
+                  type="text"
+                  value={settings.gameName || ''}
+                  onChange={(e) => setSettings({ ...settings, gameName: e.target.value })}
+                  className="bg-surface-canvas border border-border-strong text-ink-primary text-base sm:text-sm rounded-xl focus:border-brand block w-full px-3.5 py-2.5 placeholder-ink-muted"
+                  placeholder="Ej: Final vs. Vélez"
+                />
+              </div>
             </div>
 
-            {isTeamSelectorOpen && (
-                <TeamSelectorModal 
-                    isOpen={isTeamSelectorOpen} 
-                    onClose={() => setIsTeamSelectorOpen(false)} 
-                    onSelectTeam={(team) => {
-                        setSettings({ ...settings, myTeam: team });
-                        setIsTeamSelectorOpen(false);
-                    }}
-                    currentTeam={settings.myTeam || ''}
+            {/* Mano Caliente Settings */}
+            <div className="bg-surface-elevated/60 p-4 rounded-xl border border-border-subtle">
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <FlameIcon className="h-5 w-5 text-sport-warn-light" />
+                  <h3 className="text-base font-extrabold text-ink-primary">Mano Caliente</h3>
+                </div>
+                <ToggleSwitch
+                  isEnabled={settings.isManoCalienteEnabled}
+                  ariaLabel="Activar detección de Mano Caliente"
+                  onToggle={() =>
+                    setSettings({
+                      ...settings,
+                      isManoCalienteEnabled: !settings.isManoCalienteEnabled,
+                    })
+                  }
                 />
-            )}
-        </div>
+              </div>
+              <p className="text-ink-muted text-xs sm:text-sm mt-1.5 mb-3">
+                Avisar cuando una jugadora anota{' '}
+                <span className="font-bold text-ink-primary tabular-nums">
+                  {settings.manoCalienteThreshold}
+                </span>{' '}
+                goles seguidos.
+              </p>
+              <div className="flex items-center gap-3 relative">
+                <span className="text-ink-secondary text-xs font-bold tabular-nums">3</span>
+                <input
+                  type="range"
+                  id="manoCalienteThreshold"
+                  value={settings.manoCalienteThreshold}
+                  onChange={(e) =>
+                    handleThresholdChange('manoCalienteThreshold', e.target.value)
+                  }
+                  disabled={!settings.isManoCalienteEnabled}
+                  className="w-full flex-1 h-2 bg-surface-canvas rounded-lg appearance-none cursor-pointer disabled:opacity-50 accent-cyan-400"
+                  min="3"
+                  max="10"
+                />
+                <span className="text-ink-secondary text-xs font-bold tabular-nums">10</span>
+                {!settings.isManoCalienteEnabled && (
+                  <div
+                    className="absolute inset-0 cursor-pointer"
+                    onClick={() =>
+                      setSettings({ ...settings, isManoCalienteEnabled: true })
+                    }
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Mano Fría Settings */}
+            <div className="bg-surface-elevated/60 p-4 rounded-xl border border-border-subtle">
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <SnowflakeIcon className="h-5 w-5 text-sport-triple-light" />
+                  <h3 className="text-base font-extrabold text-ink-primary">Mano Fría</h3>
+                </div>
+                <ToggleSwitch
+                  isEnabled={settings.isManoFriaEnabled}
+                  ariaLabel="Activar detección de Mano Fría"
+                  onToggle={() =>
+                    setSettings({
+                      ...settings,
+                      isManoFriaEnabled: !settings.isManoFriaEnabled,
+                    })
+                  }
+                />
+              </div>
+              <p className="text-ink-muted text-xs sm:text-sm mt-1.5 mb-3">
+                Avisar cuando una jugadora falla{' '}
+                <span className="font-bold text-ink-primary tabular-nums">
+                  {settings.manoFriaThreshold}
+                </span>{' '}
+                tiros seguidos.
+              </p>
+              <div className="flex items-center gap-3 relative">
+                <span className="text-ink-secondary text-xs font-bold tabular-nums">3</span>
+                <input
+                  type="range"
+                  id="manoFriaThreshold"
+                  value={settings.manoFriaThreshold}
+                  onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
+                  disabled={!settings.isManoFriaEnabled}
+                  className="w-full flex-1 h-2 bg-surface-canvas rounded-lg appearance-none cursor-pointer disabled:opacity-50 accent-sky-400"
+                  min="3"
+                  max="10"
+                />
+                <span className="text-ink-secondary text-xs font-bold tabular-nums">10</span>
+                {!settings.isManoFriaEnabled && (
+                  <div
+                    className="absolute inset-0 cursor-pointer"
+                    onClick={() => setSettings({ ...settings, isManoFriaEnabled: true })}
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Cloud Sync Section */}
+            <div className="border-t border-border-subtle pt-4">
+              <h3 className="text-sm font-extrabold text-ink-primary uppercase tracking-wider mb-1">
+                Sincronización
+              </h3>
+              <p className="text-ink-muted text-xs sm:text-sm mb-3">
+                Guardá los datos de este partido en la nube para tener respaldo.
+              </p>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={onRequestSaveGame}
+                  className="w-full min-h-[44px] flex items-center justify-center gap-2.5 text-ink-inverse font-extrabold py-2.5 px-4 rounded-xl transition-colors bg-brand hover:bg-brand-hover text-sm"
+                >
+                  <CloudUploadIcon className="h-4 w-4" />
+                  <span>Guardar Partido en la Nube</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onLogin}
+                  className="w-full min-h-[44px] flex items-center justify-center gap-2.5 bg-white text-slate-900 hover:bg-slate-100 font-bold py-2.5 px-4 rounded-xl transition-colors text-sm"
+                >
+                  <GoogleIcon className="h-4 w-4" />
+                  <span>Ingresar para Guardar</span>
+                </button>
+              )}
+            </div>
+
+            {/* Session Management Section */}
+            <div className="border-t border-border-subtle pt-4">
+              <h3 className="text-sm font-extrabold text-ink-primary uppercase tracking-wider mb-1">
+                Gestión del Partido
+              </h3>
+              <p className="text-ink-muted text-xs sm:text-sm mb-3">
+                Estas acciones afectan el partido actual.
+              </p>
+              <div className="grid grid-cols-1 gap-2.5">
+                <button
+                  type="button"
+                  onClick={onRequestReselectPlayers}
+                  className="w-full min-h-[44px] bg-surface-elevated hover:bg-surface-hover border border-border-strong text-ink-primary font-bold py-2.5 px-4 rounded-xl transition-colors text-sm"
+                >
+                  Editar Datos del Partido
+                </button>
+                <button
+                  type="button"
+                  onClick={onRequestNewGame}
+                  className="w-full min-h-[44px] bg-sport-miss/15 hover:bg-sport-miss/25 border border-sport-miss/45 text-sport-miss-light font-bold py-2.5 px-4 rounded-xl transition-colors text-sm"
+                >
+                  Comenzar Nuevo Partido
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalShell>
+
+        {isTeamSelectorOpen && (
+          <TeamSelectorModal
+            isOpen={isTeamSelectorOpen}
+            onClose={() => setIsTeamSelectorOpen(false)}
+            onSelectTeam={(team) => {
+              setSettings({ ...settings, myTeam: team });
+              setIsTeamSelectorOpen(false);
+            }}
+            currentTeam={settings.myTeam || ''}
+          />
+        )}
+      </>
     );
-});
+  }
+);
 
 export default SettingsModal;

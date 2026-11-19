@@ -16,6 +16,13 @@ import { useProfile } from '../hooks/useProfile';
 import { useSync } from '../context/SyncContext';
 import { isLocalGameId } from '../utils/localGamesStorage';
 import { hasCompleteMatchMetadata } from '../utils/matchMetadata';
+import {
+    AlertTriangleIcon,
+    PencilIcon,
+    ShareIcon,
+    SmartphoneIcon,
+    WifiOffIcon,
+} from '@/components/icons';
 
 const TAB_TRANSLATIONS: Record<AppTab, string> = {
     tally: 'Planilla',
@@ -159,9 +166,9 @@ export default function MatchRoute() {
 
     if (authLoading || syncLoading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
+            <div className="flex flex-col items-center justify-center min-h-screen bg-surface-canvas">
                 <Loader />
-                <p className="text-slate-400 mt-4">Cargando partido...</p>
+                <p className="text-ink-muted mt-4 text-sm font-medium">Cargando partido...</p>
             </div>
         );
     }
@@ -173,14 +180,7 @@ export default function MatchRoute() {
     const actionLabel = actionToAssign ? STAT_LABELS[actionToAssign] : '';
 
     return (
-        <div className="min-h-screen bg-[#0a0f18] text-slate-200 flex flex-col items-center p-4 sm:p-6 md:p-8 font-sans overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 pb-24 md:pb-8 relative">
-
-            {/* ── Background Glows ── */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
-                <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/10 blur-[120px] rounded-full animate-float"></div>
-                <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 blur-[100px] rounded-full"></div>
-            </div>
+        <div className="min-h-screen bg-surface-canvas text-ink-primary flex flex-col items-center px-3 sm:px-6 md:px-8 pt-2 sm:pt-4 pb-24 md:pb-8 font-sans overflow-x-hidden selection:bg-brand/25 selection:text-ink-primary relative">
 
             <AppHeader
                 user={user}
@@ -213,99 +213,53 @@ export default function MatchRoute() {
 
             {/* Sync Cloud Bar Indicator for Logged-in Owners (Displayed on error or offline) */}
             {user && isGameOwner && (!isOnline || syncState.status === 'error') && (
-                <div className={`w-full max-w-4xl flex items-center justify-between text-xs px-3 py-1.5 mb-2 rounded border transition-colors ${
+                <div className={`w-full max-w-4xl flex items-center justify-between gap-2 text-xs px-3 py-2 mb-2.5 rounded-xl border ${
                     !isOnline
-                        ? 'bg-amber-950/40 border-amber-800/60'
-                        : syncState.status === 'error'
-                            ? 'bg-red-950/40 border-red-800/60'
-                            : hasUnsavedChanges
-                                ? 'bg-amber-950/30 border-amber-700/40'
-                                : 'bg-slate-800/40 border-slate-700/50'
+                        ? 'bg-sport-warn/10 border-sport-warn/35 text-sport-warn-light'
+                        : 'bg-sport-miss/10 border-sport-miss/35 text-sport-miss-light'
                 }`}>
-                    <div className="flex items-center gap-2">
-                        <span className="relative flex h-2 w-2">
-                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                                !isOnline
-                                    ? 'bg-amber-400'
-                                    : syncState.status === 'error'
-                                        ? 'bg-red-400'
-                                        : isAutoSaving
-                                            ? 'bg-cyan-400'
-                                            : hasUnsavedChanges
-                                                ? 'bg-amber-400'
-                                                : 'bg-emerald-400'
-                            }`}></span>
-                            <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                                !isOnline
-                                    ? 'bg-amber-500'
-                                    : syncState.status === 'error'
-                                        ? 'bg-red-500'
-                                        : isAutoSaving
-                                            ? 'bg-cyan-500'
-                                            : hasUnsavedChanges
-                                                ? 'bg-amber-500'
-                                                : 'bg-emerald-500'
-                            }`}></span>
-                        </span>
-                        <span className={`font-medium ${
-                            !isOnline
-                                ? 'text-amber-300'
-                                : syncState.status === 'error'
-                                    ? 'text-red-300'
-                                    : hasUnsavedChanges
-                                        ? 'text-amber-200'
-                                        : 'text-slate-300'
-                        }`}>
+                    <div className="flex items-center gap-2 min-w-0">
+                        {!isOnline ? (
+                            <WifiOffIcon className="h-4 w-4 shrink-0" />
+                        ) : (
+                            <AlertTriangleIcon className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="font-medium truncate">
                             {!isOnline
                                 ? 'Sin conexión a internet. Los datos se guardan en este dispositivo.'
-                                : syncState.status === 'error'
-                                    ? `Error al sincronizar: ${syncState.message}`
-                                    : isAutoSaving
-                                        ? 'Guardando cambios en la nube...'
-                                        : hasUnsavedChanges
-                                            ? 'Cambios locales pendientes de sincronizar...'
-                                            : lastSaved
-                                                ? `Sincronizado en la nube: ${lastSaved.toLocaleTimeString('es-AR')}`
-                                                : 'En la nube (Autoguardado activo)'}
+                                : `Error al sincronizar: ${syncState.message}`}
                         </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {(!isOnline || syncState.status === 'error') ? (
-                            <button
-                                onClick={handleManualSave}
-                                disabled={!isOnline}
-                                className={`text-[10px] font-black uppercase tracking-wider transition-colors underline ${
-                                    !isOnline ? 'text-slate-500 cursor-not-allowed no-underline' : 'text-red-400 hover:text-red-300'
-                                }`}
-                            >
-                                {!isOnline ? 'Offline' : 'Reintentar'}
-                            </button>
-                        ) : !isAutoSaving ? (
-                            <button
-                                onClick={handleManualSave}
-                                className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
-                            >
-                                Guardar ahora
-                            </button>
-                        ) : null}
-                    </div>
+                    <button
+                        type="button"
+                        onClick={handleManualSave}
+                        disabled={!isOnline}
+                        className={`shrink-0 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-colors ${
+                            !isOnline
+                                ? 'text-ink-muted cursor-not-allowed'
+                                : 'bg-sport-miss/20 hover:bg-sport-miss/30 text-sport-miss-light'
+                        }`}
+                    >
+                        {!isOnline ? 'Offline' : 'Reintentar'}
+                    </button>
                 </div>
             )}
 
             {/* Offline/Anonymous Notice for Non-logged Users */}
             {!user && (
-                <div className="w-full max-w-4xl flex items-center justify-between text-xs px-3 py-2 mb-2 bg-amber-950/30 rounded-xl border border-amber-800/40 text-amber-200/90">
-                    <div className="flex items-center gap-2">
-                        <span>⚠️</span>
-                        <span>
-                            <strong>Modo local:</strong> Los datos se guardan en este dispositivo. Iniciá sesión para sincronizar y respaldar en la nube.
+                <div className="w-full max-w-4xl flex items-center justify-between gap-2 text-xs px-3 py-2 mb-2.5 bg-surface-card rounded-xl border border-sport-warn/30 text-ink-secondary">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <SmartphoneIcon className="h-4 w-4 text-sport-warn-light shrink-0" />
+                        <span className="leading-snug">
+                            <strong className="text-ink-primary">Modo local:</strong> Se guarda en este dispositivo. Iniciá sesión para respaldar en la nube.
                         </span>
                     </div>
                     <button
+                        type="button"
                         onClick={handleLogin}
-                        className="text-amber-400 hover:text-amber-300 font-bold underline whitespace-nowrap ml-2"
+                        className="shrink-0 min-h-[36px] px-2.5 text-brand hover:text-brand-hover font-bold whitespace-nowrap rounded-lg hover:bg-surface-elevated transition-colors"
                     >
-                        Iniciar Sesión
+                        Ingresar
                     </button>
                 </div>
             )}
@@ -325,9 +279,10 @@ export default function MatchRoute() {
                                     navigate(`/match/${id}?edit=true`, { replace: true });
                                 }
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-cyan-600 hover:bg-cyan-500 text-white shadow-md hover:shadow-cyan-500/20"
+                            className="flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors bg-brand hover:bg-brand-hover text-ink-inverse shadow-card active:scale-[0.98]"
                         >
-                            ✏️ Continuar Anotando
+                            <PencilIcon className="h-4 w-4" />
+                            <span>Continuar anotando</span>
                         </button>
                     </div>
                 )}
@@ -335,7 +290,7 @@ export default function MatchRoute() {
                 <div
                     role="tablist"
                     aria-label="Vistas del partido"
-                    className="hidden md:flex justify-center mb-6 border-b border-slate-700 bg-slate-900/90 rounded-t-xl shadow-md"
+                    className="hidden md:grid grid-cols-2 mb-5 p-1 border border-border-subtle bg-surface-card rounded-xl gap-1"
                 >
                     {tabsForCurrentMode.map(tab => (
                         <button
@@ -344,10 +299,10 @@ export default function MatchRoute() {
                             role="tab"
                             aria-selected={activeTab === tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`relative z-20 flex items-center px-4 sm:px-6 py-3 text-base sm:text-lg font-bold capitalize border-b-4 transition-colors duration-300 focus:outline-none ${
+                            className={`relative z-20 flex items-center justify-center min-h-[44px] px-5 py-2 text-sm font-bold rounded-lg transition-colors ${
                                 activeTab === tab
-                                    ? 'border-cyan-500 text-cyan-400'
-                                    : 'border-transparent text-slate-400 hover:text-cyan-300'
+                                    ? 'bg-surface-elevated text-ink-primary border border-border-strong shadow-card'
+                                    : 'text-ink-muted hover:text-ink-primary border border-transparent'
                             }`}
                         >
                             {TAB_TRANSLATIONS[tab]}
@@ -371,22 +326,20 @@ export default function MatchRoute() {
                 />
             </div>
 
-            <footer className="w-full text-center text-slate-500 text-xs mt-8 pb-4">Santiago Greco - Gresolutions © 2026</footer>
+            <footer className="w-full text-center text-ink-muted text-xs mt-8 pb-4">Santiago Greco - Gresolutions © 2026</footer>
 
             <BottomNavigation activeTab={activeTab} onSelectTab={setActiveTab} gameMode={gameState.gameMode} />
 
-            {/* FAB flotante Compartir Reporte — visible en todas las tabs menos estadísticas */}
+            {/* Floating Report Action — visible in tally tab */}
             {activeTab !== 'statistics' && (
                 <button
                     type="button"
                     onClick={handleOpenShareModal}
-                    className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest px-4 py-3 rounded-2xl shadow-xl shadow-cyan-900/40 transition-all hover:scale-105 active:scale-95 border border-cyan-400/30 backdrop-blur-sm"
+                    className="fixed bottom-[76px] right-3 md:bottom-6 md:right-6 z-30 flex items-center gap-2 bg-surface-elevated hover:bg-surface-hover text-ink-primary font-bold text-xs uppercase tracking-wider px-4 min-h-[44px] rounded-xl shadow-sticky transition-all active:scale-[0.97] border border-brand/40 touch-manipulation"
                     title="Compartir reporte del partido"
                     aria-label="Compartir reporte del partido"
                 >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
+                    <ShareIcon className="h-4 w-4 text-brand" />
                     <span>Reporte</span>
                 </button>
             )}
