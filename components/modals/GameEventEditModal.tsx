@@ -8,7 +8,7 @@ interface GameEventEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   event: GameEvent;
-  onSave: (event: GameEvent, newPlayer: string, newAction: StatAction) => void;
+  onSave: (event: GameEvent, newPlayer: string, newAction: StatAction) => boolean | void;
   onDelete: (eventId: string) => void;
   playerNames: Record<string, string>;
   availablePlayers: string[];
@@ -34,8 +34,10 @@ const GameEventEditModal: React.FC<GameEventEditModalProps> = ({
   }, [event, isOpen]);
 
   const handleSave = () => {
-    onSave(event, selectedPlayer, selectedAction);
-    onClose();
+    const saved = onSave(event, selectedPlayer, selectedAction);
+    if (saved !== false) {
+      onClose();
+    }
   };
 
   const handleDeleteClick = () => {

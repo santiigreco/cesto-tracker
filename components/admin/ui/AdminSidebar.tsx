@@ -1,9 +1,5 @@
-
 import React from 'react';
-import { UsersIcon } from '../../icons';
-import { TrophyIcon } from '../../icons';
-import { CalendarIcon } from '../../icons';
-import { ChartBarIcon } from '../../icons';
+import { UsersIcon, CalendarIcon, ChartBarIcon } from '../../icons';
 import { AdminTab } from '../types';
 
 interface AdminSidebarProps {
@@ -14,59 +10,59 @@ interface AdminSidebarProps {
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, isOwner, isAdmin }) => {
+    const desktopContainer = 'hidden lg:flex w-64 bg-surface-card border-r border-border-subtle flex-col py-5 px-3 gap-1.5 h-full';
+    const desktopBtnBase = 'min-h-[44px] flex items-center gap-3.5 px-4 py-2.5 rounded-xl transition-colors w-full text-left text-sm font-bold';
+    const desktopActive = 'bg-brand text-ink-inverse shadow-card';
+    const desktopInactive = 'text-ink-secondary hover:bg-surface-elevated hover:text-ink-primary';
 
-    // Desktop Classes
-    const desktopContainer = "hidden lg:flex w-64 bg-slate-800 border-r border-slate-700 flex-col py-6 gap-2 h-full";
-    const desktopBtnBase = "flex items-center gap-4 px-6 py-3 mx-2 rounded-lg transition-all w-auto text-left";
-    const desktopActive = "bg-cyan-600 text-white shadow-lg shadow-cyan-900/50";
-    const desktopInactive = "text-slate-400 hover:bg-slate-700 hover:text-white";
-
-    // Mobile Classes (Bottom Navigation)
-    const mobileContainer = "lg:hidden w-full bg-slate-800 border-t border-slate-700 flex justify-around items-center h-16 safe-area-bottom z-50";
-    const mobileBtnBase = "flex flex-col items-center justify-center w-full h-full p-1";
-    const mobileActive = "text-cyan-400";
-    const mobileInactive = "text-slate-500";
+    const mobileContainer = 'lg:hidden w-full bg-surface-card border-t border-border-subtle flex justify-around items-center h-16 safe-area-bottom z-50';
+    const mobileBtnBase = 'flex flex-col items-center justify-center w-full h-full p-1 transition-colors';
+    const mobileActive = 'text-brand';
+    const mobileInactive = 'text-ink-muted hover:text-ink-secondary';
 
     const canViewUsers = isAdmin ?? isOwner ?? true;
 
     const tabs = [
-        { id: 'dashboard' as AdminTab, label: 'Resumen', icon: <ChartBarIcon className="h-6 w-6" /> },
-        ...(canViewUsers ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-6 w-6" /> }] : []),
-        { id: 'games' as AdminTab, label: 'Historial', icon: <CalendarIcon className="h-6 w-6" /> },
+        { id: 'dashboard' as AdminTab, label: 'Resumen', icon: <ChartBarIcon className="h-5 w-5 shrink-0" /> },
+        ...(canViewUsers ? [{ id: 'users' as AdminTab, label: 'Usuarios', icon: <UsersIcon className="h-5 w-5 shrink-0" /> }] : []),
+        { id: 'games' as AdminTab, label: 'Historial', icon: <CalendarIcon className="h-5 w-5 shrink-0" /> },
     ];
 
     return (
         <>
             {/* Desktop View */}
-            <div className={desktopContainer}>
+            <nav aria-label="Navegación de administración" className={desktopContainer}>
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
+                        type="button"
                         onClick={() => setActiveTab(tab.id)}
+                        aria-current={activeTab === tab.id ? 'page' : undefined}
                         className={`${desktopBtnBase} ${activeTab === tab.id ? desktopActive : desktopInactive}`}
                     >
                         {tab.icon}
-                        <span className="font-bold">{tab.label}</span>
+                        <span>{tab.label}</span>
                     </button>
                 ))}
-            </div>
+            </nav>
 
             {/* Mobile View */}
-            <div className={mobileContainer}>
+            <nav aria-label="Navegación móvil de administración" className={mobileContainer}>
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
+                        type="button"
                         onClick={() => setActiveTab(tab.id)}
+                        aria-current={activeTab === tab.id ? 'page' : undefined}
                         className={`${mobileBtnBase} ${activeTab === tab.id ? mobileActive : mobileInactive}`}
                     >
-                        <div className={`${activeTab === tab.id ? 'transform scale-110' : ''} transition-transform`}>
-                            {/* Force Icon Size Consistency */}
-                            {React.cloneElement(tab.icon as React.ReactElement<{ className?: string }>, { className: "h-6 w-6" })}
+                        <div className={`${activeTab === tab.id ? 'scale-110' : ''} transition-transform`}>
+                            {React.cloneElement(tab.icon as React.ReactElement<{ className?: string }>, { className: 'h-6 w-6' })}
                         </div>
                         <span className="text-[10px] font-bold mt-1">{tab.label}</span>
                     </button>
                 ))}
-            </div>
+            </nav>
         </>
     );
 };

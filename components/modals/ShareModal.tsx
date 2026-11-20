@@ -48,6 +48,12 @@ const ShareModal: React.FC<ShareModalProps> = ({
   const [rivalScore, setRivalScore] = useState<string>('');
   const [previewScale, setPreviewScale] = useState(1);
 
+  useEffect(() => {
+    if (isOpen) {
+      setRivalScore(gameState.opponentScore > 0 ? String(gameState.opponentScore) : '');
+    }
+  }, [isOpen, gameState.opponentScore]);
+
   const REPORT_WIDTH = 450;
 
   // Responsive preview scaling

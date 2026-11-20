@@ -1,19 +1,25 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import ModalShell from '../ui/ModalShell';
-import { FlameIcon, PlusIcon, SnowflakeIcon } from '../icons';
+import { CheckIcon, FlameIcon, PlusIcon, SnowflakeIcon, SwitchIcon } from '../icons';
 import { StatAction } from '../../types';
+
+const MAX_ON_COURT = 6;
 
 interface PlayerSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectPlayer: (playerNumber: string) => void;
   onAddPlayer?: (playerNumber: string, playerName?: string) => string | null;
+  /** Bench / roster players (not on court), already ordered by the caller. */
   players: string[];
+  /** The (up to) 6 players currently on court. Pinned at the top. */
+  onCourtPlayers?: string[];
+  /** Toggles a player on/off court (substitutions). Enables the "Cambios" mode. */
+  onToggleOnCourt?: (playerNumber: string) => boolean | void;
   playerNames: Record<string, string>;
   actionLabel: string;
   actionKey?: StatAction | null;
   playerStatuses?: Record<string, string[]>;
-  recentCount?: number;
 }
 
 const getActionPillClass = (actionKey?: StatAction | null): string => {
@@ -40,16 +46,18 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   onSelectPlayer,
   onAddPlayer,
   players,
+  onCourtPlayers = [],
+  onToggleOnCourt,
   playerNames,
   actionLabel,
   actionKey,
   playerStatuses = {},
-  recentCount = 0,
 }) => {
   const [isAddingCustom, setIsAddingCustom] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
   const [customName, setCustomName] = useState('');
   const [customError, setCustomError] = useState<string | null>(null);
+  const [isSubMode, setIsSubMode] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -57,10 +65,22 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
       setCustomNumber('');
       setCustomName('');
       setCustomError(null);
+      setIsSubMode(false);
     }
   }, [isOpen]);
 
+  const isFoulAction = actionKey === 'faltasPersonales';
+
+  const isBlockedForAction = (player: string): boolean =>
+    isFoulAction && (playerStatuses[player] || []).includes('foul-out');
+
   const handlePlayerClick = (playerNumber: string) => {
+    if (isSubMode && onToggleOnCourt) {
+      onToggleOnCourt(playerNumber);
+      return;
+    }
+    // Regulation: a 7th personal foul is not allowed.
+    if (isBlockedForAction(playerNumber)) return;
     onSelectPlayer(playerNumber);
   };
 
@@ -87,10 +107,11 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
     onSelectPlayer(addedKey);
   };
 
-  const recentPlayers = players.slice(0, recentCount);
-  const otherPlayers = players.slice(recentCount);
+  const hasOnCourt = onCourtPlayers.length > 0;
+  const canManageCourt = Boolean(onToggleOnCourt);
+  const showCourtSection = hasOnCourt || canManageCourt;
 
-  const customFooter = onAddPlayer ? (
+  const customFooter = onAddPlayer && !isSubMode ? (
     !isAddingCustom ? (
       <button
         type="button"
@@ -154,7 +175,29 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
         </div>
       </form>
     )
+  ) : isSubMode ? (
+    <button
+      type="button"
+      onClick={() => setIsSubMode(false)}
+      className="w-full min-h-[48px] rounded-xl bg-brand hover:bg-brand-hover text-ink-inverse font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 touch-manipulation"
+    >
+      <CheckIcon className="h-4 w-4" />
+      <span>Listo, volver a asignar</span>
+    </button>
   ) : undefined;
+
+  const renderButton = (player: string, onCourt: boolean) => (
+    <PlayerButton
+      key={player}
+      player={player}
+      name={playerNames[player]}
+      statuses={playerStatuses[player] || []}
+      onClick={() => handlePlayerClick(player)}
+      blocked={!isSubMode && isBlockedForAction(player)}
+      subMode={isSubMode}
+      onCourt={onCourt}
+    />
+  );
 
   return (
     <ModalShell
@@ -164,59 +207,80 @@ const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
       maxWidth="md"
       zIndexClass="z-[90]"
       title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>Asignar</span>
-          <span
-            className={`px-2.5 py-0.5 rounded-lg border text-sm font-extrabold uppercase tracking-wider ${getActionPillClass(
-              actionKey
-            )}`}
-          >
-            {actionLabel}
+        isSubMode ? (
+          <span>Cambios en cancha</span>
+        ) : (
+          <span className="flex flex-wrap items-center gap-2">
+            <span>Asignar</span>
+            <span
+              className={`px-2.5 py-0.5 rounded-lg border text-sm font-extrabold uppercase tracking-wider ${getActionPillClass(
+                actionKey
+              )}`}
+            >
+              {actionLabel}
+            </span>
           </span>
-        </span>
+        )
       }
-      subtitle="Tocá el dorsal correspondiente"
+      subtitle={
+        isSubMode
+          ? `Tocá para sacar o meter jugadoras (máx. ${MAX_ON_COURT} en cancha)`
+          : 'Tocá el dorsal correspondiente'
+      }
       footer={customFooter}
     >
       <div className="space-y-5">
-        {recentPlayers.length > 0 && (
+        {showCourtSection && (
           <div className="space-y-2.5">
-            <h3 className="text-[11px] font-bold text-ink-muted uppercase tracking-wider px-0.5">
-              En actividad
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {recentPlayers.map((player) => (
-                <PlayerButton
-                  key={player}
-                  player={player}
-                  name={playerNames[player]}
-                  statuses={playerStatuses[player] || []}
-                  onClick={() => handlePlayerClick(player)}
-                />
-              ))}
+            <div className="flex items-center justify-between gap-2 px-0.5">
+              <h3 className="text-[11px] font-bold text-ink-muted uppercase tracking-wider flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-sport-goal shrink-0" aria-hidden="true" />
+                <span>En cancha</span>
+                <span
+                  className={`tabular-nums ${
+                    onCourtPlayers.length === MAX_ON_COURT ? 'text-ink-secondary' : 'text-sport-warn-light'
+                  }`}
+                >
+                  {onCourtPlayers.length}/{MAX_ON_COURT}
+                </span>
+              </h3>
+              {canManageCourt && !isSubMode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingCustom(false);
+                    setIsSubMode(true);
+                  }}
+                  className="min-h-[40px] px-3 rounded-lg bg-surface-elevated hover:bg-surface-hover border border-border-strong text-brand font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 touch-manipulation"
+                >
+                  <SwitchIcon className="h-4 w-4" />
+                  <span>Cambios</span>
+                </button>
+              )}
             </div>
+            {hasOnCourt ? (
+              <div className="grid grid-cols-3 gap-2">
+                {onCourtPlayers.map((player) => renderButton(player, true))}
+              </div>
+            ) : (
+              <p className="text-xs text-ink-muted px-0.5">
+                {isSubMode
+                  ? 'Todavía no hay jugadoras en cancha. Tocá dorsales del banco para meterlas.'
+                  : 'Sin jugadoras marcadas en cancha. Usá "Cambios" para fijarlas arriba.'}
+              </p>
+            )}
           </div>
         )}
 
-        {recentPlayers.length > 0 && otherPlayers.length > 0 && (
-          <hr className="border-border-subtle" />
-        )}
+        {players.length > 0 && showCourtSection && <hr className="border-border-subtle" />}
 
-        {otherPlayers.length > 0 && (
+        {players.length > 0 && (
           <div className="space-y-2.5">
             <h3 className="text-[11px] font-bold text-ink-muted uppercase tracking-wider px-0.5">
-              {recentPlayers.length > 0 ? 'Plantel' : 'Jugadoras'}
+              {showCourtSection ? 'Banco' : 'Jugadoras'}
             </h3>
             <div className="grid grid-cols-3 gap-2">
-              {otherPlayers.map((player) => (
-                <PlayerButton
-                  key={player}
-                  player={player}
-                  name={playerNames[player]}
-                  statuses={playerStatuses[player] || []}
-                  onClick={() => handlePlayerClick(player)}
-                />
-              ))}
+              {players.map((player) => renderButton(player, false))}
             </div>
           </div>
         )}
@@ -230,23 +294,36 @@ const PlayerButton: React.FC<{
   name?: string;
   statuses: string[];
   onClick: () => void;
-}> = ({ player, name, statuses, onClick }) => {
-  const isFoulOut = statuses.includes('foul-out') || statuses.includes('🛑');
-  const isFoulWarn = statuses.includes('foul-warning') || statuses.includes('⚠️');
-  const isHot = statuses.includes('hot') || statuses.includes('🔥');
-  const isCold = statuses.includes('cold') || statuses.includes('❄️');
+  blocked?: boolean;
+  subMode?: boolean;
+  onCourt?: boolean;
+}> = ({ player, name, statuses, onClick, blocked = false, subMode = false, onCourt = false }) => {
+  const isFoulOut = statuses.includes('foul-out');
+  const isFoulWarn = statuses.includes('foul-warning');
+  const isHot = statuses.includes('hot');
+  const isCold = statuses.includes('cold');
 
-  const containerClass = isFoulOut
-    ? 'border-2 border-sport-miss bg-sport-miss/15 hover:bg-sport-miss/25'
-    : isFoulWarn
-      ? 'border-2 border-sport-warn bg-sport-warn/15 hover:bg-sport-warn/25'
-      : 'bg-surface-elevated hover:bg-surface-hover border border-border-strong';
+  let containerClass: string;
+  if (subMode) {
+    containerClass = onCourt
+      ? 'border-2 border-sport-goal bg-sport-goal/15 hover:bg-sport-goal/25'
+      : 'bg-surface-elevated hover:bg-surface-hover border border-dashed border-border-strong';
+  } else if (isFoulOut) {
+    containerClass = 'border-2 border-sport-miss bg-sport-miss/15 hover:bg-sport-miss/25';
+  } else if (isFoulWarn) {
+    containerClass = 'border-2 border-sport-warn bg-sport-warn/15 hover:bg-sport-warn/25';
+  } else {
+    containerClass = 'bg-surface-elevated hover:bg-surface-hover border border-border-strong';
+  }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`p-2.5 min-h-[64px] rounded-xl text-ink-primary transition-all active:scale-[0.97] text-center flex flex-col items-center justify-center gap-0.5 relative touch-manipulation select-none ${containerClass}`}
+      disabled={blocked}
+      aria-pressed={subMode ? onCourt : undefined}
+      title={blocked ? 'Máximo reglamentario: 6 faltas personales' : undefined}
+      className={`p-2.5 min-h-[64px] rounded-xl text-ink-primary transition-all active:scale-[0.97] text-center flex flex-col items-center justify-center gap-0.5 relative touch-manipulation select-none disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100 ${containerClass}`}
     >
       <div className="flex items-center justify-center gap-1.5">
         <span className="text-lg sm:text-xl font-black leading-none tabular-nums">
@@ -254,7 +331,7 @@ const PlayerButton: React.FC<{
         </span>
         {isFoulOut && (
           <span className="px-1.5 py-0.5 rounded bg-sport-miss text-white text-[9px] font-black leading-none tabular-nums">
-            6F
+            {blocked ? '6F · MÁX' : '6F'}
           </span>
         )}
         {!isFoulOut && isFoulWarn && (
@@ -262,12 +339,21 @@ const PlayerButton: React.FC<{
             5F
           </span>
         )}
-        {isHot && <FlameIcon className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
-        {isCold && <SnowflakeIcon className="h-3.5 w-3.5 text-sky-400 shrink-0" />}
+        {!subMode && isHot && <FlameIcon className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+        {!subMode && isCold && <SnowflakeIcon className="h-3.5 w-3.5 text-sky-400 shrink-0" />}
       </div>
       {name && player !== 'Equipo' && (
         <span className="text-[11px] text-ink-secondary font-medium truncate max-w-full leading-tight">
           {name}
+        </span>
+      )}
+      {subMode && (
+        <span
+          className={`text-[9px] font-extrabold uppercase tracking-wider leading-none mt-0.5 ${
+            onCourt ? 'text-sport-goal-light' : 'text-ink-muted'
+          }`}
+        >
+          {onCourt ? 'En cancha' : 'Banco'}
         </span>
       )}
     </button>

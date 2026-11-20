@@ -1,10 +1,25 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useGameContext, initialGameState, initialPlayerTally } from '../context/GameContext';
 import { useUI } from '../context/UIContext';
 import { GameMode, RosterPlayer, Settings, StatAction, GameEvent } from '../types';
 import { generateLocalGameId } from '../utils/localGamesStorage';
 import { getUserPreferences } from '../utils/userPreferences';
 import { DEFAULT_QUICK_PLAYERS, readLastTeamSetup } from '../utils/matchMetadata';
+import { canAddPersonalFoul, MAX_PERSONAL_FOULS } from '../utils/foulRules';
+
+/** Max players on court at the same time in cestoball. */
+export const MAX_ON_COURT = 6;
+
+/**
+ * Keeps the previously selected on-court players that still belong to the roster,
+ * and fills remaining spots (up to 6) with roster players in order.
+ */
+const reconcileActivePlayers = (previousActive: string[] | undefined, roster: string[]): string[] => {
+    const kept = (previousActive || []).filter(p => roster.includes(p)).slice(0, MAX_ON_COURT);
+    if (kept.length >= MAX_ON_COURT) return kept;
+    const fill = roster.filter(p => !kept.includes(p)).slice(0, MAX_ON_COURT - kept.length);
+    return [...kept, ...fill];
+};
 
 // Helper function moved outside the hook to ensure stability and avoid closure issues.
 // Performs shallow immutable cloning on the target player & period so React.memo on PlayerTallyCard detects changes accurately.
@@ -24,8 +39,16 @@ const modifyStatValue = (tallyStats: any, player: string, period: string, action
 
 export const useGameLogic = () => {
     const { gameState, setGameState, resetGame } = useGameContext();
-    const { notificationPopup, setNotificationPopup, setActiveTab } = useUI();
+    const { notificationPopup, setNotificationPopup, setActiveTab, showToast } = useUI();
     const isReadOnly = gameState.isReadOnly;
+    // Latest tallyStats snapshot for synchronous validations without destabilizing callbacks
+    // (keeps memoized PlayerTallyCard props stable across taps).
+    const tallyStatsRef = useRef(gameState.tallyStats);
+    tallyStatsRef.current = gameState.tallyStats;
+    const gameLogRef = useRef(gameState.gameLog);
+    gameLogRef.current = gameState.gameLog;
+    const activePlayersRef = useRef(gameState.activePlayers);
+    activePlayersRef.current = gameState.activePlayers;
 
     const startQuickMatch = useCallback((options?: {
         teamName?: string;
@@ -126,7 +149,7 @@ export const useGameLogic = () => {
             return {
                 ...prev,
                 availablePlayers: nextAvailable,
-                activePlayers: nextAvailable.slice(0, 6),
+                activePlayers: reconcileActivePlayers(prev.activePlayers, nextAvailable),
                 tallyStats: nextTallyStats,
                 playerNames: nextPlayerNames,
             };
@@ -165,7 +188,7 @@ export const useGameLogic = () => {
                     localId: prev.localId || generateLocalGameId(),
                     hasSeenHomepage: true,
                     availablePlayers: sortedRoster,
-                    activePlayers: sortedRoster.slice(0, 6),
+                    activePlayers: reconcileActivePlayers(prev.activePlayers, sortedRoster),
                     playerNames,
                     playerStreaks: prev.playerStreaks,
                     settings: newSettings,
@@ -218,8 +241,20 @@ export const useGameLogic = () => {
     }, [setGameState]);
 
     // --- TALLY LOGIC ---
-    const handleUpdateTallyStat = useCallback((playerNumber: string, stat: StatAction, change: 1) => {
-        if (!isReadOnly && (stat === 'goles' || stat === 'triples' || stat === 'faltasPersonales')) {
+    /**
+     * Records a stat for a player in the current period.
+     * Returns false when the action was rejected (read-only match or regulation foul cap).
+     */
+    const handleUpdateTallyStat = useCallback((playerNumber: string, stat: StatAction, change: 1): boolean => {
+        if (isReadOnly) return false;
+
+        // Regulation: max 6 personal fouls per player across the whole match.
+        if (stat === 'faltasPersonales' && !canAddPersonalFoul(tallyStatsRef.current, playerNumber)) {
+            showToast(`Reglamento: #${playerNumber} ya tiene ${MAX_PERSONAL_FOULS} faltas personales (máximo).`, 'warning');
+            return false;
+        }
+
+        if (stat === 'goles' || stat === 'triples' || stat === 'faltasPersonales') {
             try {
                 if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function' && getUserPreferences().enableHaptics) {
                     navigator.vibrate(stat === 'faltasPersonales' ? [15, 30, 15] : 15);
@@ -231,6 +266,8 @@ export const useGameLogic = () => {
 
         setGameState(prev => {
             if (prev.isReadOnly) return prev;
+            // Re-check against the latest state (guards against rapid double taps).
+            if (stat === 'faltasPersonales' && !canAddPersonalFoul(prev.tallyStats, playerNumber)) return prev;
             const { currentPeriod } = prev;
 
             const newLogEntry: GameEvent = {
@@ -294,7 +331,8 @@ export const useGameLogic = () => {
                 teamFouls: newTeamFouls
             };
         });
-    }, [isReadOnly, setGameState, setNotificationPopup]);
+        return true;
+    }, [isReadOnly, setGameState, setNotificationPopup, showToast]);
 
     const handleUndoTally = useCallback(() => {
         setGameState(prev => {
@@ -375,7 +413,18 @@ export const useGameLogic = () => {
         });
     }, [setGameState]);
 
-    const handleEditGameEvent = useCallback((oldEventOrId: GameEvent | string, newPlayer: string, newAction: StatAction) => {
+    const handleEditGameEvent = useCallback((oldEventOrId: GameEvent | string, newPlayer: string, newAction: StatAction): boolean => {
+        // Regulation guard: editing an event into a personal foul cannot push a player over 6 fouls.
+        if (newAction === 'faltasPersonales' && newPlayer !== 'Equipo') {
+            const targetId = typeof oldEventOrId === 'string' ? oldEventOrId : oldEventOrId.id;
+            const existing = gameLogRef.current.find(e => e.id === targetId);
+            const isAlreadyThisPlayersFoul = existing?.action === 'faltasPersonales' && existing.playerNumber === newPlayer;
+            if (!isAlreadyThisPlayersFoul && !canAddPersonalFoul(tallyStatsRef.current, newPlayer)) {
+                showToast(`Reglamento: #${newPlayer} ya tiene ${MAX_PERSONAL_FOULS} faltas personales (máximo).`, 'warning');
+                return false;
+            }
+        }
+
         setGameState(prev => {
             if (prev.isReadOnly) return prev;
             const targetId = typeof oldEventOrId === 'string' ? oldEventOrId : oldEventOrId.id;
@@ -383,6 +432,10 @@ export const useGameLogic = () => {
             if (eventIndex === -1) return prev;
 
             const existingEvent = prev.gameLog[eventIndex];
+            const isSamePlayerFoul = existingEvent.action === 'faltasPersonales' && existingEvent.playerNumber === newPlayer;
+            if (newAction === 'faltasPersonales' && !isSamePlayerFoul && !canAddPersonalFoul(prev.tallyStats, newPlayer)) {
+                return prev;
+            }
             const newTallyStats = { ...prev.tallyStats };
             modifyStatValue(newTallyStats, existingEvent.playerNumber, existingEvent.period, existingEvent.action, -1);
             modifyStatValue(newTallyStats, newPlayer, existingEvent.period, newAction, 1);
@@ -414,7 +467,52 @@ export const useGameLogic = () => {
 
             return newState;
         });
-    }, [setGameState]);
+        return true;
+    }, [setGameState, showToast]);
+
+    // --- OPPONENT SCORE (live) ---
+    /** Adjusts the rival score by delta (e.g. +2, +3, -1). Never goes below 0. */
+    const handleUpdateOpponentScore = useCallback((delta: number) => {
+        if (isReadOnly || !Number.isFinite(delta) || delta === 0) return;
+        if (delta > 0) {
+            try {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function' && getUserPreferences().enableHaptics) {
+                    navigator.vibrate(10);
+                }
+            } catch {
+                // Ignore vibration API errors on unsupported browsers
+            }
+        }
+        setGameState(prev => {
+            if (prev.isReadOnly) return prev;
+            const next = Math.max(0, (prev.opponentScore || 0) + delta);
+            if (next === prev.opponentScore) return prev;
+            return { ...prev, opponentScore: next };
+        });
+    }, [isReadOnly, setGameState]);
+
+    // --- ON-COURT PLAYERS ---
+    /**
+     * Toggles a player on/off court. Returns false when trying to add a 7th player.
+     */
+    const toggleActivePlayer = useCallback((playerNumber: string): boolean => {
+        if (isReadOnly || playerNumber === 'Equipo') return false;
+        const current = activePlayersRef.current || [];
+        if (!current.includes(playerNumber) && current.length >= MAX_ON_COURT) {
+            showToast(`Ya hay ${MAX_ON_COURT} jugadoras en cancha. Sacá una antes de sumar otra.`, 'warning');
+            return false;
+        }
+        setGameState(prev => {
+            if (prev.isReadOnly) return prev;
+            const active = prev.activePlayers || [];
+            if (active.includes(playerNumber)) {
+                return { ...prev, activePlayers: active.filter(p => p !== playerNumber) };
+            }
+            if (active.length >= MAX_ON_COURT) return prev;
+            return { ...prev, activePlayers: [...active, playerNumber] };
+        });
+        return true;
+    }, [isReadOnly, setGameState, showToast]);
 
     const handleClearSheet = useCallback(() => {
         setGameState(prev => ({ ...prev, shots: [], playerStreaks: {}, gameLog: [], tallyStats: {}, tallyRedoLog: [] }));
@@ -435,6 +533,8 @@ export const useGameLogic = () => {
         handleDeleteGameEvent,
         handleEditGameEvent,
         startQuickMatch,
-        addPlayerToMatch
+        addPlayerToMatch,
+        handleUpdateOpponentScore,
+        toggleActivePlayer
     };
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TallyStatsPeriod, StatAction } from '../../types';
 import { CheckIcon, PencilIcon, PlusIcon, XIcon } from '../icons';
+import { FOUL_WARNING_THRESHOLD, MAX_PERSONAL_FOULS } from '../../utils/foulRules';
 
 const getStatButtonClasses = (statKey: StatAction): string => {
   if (statKey === 'goles') {
@@ -78,6 +79,8 @@ const PlayerTallyCard: React.FC<{
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   playerTally: TallyStatsPeriod;
+  /** Personal fouls summed across ALL periods (regulation cap: 6 per match). */
+  totalMatchFouls?: number;
   onUpdate: (playerNumber: string, stat: StatAction, change: 1) => void;
   isReadOnly?: boolean;
 }> = React.memo(
@@ -91,10 +94,14 @@ const PlayerTallyCard: React.FC<{
     onSaveEdit,
     onCancelEdit,
     playerTally,
+    totalMatchFouls,
     onUpdate,
     isReadOnly,
   }) => {
     const isTeamCard = playerNumber === 'Equipo';
+    // Fallback to current-period fouls if the caller doesn't provide the match total.
+    const matchFouls = totalMatchFouls ?? playerTally.faltasPersonales;
+    const isFouledOut = matchFouls >= MAX_PERSONAL_FOULS;
     const playerStatsToShow: StatAction[] = [
       'goles',
       'triples',
@@ -179,16 +186,16 @@ const PlayerTallyCard: React.FC<{
         {!isTeamCard && (
           <div
             className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-3 px-0.5"
-            title={`${playerTally.faltasPersonales} de 6 faltas personales`}
+            title={`${matchFouls} de ${MAX_PERSONAL_FOULS} faltas personales en el partido (${playerTally.faltasPersonales} en este período)`}
           >
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-semibold text-ink-muted mr-0.5">Faltas:</span>
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: MAX_PERSONAL_FOULS }).map((_, i) => (
                 <div
                   key={i}
                   className={`w-3.5 h-3.5 rounded-full border transition-colors ${
-                    i < playerTally.faltasPersonales
-                      ? i === 4 && playerTally.faltasPersonales === 5
+                    i < matchFouls
+                      ? i === FOUL_WARNING_THRESHOLD - 1 && matchFouls === FOUL_WARNING_THRESHOLD
                         ? 'bg-sport-warn-light border-sport-warn'
                         : 'bg-sport-miss border-rose-400'
                       : 'bg-surface-canvas border-border-strong'
@@ -196,11 +203,11 @@ const PlayerTallyCard: React.FC<{
                 />
               ))}
             </div>
-            {playerTally.faltasPersonales >= 6 ? (
+            {isFouledOut ? (
               <span className="text-[10px] font-extrabold text-sport-miss-light bg-sport-miss/15 border border-sport-miss/50 px-2 py-0.5 rounded-lg uppercase tracking-wider tabular-nums">
                 CAMBIO OBLIGATORIO · 6F
               </span>
-            ) : playerTally.faltasPersonales === 5 ? (
+            ) : matchFouls === FOUL_WARNING_THRESHOLD ? (
               <span className="text-[10px] font-extrabold text-sport-warn-light bg-sport-warn/15 border border-sport-warn/45 px-2 py-0.5 rounded-lg uppercase tracking-wider tabular-nums">
                 EN CAPILLA · 5F
               </span>
@@ -218,7 +225,7 @@ const PlayerTallyCard: React.FC<{
               value={playerTally[statKey as keyof TallyStatsPeriod]}
               onUpdate={onUpdate}
               readOnly={isReadOnly}
-              disabled={statKey === 'faltasPersonales' && playerTally.faltasPersonales >= 6}
+              disabled={!isTeamCard && statKey === 'faltasPersonales' && isFouledOut}
             />
           ))}
         </div>

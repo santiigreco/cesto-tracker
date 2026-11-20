@@ -44,9 +44,9 @@ const AdminRoute: React.FC = () => {
 
     if (authLoading || profileLoading) {
         return (
-            <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+            <div className="min-h-screen bg-surface-canvas flex flex-col items-center justify-center">
                 <Loader />
-                <p className="text-slate-400 mt-4">Verificando credenciales...</p>
+                <p className="text-ink-secondary mt-4 text-sm font-medium">Verificando credenciales...</p>
             </div>
         );
     }
@@ -55,16 +55,46 @@ const AdminRoute: React.FC = () => {
         return null;
     }
 
+    const headerBtnClass =
+        'min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-surface-elevated hover:bg-surface-hover border border-border-strong text-ink-secondary hover:text-ink-primary transition-colors active:scale-95';
+
     return (
-        <div className="min-h-screen bg-[#0a0f18] flex flex-col lg:flex-row overflow-hidden">
+        <div className="min-h-screen bg-surface-canvas text-ink-primary flex flex-col lg:flex-row overflow-hidden">
             {/* --- MOBILE HEADER --- */}
-            <div className="lg:hidden flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800 shrink-0">
-                <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                    PANEL DE CONTROL
-                </h2>
-                <div className="flex gap-3">
-                    <button onClick={handleRefresh} className="text-slate-400 hover:text-white"><RefreshIcon className="h-6 w-6" /></button>
-                    <button onClick={handleClose} className="text-slate-400 hover:text-red-500"><XIcon className="h-6 w-6" /></button>
+            <div className="lg:hidden flex justify-between items-center px-4 py-3 border-b border-border-subtle bg-surface-card shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    <h2 className="text-base font-black text-ink-primary tracking-tight uppercase truncate">
+                        Panel de Control
+                    </h2>
+                    {isOwner ? (
+                        <span className="px-2 py-0.5 bg-sport-miss/15 text-sport-miss-light border border-sport-miss/40 text-[10px] rounded-md uppercase tracking-widest font-extrabold shrink-0">
+                            Owner
+                        </span>
+                    ) : (
+                        <span className="px-2 py-0.5 bg-brand/15 text-brand border border-brand/35 text-[10px] rounded-md uppercase tracking-widest font-extrabold shrink-0">
+                            Admin
+                        </span>
+                    )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onClick={handleRefresh}
+                        className={headerBtnClass}
+                        title="Recargar vista actual"
+                        aria-label="Recargar vista actual"
+                    >
+                        <RefreshIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        className={`${headerBtnClass} hover:text-sport-miss-light`}
+                        title="Volver al inicio"
+                        aria-label="Volver al inicio"
+                    >
+                        <XIcon className="h-5 w-5" />
+                    </button>
                 </div>
             </div>
 
@@ -74,33 +104,42 @@ const AdminRoute: React.FC = () => {
             </div>
 
             {/* --- MAIN CONTENT AREA --- */}
-            <div className="flex-grow bg-slate-900 overflow-hidden relative order-1 lg:order-2 flex flex-col h-screen">
-
+            <div className="flex-grow bg-surface-canvas overflow-hidden relative order-1 lg:order-2 flex flex-col h-screen">
                 {/* Desktop Header */}
-                <div className="hidden lg:flex justify-between items-center p-6 border-b border-slate-700 bg-slate-800 shrink-0">
+                <div className="hidden lg:flex justify-between items-center px-6 py-4 border-b border-border-subtle bg-surface-card shrink-0">
                     <div>
-                        <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center gap-3">
-                            CONTROL DE MANDO {isOwner ? (
-                                <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] rounded uppercase tracking-widest font-sans">Owner</span>
+                        <h2 className="text-xl font-black text-ink-primary tracking-tight flex items-center gap-2.5">
+                            <span>CONTROL DE MANDO</span>
+                            {isOwner ? (
+                                <span className="px-2 py-0.5 bg-sport-miss/15 text-sport-miss-light border border-sport-miss/40 text-[10px] rounded-md uppercase tracking-widest font-extrabold">
+                                    Owner
+                                </span>
                             ) : (
-                                <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded uppercase tracking-widest font-sans">Admin</span>
+                                <span className="px-2 py-0.5 bg-brand/15 text-brand border border-brand/35 text-[10px] rounded-md uppercase tracking-widest font-extrabold">
+                                    Admin
+                                </span>
                             )}
                         </h2>
-                        <p className="text-slate-400 text-xs mt-1">Gestión integral del sistema Cesto Tracker</p>
+                        <p className="text-ink-muted text-xs mt-0.5">Gestión integral del sistema Cesto Tracker</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                         <button
+                            type="button"
                             onClick={handleRefresh}
-                            className="p-2 rounded-lg bg-slate-700 hover:bg-cyan-600 text-white transition-all active:scale-95"
+                            className={headerBtnClass}
                             title="Recargar vista actual"
+                            aria-label="Recargar vista actual"
                         >
                             <RefreshIcon className="h-5 w-5" />
                         </button>
                         <button
+                            type="button"
                             onClick={handleClose}
-                            className="p-2 rounded-lg bg-slate-700 hover:bg-red-600 text-white transition-colors active:scale-95"
+                            className={`${headerBtnClass} hover:text-sport-miss-light`}
+                            title="Cerrar panel"
+                            aria-label="Cerrar panel"
                         >
-                            <XIcon />
+                            <XIcon className="h-5 w-5" />
                         </button>
                     </div>
                 </div>

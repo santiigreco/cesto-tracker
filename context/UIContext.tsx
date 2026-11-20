@@ -20,6 +20,26 @@ export type ModalName =
 
 export type MatchMetadataIntent = 'edit' | 'save' | 'finish' | 'excel' | 'share';
 
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
+
+export interface ToastOptions {
+    /** Optional inline action (e.g. "Deshacer"). */
+    actionLabel?: string;
+    onAction?: () => void;
+    /** Visible duration in ms (default 3000). */
+    durationMs?: number;
+}
+
+export interface ToastState {
+    /** Increments on every toast so identical consecutive messages still re-trigger. */
+    id: number;
+    message: string;
+    type: ToastType;
+    actionLabel?: string;
+    onAction?: () => void;
+    durationMs: number;
+}
+
 export interface AuthModalParams {
     initialMode?: 'login' | 'signup' | 'reset';
     title?: string;
@@ -51,8 +71,9 @@ interface UIContextType {
     setNotificationPopup: (popup: { type: 'caliente' | 'fria'; playerNumber: string } | null) => void;
 
     // Toast
-    toast: { message: string; type: 'success' | 'error' | 'info' | 'warning' } | null;
-    showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+    toast: ToastState | null;
+    showToast: (message: string, type?: ToastType, options?: ToastOptions) => void;
+    dismissToast: () => void;
 
     // General actions
     handleShare: () => Promise<void>;
@@ -64,13 +85,29 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [activeTab, setActiveTab] = useState<AppTab>('tally');
     const [actionToAssign, setActionToAssign] = useState<StatAction | null>(null);
     const [notificationPopup, setNotificationPopup] = useState<{ type: 'caliente' | 'fria'; playerNumber: string } | null>(null);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
+    const [toast, setToast] = useState<ToastState | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const toastIdRef = useRef(0);
 
-    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    const dismissToast = useCallback(() => {
         if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-        setToast({ message, type });
-        toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+        toastTimerRef.current = null;
+        setToast(null);
+    }, []);
+
+    const showToast = useCallback((message: string, type: ToastType = 'info', options?: ToastOptions) => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        const durationMs = options?.durationMs ?? 3000;
+        toastIdRef.current += 1;
+        setToast({
+            id: toastIdRef.current,
+            message,
+            type,
+            actionLabel: options?.actionLabel,
+            onAction: options?.onAction,
+            durationMs,
+        });
+        toastTimerRef.current = setTimeout(() => setToast(null), durationMs);
     }, []);
 
     // Modal Manager State
@@ -136,14 +173,14 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         modals, openModal, closeModal, openAuthModal,
         actionToAssign, setActionToAssign,
         notificationPopup, setNotificationPopup,
-        toast, showToast,
+        toast, showToast, dismissToast,
         handleShare
     }), [
         activeTab,
         modals, openModal, closeModal, openAuthModal,
         actionToAssign,
         notificationPopup,
-        toast, showToast,
+        toast, showToast, dismissToast,
         handleShare
     ]);
 

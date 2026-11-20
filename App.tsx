@@ -27,7 +27,7 @@ const RouteLoader = () => (
 );
 
 function App() {
-  const { modals, closeModal, toast } = useUI();
+  const { modals, closeModal, toast, dismissToast } = useUI();
 
   return (
     <>
@@ -60,7 +60,17 @@ function App() {
         </Suspense>
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {toast && (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          durationMs={toast.durationMs}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
+          onDismiss={dismissToast}
+        />
+      )}
     </>
   );
 }

@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangleIcon, CheckCircleIcon, InfoCircleIcon } from '../icons';
 
+type ToastType = 'success' | 'error' | 'info' | 'warning';
+
 interface ToastProps {
   message: string;
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: ToastType;
+  /** Total visible time in ms (fade-out starts ~300ms before). */
+  durationMs?: number;
+  /** Optional inline action, e.g. "Deshacer". */
+  actionLabel?: string;
+  onAction?: () => void;
+  onDismiss?: () => void;
 }
 
 const TOAST_STYLES: Record<
-  ToastProps['type'],
+  ToastType,
   { border: string; iconColor: string; Icon: React.FC<{ className?: string }> }
 > = {
   success: {
@@ -32,16 +40,29 @@ const TOAST_STYLES: Record<
   },
 };
 
-const Toast: React.FC<ToastProps> = ({ message, type }) => {
+const Toast: React.FC<ToastProps> = ({
+  message,
+  type,
+  durationMs = 3000,
+  actionLabel,
+  onAction,
+  onDismiss,
+}) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
-    const timer = setTimeout(() => setIsVisible(false), 2700);
+    const timer = setTimeout(() => setIsVisible(false), Math.max(500, durationMs - 300));
     return () => clearTimeout(timer);
-  }, [message, type]);
+  }, [message, type, durationMs]);
 
   const { border, iconColor, Icon } = TOAST_STYLES[type];
+  const hasAction = Boolean(actionLabel && onAction);
+
+  const handleAction = () => {
+    onAction?.();
+    onDismiss?.();
+  };
 
   return (
     <div
@@ -52,12 +73,23 @@ const Toast: React.FC<ToastProps> = ({ message, type }) => {
       }`}
     >
       <div
-        className={`bg-surface-elevated text-ink-primary px-4 py-3 rounded-xl shadow-modal flex items-center gap-2.5 border ${border}`}
+        className={`bg-surface-elevated text-ink-primary rounded-xl shadow-modal flex items-center gap-2.5 border ${border} ${
+          hasAction ? 'pl-4 pr-1.5 py-1.5' : 'px-4 py-3'
+        }`}
       >
         <Icon className={`h-5 w-5 shrink-0 ${iconColor}`} />
-        <span className="font-semibold text-sm sm:text-base break-words leading-snug">
+        <span className="font-semibold text-sm sm:text-base break-words leading-snug tabular-nums">
           {message}
         </span>
+        {hasAction && (
+          <button
+            type="button"
+            onClick={handleAction}
+            className="ml-1 min-h-[44px] px-3.5 rounded-lg bg-surface-hover hover:bg-surface-card border border-border-strong text-brand font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-colors active:scale-[0.97] touch-manipulation shrink-0"
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
     </div>
   );

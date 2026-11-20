@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSync } from '../../context/SyncContext';
 import { generateFederationExcel } from '../../utils/exportToExcel';
 import { getActivePlayersFromMatch, hasCompleteMatchMetadata } from '../../utils/matchMetadata';
+import { FOUL_WARNING_THRESHOLD, MAX_PERSONAL_FOULS, getTotalPlayerFouls } from '../../utils/foulRules';
 import { InfoCircleIcon } from '../icons';
 import ModalShell from './ModalShell';
 
@@ -58,21 +59,38 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
 
     const {
         handleUpdateTallyStat,
+        handleUndoTally,
         handleClearSheet,
         handleDeleteGameEvent,
         handleEditGameEvent,
         updatePlayerName,
         startQuickMatch,
         addPlayerToMatch,
+        toggleActivePlayer,
     } = useGameLogic();
 
     const handleAssignActionToPlayer = useCallback((playerNumber: string) => {
         if (actionToAssign) {
-            handleUpdateTallyStat(playerNumber, actionToAssign, 1);
+            const applied = handleUpdateTallyStat(playerNumber, actionToAssign, 1);
+            if (applied) {
+                const label = (props.actionLabel || '').toUpperCase();
+                const name = gameState.playerNames[playerNumber];
+                const who = playerNumber === 'Equipo'
+                    ? 'Equipo'
+                    : `#${playerNumber}${name ? ` ${name}` : ''}`;
+                showToast(`${label} · ${who}`, 'success', {
+                    actionLabel: 'Deshacer',
+                    onAction: handleUndoTally,
+                    durationMs: 3500,
+                });
+            } else {
+                // Rejected by regulation (e.g. 6-foul cap): keep the modal open so another player can be picked.
+                return;
+            }
         }
         closeModal('playerSelection');
         setActionToAssign(null);
-    }, [actionToAssign, handleUpdateTallyStat, closeModal, setActionToAssign]);
+    }, [actionToAssign, handleUpdateTallyStat, handleUndoTally, closeModal, setActionToAssign, showToast, props.actionLabel, gameState.playerNames]);
 
     const handleConfirmClearSheet = useCallback(() => {
         handleClearSheet();
@@ -241,18 +259,17 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
     const isPlayerSelectionOpen = Boolean(modals.playerSelection?.isOpen && actionToAssign);
 
     // --- Dynamic Player Ordering Logic (computed ONLY when PlayerSelectionModal is open) ---
-    const { sortedPlayersByRecentUsage, recentCount, playerStatuses } = useMemo(() => {
+    const { onCourtPlayers, benchPlayers, playerStatuses } = useMemo(() => {
         if (!isPlayerSelectionOpen) {
             return {
-                sortedPlayersByRecentUsage: EMPTY_PLAYERS,
-                recentCount: 0,
+                onCourtPlayers: EMPTY_PLAYERS,
+                benchPlayers: EMPTY_PLAYERS,
                 playerStatuses: EMPTY_STATUSES
             };
         }
 
         const log = gameState.gameLog || [];
         const usedSet = new Set<string>();
-        const foulsByPlayer: Record<string, number> = {};
         const recentShotsByPlayer: Record<string, string[]> = {};
 
         for (let i = 0; i < log.length; i++) {
@@ -260,9 +277,7 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
             const p = entry.playerNumber;
             if (!p) continue;
             usedSet.add(p);
-            if (entry.action === 'faltasPersonales') {
-                foulsByPlayer[p] = (foulsByPlayer[p] || 0) + 1;
-            } else if (entry.action === 'goles' || entry.action === 'triples' || entry.action === 'fallos') {
+            if (entry.action === 'goles' || entry.action === 'triples' || entry.action === 'fallos') {
                 const arr = recentShotsByPlayer[p] || (recentShotsByPlayer[p] = []);
                 if (arr.length < 3) {
                     arr.push(entry.action);
@@ -270,18 +285,23 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
             }
         }
 
-        const usedPlayerNumbers = Array.from(usedSet).sort((a, b) => Number(a) - Number(b));
-        const unusedPlayers = gameState.availablePlayers
-            .filter(p => !usedSet.has(p))
-            .sort((a, b) => Number(a) - Number(b));
+        const available = gameState.availablePlayers;
+        const byNumber = (a: string, b: string) => Number(a) - Number(b);
+        const onCourt = (gameState.activePlayers || []).filter(p => available.includes(p)).sort(byNumber);
+        const onCourtSet = new Set(onCourt);
+        const bench = available.filter(p => !onCourtSet.has(p));
+        // Bench: players with recent activity first, then the rest by dorsal.
+        const benchUsed = bench.filter(p => usedSet.has(p)).sort(byNumber);
+        const benchUnused = bench.filter(p => !usedSet.has(p)).sort(byNumber);
 
         const statuses: Record<string, string[]> = {};
-        for (let i = 0; i < gameState.availablePlayers.length; i++) {
-            const p = gameState.availablePlayers[i];
+        for (let i = 0; i < available.length; i++) {
+            const p = available[i];
             const list: string[] = [];
-            const playerFouls = foulsByPlayer[p] || 0;
-            if (playerFouls === 5) list.push('foul-warning');
-            if (playerFouls >= 6) list.push('foul-out');
+            // Source of truth: tallyStats summed across ALL periods (works for loaded/edited games too).
+            const playerFouls = getTotalPlayerFouls(gameState.tallyStats, p);
+            if (playerFouls === FOUL_WARNING_THRESHOLD) list.push('foul-warning');
+            if (playerFouls >= MAX_PERSONAL_FOULS) list.push('foul-out');
 
             const shots = recentShotsByPlayer[p];
             if (shots && shots.length === 3) {
@@ -292,11 +312,11 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
         }
 
         return {
-            sortedPlayersByRecentUsage: [...usedPlayerNumbers, ...unusedPlayers],
-            recentCount: usedPlayerNumbers.length,
+            onCourtPlayers: onCourt,
+            benchPlayers: [...benchUsed, ...benchUnused],
             playerStatuses: statuses
         };
-    }, [isPlayerSelectionOpen, gameState.gameLog, gameState.availablePlayers]);
+    }, [isPlayerSelectionOpen, gameState.gameLog, gameState.availablePlayers, gameState.activePlayers, gameState.tallyStats]);
 
     const handleSettingsChange = useCallback((newSettings: Settings) => {
         setGameState(prev => ({ ...prev, settings: newSettings }));
@@ -322,12 +342,13 @@ const AppModals: React.FC<AppModalsProps> = React.memo((props) => {
                     onClose={() => { closeModal('playerSelection'); setActionToAssign(null); }}
                     onSelectPlayer={handleAssignActionToPlayer}
                     onAddPlayer={addPlayerToMatch}
-                    players={sortedPlayersByRecentUsage}
+                    players={benchPlayers}
+                    onCourtPlayers={onCourtPlayers}
+                    onToggleOnCourt={toggleActivePlayer}
                     playerNames={gameState.playerNames}
                     actionLabel={props.actionLabel || ''}
                     actionKey={actionToAssign}
                     playerStatuses={playerStatuses}
-                    recentCount={recentCount}
                 />
             )}
 

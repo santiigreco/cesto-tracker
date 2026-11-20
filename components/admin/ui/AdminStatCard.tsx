@@ -1,26 +1,21 @@
-
 import React from 'react';
 
 interface AdminStatCardProps {
     title: string;
     value: number | string;
     icon: React.ReactNode;
-    colorClass: string; // e.g. 'text-purple-400'
+    colorClass: string; // e.g. 'text-brand'
 }
 
 export const AdminStatCard: React.FC<AdminStatCardProps> = ({ title, value, icon, colorClass }) => {
-    // Generate background color based on text color (heuristic: replace 'text-' with 'bg-')
-    // Fallback if custom class format
-    const bgClass = colorClass.replace('text-', 'bg-');
-
     return (
-        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex items-center gap-4">
-            <div className={`p-4 rounded-full bg-opacity-20 ${bgClass} ${colorClass}`}>
-                {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: `h-8 w-8 ${colorClass}` })}
+        <div className="bg-surface-card p-5 rounded-2xl border border-border-subtle shadow-card flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl bg-surface-elevated border border-border-strong flex items-center justify-center shrink-0 ${colorClass}`}>
+                {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: `h-6 w-6 ${colorClass}` })}
             </div>
-            <div>
-                <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">{title}</p>
-                <p className="text-3xl font-extrabold text-white">{value}</p>
+            <div className="min-w-0">
+                <p className="text-ink-muted text-xs font-bold uppercase tracking-wider">{title}</p>
+                <p className="text-2xl sm:text-3xl font-black text-ink-primary tabular-nums mt-0.5">{value}</p>
             </div>
         </div>
     );

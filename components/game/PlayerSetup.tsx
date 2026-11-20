@@ -1,17 +1,10 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import {
-  ArrowRightIcon,
-  ChevronDownIcon,
-  JerseySvgIcon,
-  ShieldIcon,
-  TrophyIcon,
-} from '../icons';
+import { ArrowRightIcon, ChevronDownIcon } from '../icons';
 import { Settings, GameMode, RosterPlayer } from '../../types';
-import ToggleSwitch from '@/components/ui/ToggleSwitch';
-import TeamLogo from '@/components/ui/TeamLogo';
-
-import { TEAMS_CONFIG, CATEGORIES_CONFIG } from '../../constants';
+import { TEAMS_CONFIG } from '../../constants';
 import { findBestTeamMatch } from '../../utils/teamUtils';
+import AdvancedStreakSettings from './setup/AdvancedStreakSettings';
+import MatchSetupFormFields from './setup/MatchSetupFormFields';
 
 const TeamSelectorModal = lazy(() => import('@/components/modals/TeamSelectorModal'));
 const TournamentSelectorModal = lazy(() => import('@/components/modals/TournamentSelectorModal'));
@@ -50,11 +43,9 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     initialPlayerNames = {},
     isEditMode = false,
 }) => {
-    // ── State ──
     const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(() => {
         if (initialSelectedPlayers.length > 0) return new Set(initialSelectedPlayers);
         if (!isEditMode) {
-            // Restore players from last saved team only if team matches (or none chosen yet)
             try {
                 const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
                 if (saved) {
@@ -64,16 +55,14 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         return new Set(parsed.players);
                     }
                 }
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         }
         return new Set(allPlayers);
     });
 
-    // Local state to hold player names when a team is loaded
     const [localPlayerNames, setLocalPlayerNames] = useState<Record<string, string>>(() => {
         if (Object.keys(initialPlayerNames).length > 0) return initialPlayerNames;
         if (!isEditMode) {
-            // Restore from last saved team only if team matches (or none chosen yet)
             try {
                 const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
                 if (saved) {
@@ -83,17 +72,16 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         return parsed.playerNames;
                     }
                 }
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         }
         return {};
     });
 
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
-    const [isRivalSelectorOpen, setIsRivalSelectorOpen] = useState(false); // State for Rival selector
+    const [isRivalSelectorOpen, setIsRivalSelectorOpen] = useState(false);
     const [isTournamentSelectorOpen, setIsTournamentSelectorOpen] = useState(false);
     const [settings, setSettings] = useState<Settings>(() => {
-        // Only auto-restore myTeam for fresh games (no initialSettings provided)
         if (isEditMode || initialSettings.myTeam) return initialSettings;
         try {
             const saved = localStorage.getItem(LAST_TEAM_STORAGE_KEY);
@@ -101,16 +89,12 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 const parsed = JSON.parse(saved);
                 return { ...initialSettings, myTeam: parsed.myTeam || initialSettings.myTeam || '' };
             }
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
         return initialSettings;
     });
 
-    // Unified handler for loading a team (either from "My Teams" modal or "Team Selector")
     const applyTeamRoster = (name: string, players: RosterPlayer[]) => {
-        // 1. Set Team Name
         setSettings(prev => ({ ...prev, myTeam: name }));
-
-        // 2. Set Players
         const newSelected = new Set<string>();
         const newNames: Record<string, string> = {};
 
@@ -156,27 +140,25 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
     const handleStart = () => {
         if (selectedPlayers.size < 1) {
-            alert("Debés seleccionar al menos una jugadora.");
+            alert('Debés seleccionar al menos una jugadora.');
             return;
         }
 
         const sortedPlayers = Array.from(selectedPlayers).sort((a, b) => Number(a) - Number(b));
 
-        // Set default name if empty and cap length
         const finalSettings = {
             ...settings,
             myTeam: settings.myTeam?.trim().slice(0, 50) || '',
             gameName: (settings.gameName?.trim() || 'Equipo Rival').slice(0, 50)
         };
 
-        // Save this team config for next time
         try {
             localStorage.setItem(LAST_TEAM_STORAGE_KEY, JSON.stringify({
                 players: sortedPlayers,
                 playerNames: localPlayerNames,
                 myTeam: settings.myTeam,
             }));
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
 
         onSetupComplete(sortedPlayers, finalSettings, 'stats-tally', localPlayerNames);
     };
@@ -184,16 +166,14 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     const handleThresholdChange = (key: 'manoCalienteThreshold' | 'manoFriaThreshold', value: string) => {
         const numValue = parseInt(value, 10);
         if (!isNaN(numValue)) {
-            setSettings({ ...settings, [key]: numValue });
+            setSettings(prev => ({ ...prev, [key]: numValue }));
         }
     };
 
     const handleTeamSelectedFromDropdown = (name: string, roster?: RosterPlayer[]) => {
         if (roster && roster.length > 0) {
-            // If roster data came from the selector (because it was a saved team), apply it directly
             applyTeamRoster(name, roster);
         } else {
-            // Just set the name if it's a generic team
             setSettings(prev => ({ ...prev, myTeam: name }));
         }
         setIsTeamSelectorOpen(false);
@@ -203,7 +183,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
     return (
         <div className="min-h-screen bg-surface-canvas text-ink-primary flex flex-col items-center justify-center p-4 sm:p-6 font-sans overflow-x-hidden selection:bg-brand/25 selection:text-ink-primary">
-
             <div className="w-full max-w-xl space-y-6">
                 {/* ── Header ── */}
                 <div className="text-center space-y-2">
@@ -221,7 +200,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
                 {/* ── Main Setup Card ── */}
                 <div className="bg-surface-card rounded-2xl border border-border-subtle p-5 sm:p-7 shadow-card space-y-6 relative">
-                    {/* ── Advanced Settings Trigger ── */}
                     <button
                         type="button"
                         onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
@@ -233,155 +211,24 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {/* ── Advanced Settings Panel ── */}
                     {isAdvancedOpen && (
-                        <div className="space-y-4 animate-fade-in bg-surface-elevated/50 p-4 rounded-xl border border-border-subtle mt-10">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Mano Caliente</label>
-                                    <div className="bg-surface-card p-3.5 rounded-xl border border-border-subtle space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-ink-secondary">Activar detección</span>
-                                            <ToggleSwitch
-                                                isEnabled={settings.isManoCalienteEnabled}
-                                                onToggle={() => setSettings(prev => ({ ...prev, isManoCalienteEnabled: !prev.isManoCalienteEnabled }))}
-                                            />
-                                        </div>
-                                        {settings.isManoCalienteEnabled && (
-                                            <div className="flex items-center justify-between gap-4 animate-fade-in">
-                                                <span className="text-xs font-medium text-ink-muted">Umbral (goles)</span>
-                                                <input
-                                                    type="number"
-                                                    value={settings.manoCalienteThreshold}
-                                                    onChange={(e) => handleThresholdChange('manoCalienteThreshold', e.target.value)}
-                                                    className="w-16 bg-surface-elevated text-center text-brand font-extrabold rounded-lg py-1 border border-border-strong focus:border-brand text-base sm:text-sm tabular-nums"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Mano Fría</label>
-                                    <div className="bg-surface-card p-3.5 rounded-xl border border-border-subtle space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-ink-secondary">Activar detección</span>
-                                            <ToggleSwitch
-                                                isEnabled={settings.isManoFriaEnabled}
-                                                onToggle={() => setSettings(prev => ({ ...prev, isManoFriaEnabled: !prev.isManoFriaEnabled }))}
-                                            />
-                                        </div>
-                                        {settings.isManoFriaEnabled && (
-                                            <div className="flex items-center justify-between gap-4 animate-fade-in">
-                                                <span className="text-xs font-medium text-ink-muted">Umbral (fallos)</span>
-                                                <input
-                                                    type="number"
-                                                    value={settings.manoFriaThreshold}
-                                                    onChange={(e) => handleThresholdChange('manoFriaThreshold', e.target.value)}
-                                                    className="w-16 bg-surface-elevated text-center text-sport-triple-light font-extrabold rounded-lg py-1 border border-border-strong focus:border-sport-triple-light text-base sm:text-sm tabular-nums"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <AdvancedStreakSettings
+                            settings={settings}
+                            onToggleManoCaliente={() => setSettings(prev => ({ ...prev, isManoCalienteEnabled: !prev.isManoCalienteEnabled }))}
+                            onToggleManoFria={() => setSettings(prev => ({ ...prev, isManoFriaEnabled: !prev.isManoFriaEnabled }))}
+                            onThresholdChange={handleThresholdChange}
+                        />
                     )}
 
-                    {/* ── Teams Selection ── */}
-                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!isAdvancedOpen ? 'pt-6' : ''}`}>
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Tu Equipo</label>
-                            <button
-                                type="button"
-                                onClick={() => setIsTeamSelectorOpen(true)}
-                                className="w-full min-h-[56px] flex items-center justify-between gap-2 bg-surface-elevated hover:bg-surface-hover border border-border-strong hover:border-brand/50 text-ink-primary rounded-xl px-4 py-3 transition-colors"
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    {settings.myTeam ? (
-                                        <TeamLogo teamName={settings.myTeam} className="w-8 h-8 shrink-0" />
-                                    ) : (
-                                        <div className="p-2 bg-brand/15 border border-brand/25 rounded-lg text-brand shrink-0">
-                                            <JerseySvgIcon className="h-4 w-4" />
-                                        </div>
-                                    )}
-                                    <span className={`font-bold text-sm sm:text-base truncate ${settings.myTeam ? 'text-ink-primary' : 'text-ink-muted'}`}>
-                                        {settings.myTeam || 'Seleccioná equipo'}
-                                    </span>
-                                </div>
-                                <ChevronDownIcon className="h-4 w-4 text-ink-muted shrink-0" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Rival</label>
-                            <button
-                                type="button"
-                                onClick={() => setIsRivalSelectorOpen(true)}
-                                className="w-full min-h-[56px] flex items-center justify-between gap-2 bg-surface-elevated hover:bg-surface-hover border border-border-strong hover:border-brand/50 text-ink-primary rounded-xl px-4 py-3 transition-colors"
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    {settings.gameName ? (
-                                        <TeamLogo teamName={settings.gameName} className="w-8 h-8 shrink-0" />
-                                    ) : (
-                                        <div className="p-2 bg-surface-card border border-border-subtle rounded-lg text-ink-muted shrink-0">
-                                            <ShieldIcon className="h-4 w-4" />
-                                        </div>
-                                    )}
-                                    <span className={`font-bold text-sm sm:text-base truncate ${settings.gameName ? 'text-ink-primary' : 'text-ink-muted'}`}>
-                                        {settings.gameName || 'Nombre del rival'}
-                                    </span>
-                                </div>
-                                <ChevronDownIcon className="h-4 w-4 text-ink-muted shrink-0" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* ── Tournament Selection ── */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Competencia / Torneo</label>
-                        <button
-                            type="button"
-                            onClick={() => setIsTournamentSelectorOpen(true)}
-                            className="w-full min-h-[52px] flex items-center justify-between gap-2 bg-surface-elevated hover:bg-surface-hover border border-border-strong hover:border-brand/50 text-ink-primary rounded-xl px-4 py-3 transition-colors"
-                        >
-                            <div className="flex items-center gap-3 min-w-0">
-                                <TrophyIcon className="h-5 w-5 text-sport-warn-light shrink-0" />
-                                <span className="font-bold text-sm sm:text-base truncate">{settings.tournamentName || 'Todos'}</span>
-                            </div>
-                            <ChevronDownIcon className="h-4 w-4 text-ink-muted shrink-0" />
-                        </button>
-                    </div>
-
-                    {/* ── Category and Date ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Categoría</label>
-                            <div className="relative">
-                                <select
-                                    value={settings.categoryName || ''}
-                                    onChange={(e) => setSettings({ ...settings, categoryName: e.target.value })}
-                                    className="w-full min-h-[52px] bg-surface-elevated hover:bg-surface-hover border border-border-strong focus:border-brand text-ink-primary rounded-xl px-4 py-3 transition-colors appearance-none font-bold text-base sm:text-sm cursor-pointer"
-                                >
-                                    <option value="" disabled>Seleccionar Categoría</option>
-                                    {CATEGORIES_CONFIG.map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                                <ChevronDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted pointer-events-none" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider px-0.5 block">Fecha</label>
-                            <input
-                                type="date"
-                                value={settings.gameDate || ''}
-                                onChange={(e) => setSettings({ ...settings, gameDate: e.target.value })}
-                                className="w-full min-h-[52px] bg-surface-elevated hover:bg-surface-hover border border-border-strong focus:border-brand text-ink-primary rounded-xl px-4 py-3 transition-colors font-bold text-base sm:text-sm tabular-nums [color-scheme:dark]"
-                            />
-                        </div>
-                    </div>
+                    <MatchSetupFormFields
+                        settings={settings}
+                        isAdvancedOpen={isAdvancedOpen}
+                        onOpenTeamSelector={() => setIsTeamSelectorOpen(true)}
+                        onOpenRivalSelector={() => setIsRivalSelectorOpen(true)}
+                        onOpenTournamentSelector={() => setIsTournamentSelectorOpen(true)}
+                        onCategoryChange={(categoryName) => setSettings(prev => ({ ...prev, categoryName }))}
+                        onDateChange={(gameDate) => setSettings(prev => ({ ...prev, gameDate }))}
+                    />
 
                     {/* ── Start Button ── */}
                     <div className="pt-2 space-y-2">
@@ -422,7 +269,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         isOpen={isRivalSelectorOpen}
                         onClose={() => setIsRivalSelectorOpen(false)}
                         onSelectTeam={(name) => {
-                            setSettings({ ...settings, gameName: name });
+                            setSettings(prev => ({ ...prev, gameName: name }));
                             setIsRivalSelectorOpen(false);
                         }}
                         currentTeam={settings.gameName || ''}
@@ -436,14 +283,13 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                         isOpen={isTournamentSelectorOpen}
                         onClose={() => setIsTournamentSelectorOpen(false)}
                         onSelectTournament={(id, name) => {
-                            setSettings({ ...settings, tournamentId: id, tournamentName: name });
+                            setSettings(prev => ({ ...prev, tournamentId: id, tournamentName: name }));
                             setIsTournamentSelectorOpen(false);
                         }}
                         currentTournamentId={settings.tournamentId}
                     />
                 )}
             </Suspense>
-
         </div>
     );
 };

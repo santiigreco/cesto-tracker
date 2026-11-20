@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { initialPlayerTally } from '../context/GameContext';
 import { TallyStatsPeriod, PlayerStreak } from '../types';
+import {
+  MAX_PERSONAL_FOULS,
+  FOUL_WARNING_THRESHOLD,
+  getTotalPlayerFouls,
+  canAddPersonalFoul,
+} from '../utils/foulRules';
 
 describe('Reglas de Juego y Cálculo Estadístico de Cestoball', () => {
   it('debe calcular correctamente los puntos totales sumando dobles (2 pts) y triples (3 pts)', () => {
@@ -129,6 +135,42 @@ describe('Reglas de Juego y Cálculo Estadístico de Cestoball', () => {
 
       expect(teamFouls['First Half']).toBe(2);
       expect(teamFouls['Second Half']).toBe(1);
+    });
+
+    it('debe sumar las faltas personales de una jugadora en todos los períodos del partido', () => {
+      const tally = JSON.parse(JSON.stringify(initialPlayerTally));
+      tally['First Half'].faltasPersonales = 2;
+      tally['Second Half'].faltasPersonales = 2;
+      tally['First Overtime'].faltasPersonales = 1;
+      tally['Second Overtime'].faltasPersonales = 1;
+
+      const tallyStats = { '10': tally };
+      expect(getTotalPlayerFouls(tallyStats, '10')).toBe(6);
+      expect(getTotalPlayerFouls(tallyStats, '99')).toBe(0);
+    });
+
+    it('debe permitir hasta 6 faltas personales en el partido y bloquear una 7ma falta reglamentariamente', () => {
+      const tally = JSON.parse(JSON.stringify(initialPlayerTally));
+      tally['First Half'].faltasPersonales = 3;
+      tally['Second Half'].faltasPersonales = 2; // 5 faltas (en capilla)
+
+      const tallyStats = { '7': tally };
+      expect(FOUL_WARNING_THRESHOLD).toBe(5);
+      expect(MAX_PERSONAL_FOULS).toBe(6);
+      expect(getTotalPlayerFouls(tallyStats, '7')).toBe(5);
+      expect(canAddPersonalFoul(tallyStats, '7')).toBe(true);
+
+      // Llega a 6 faltas entre primer y segundo tiempo
+      tally['Second Half'].faltasPersonales = 3;
+      expect(getTotalPlayerFouls(tallyStats, '7')).toBe(6);
+      expect(canAddPersonalFoul(tallyStats, '7')).toBe(false);
+    });
+
+    it('debe permitir registrar faltas técnicas o de banco para "Equipo" sin tope de 6 faltas personales', () => {
+      const teamTally = JSON.parse(JSON.stringify(initialPlayerTally));
+      teamTally['First Half'].faltasPersonales = 8;
+
+      expect(canAddPersonalFoul({ Equipo: teamTally }, 'Equipo')).toBe(true);
     });
   });
 });

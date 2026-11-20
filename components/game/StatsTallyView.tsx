@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useGameContext, initialPlayerTally } from '../../context/GameContext';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import PlayerTallyCard from '@/components/game/PlayerTallyCard';
+import { getTotalPlayerFouls } from '../../utils/foulRules';
 
 const StatsTallyView: React.FC = React.memo(() => {
     const { gameState } = useGameContext();
@@ -47,6 +48,7 @@ const StatsTallyView: React.FC = React.memo(() => {
                     onSaveEdit={handleSavePlayerName}
                     onCancelEdit={handleCancelEditingName}
                     playerTally={(tallyStats[player] || initialPlayerTally)[currentPeriod]}
+                    totalMatchFouls={player === 'Equipo' ? 0 : getTotalPlayerFouls(tallyStats, player)}
                     onUpdate={handleUpdateTallyStat}
                     isReadOnly={isReadOnly}
                 />
